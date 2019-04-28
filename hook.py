@@ -1,6 +1,6 @@
 from plugins.sandcat.app.sand_api import SandApi
 
-name = '54ndc47'
+name = 'Sandcat'
 description = 'An in-memory agent/server combination'
 address = '/plugin/sandcat/gui'
 store = None
