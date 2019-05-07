@@ -33,6 +33,9 @@ class SandService:
     async def check_in(self, paw, executor):
         self.log.debug('[AGENT] check in (%s)' % paw)
         agent = await self.data_svc.dao.get('core_agent', dict(paw=paw))
+        if not agent:
+            self.log.debug('[AGENT] paw not recognized')
+            return
         updated_host = dict(last_seen=datetime.now(), executor=executor, checks=agent[0]['checks'] + 1)
         await self.data_svc.dao.update('core_agent', 'paw', paw, data=updated_host)
         return agent[0]
@@ -40,9 +43,8 @@ class SandService:
     async def instructions(self, agent):
         sql = 'SELECT * FROM core_chain where host_id = %s and collect is null' % agent['id']
         for link in await self.data_svc.dao.raw_select(sql):
-            command = self.utility_svc.obfuscate(agent['executor'], link['command'])
             await self.data_svc.dao.update('core_chain', key='id', value=link['id'], data=dict(collect=datetime.now()))
-            return json.dumps(dict(sleep=link['jitter'], id=link['id'], command=command))
+            return json.dumps(dict(sleep=link['jitter'], id=link['id'], command=link['command']))
         return json.dumps(dict(sleep=agent['sleep'], id=None, command=None))
 
     async def post_results(self, paw, link_id, output, status):
