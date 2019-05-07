@@ -40,8 +40,9 @@ class SandService:
     async def instructions(self, agent):
         sql = 'SELECT * FROM core_chain where host_id = %s and collect is null' % agent['id']
         for link in await self.data_svc.dao.raw_select(sql):
+            command = self.utility_svc.obfuscate(agent['executor'], link['command'])
             await self.data_svc.dao.update('core_chain', key='id', value=link['id'], data=dict(collect=datetime.now()))
-            return json.dumps(dict(sleep=link['jitter'], id=link['id'], command=link['command']))
+            return json.dumps(dict(sleep=link['jitter'], id=link['id'], command=command))
         return json.dumps(dict(sleep=agent['sleep'], id=None, command=None))
 
     async def post_results(self, paw, link_id, output, status):
