@@ -27,6 +27,8 @@ class SandApi:
     async def instructions(self, request):
         data = json.loads(self.utility_svc.decode_bytes(await request.read()))
         agent = await self.sand_svc.check_in(data['paw'], data['executor'])
+        if not agent:
+            return web.Response(text=json.dumps(dict(status=False)))
         instructions = await self.sand_svc.instructions(agent)
         return web.Response(text=self.utility_svc.encode_string(instructions))
 
