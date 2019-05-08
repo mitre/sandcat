@@ -9,9 +9,10 @@ This plugin contains:
 Start the agent on a Linux or OSX box with either of the bash commands below. Note, the second 
 command attaches a group to the agent when it first registers.
 
+
 ```
-while true; do eval "$(curl -sk -X POST -H "file:54ndc47.sh" https://localhost:8888/file/render)"; sleep 60; done
-while true; do eval "$(curl -sk -X POST -H "file:54ndc47.sh" https://localhost:8888/file/render?group=client)"; sleep 60; done
+while true; do eval "$(curl --noproxy localhost -sk -X POST -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -H "file:54ndc47.sh" https://localhost:8888/file/render)"; sleep 60; done
+while true; do eval "$(curl --noproxy localhost -sk -X POST -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -H "file:54ndc47.sh" https://localhost:8888/file/render?group=client)"; sleep 60; done
 ```
 
 Similarly, you can start the agent on Windows machine with either of the following:
