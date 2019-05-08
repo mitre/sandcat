@@ -11,13 +11,13 @@ function getJsonVal () {
 
 function registration {
     body=$(echo '{"paw":"'"$paw"'","host":"'"$(hostname)"'","executor":"bash","group":"'"$group"'"}' | base64)
-    results=$(curl -sk -X POST -d $body $server/sand/register)
+    results=$(echo "$body" | curl -sk -X POST -d @- $server/sand/register)
     register=$(base64 --decode <<< ${results})
 }
 
 function getInstructions {
     body=$(echo '{"paw":"'"$paw"'","host":"'"$(hostname)"'","executor":"bash"}' | base64)
-    encodedTask=$(curl -sk -X POST -d $body $server/sand/instructions)
+    encodedTask=$(echo "$body" | curl -sk -X POST -d @- $server/sand/instructions)
     task=$(base64 --decode <<< ${encodedTask})
 }
 
