@@ -1,5 +1,4 @@
 import json
-import os
 from datetime import datetime, timedelta
 
 
@@ -52,20 +51,3 @@ class SandService:
         await self.data_svc.dao.create('core_result', dict(link_id=link_id, output=output))
         await self.data_svc.dao.update('core_chain', key='id', value=link_id, data=dict(status=status, finish=datetime.now()))
         return json.dumps(dict(status=True))
-
-    @staticmethod
-    async def render_file(name, group, environment, url_root):
-        try:
-            t = environment.get_template(name)
-            return t.render(url_root=url_root, group=group)
-        except Exception:
-            return None
-
-    async def download_file(self, name):
-        stores = [p.store for p in self.plugins if p.store]
-        for store in stores:
-            for root, dirs, files in os.walk(store):
-                if name in files:
-                    headers = dict([('CONTENT-DISPOSITION', 'attachment; filename="%s"' % name)])
-                    return os.path.join(root, name), headers
-        return None, None
