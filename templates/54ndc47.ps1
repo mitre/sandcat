@@ -65,7 +65,7 @@ function Post-Results($web_client, $task) {
         $result = $e.Message
         $status = 1
     }
-    $resultBites = [System.Text.Encoding]::Unicode.GetBytes($result)
+    $resultBites = [System.Text.Encoding]::UTF8.GetBytes($result)
     $encodedResult = [Convert]::ToBase64String($resultBites)
     $json = @{
         paw=$paw
