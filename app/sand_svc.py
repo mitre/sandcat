@@ -15,13 +15,13 @@ class SandService:
         if agent:
             last_seen = datetime.strptime(agent[0]['last_seen'], '%Y-%m-%d %H:%M:%S.%f')
             if last_seen + timedelta(seconds=int(agent[0]['sleep'])) > datetime.now():
-                self.log.debug('[AGENT] already active (%s)' % paw)
+                self.log.debug('Agent already active - disregard (%s)' % paw)
                 status = True
             else:
-                self.log.debug('[AGENT] stale, re-connecting (%s)' % paw)
+                self.log.console('Stale agent, re-connecting (%s)' % paw)
                 status = True
         else:
-            self.log.debug('[AGENT] new connection (%s)' % paw)
+            self.log.console('New agent connection (%s)' % paw)
             aa = dict(hostname=host, last_seen=datetime.now(), paw=paw, checks=1, executor=executor, sleep=60, server=server)
             await self.data_svc.dao.create('core_agent', aa)
             status = True
