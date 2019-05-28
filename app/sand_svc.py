@@ -6,8 +6,8 @@ class SandService:
 
     def __init__(self, services):
         self.data_svc = services.get('data_svc')
-        self.log = services.get('logger')
         self.utility_svc = services.get('utility_svc')
+        self.log = self.utility_svc.create_logger('54ndc47')
         self.plugins = services.get('plugins')
 
     async def registration(self, paw, executor, server, host, group):
