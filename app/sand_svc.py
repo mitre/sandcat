@@ -8,7 +8,6 @@ class SandService:
         self.data_svc = services.get('data_svc')
         self.utility_svc = services.get('utility_svc')
         self.log = self.utility_svc.create_logger('54ndc47')
-        self.plugins = services.get('plugins')
 
     async def registration(self, paw, platform, server, host, group):
         agent = await self.data_svc.dao.get('core_agent', dict(paw=paw))
@@ -27,7 +26,7 @@ class SandService:
             status = True
         if None if group == 'None' else group:
             await self.data_svc.create_group(name=group, paws=[paw])
-        return json.dumps(dict(status=status))
+        return json.dumps(dict(status=status, sleep=60))
 
     async def check_in(self, paw):
         self.log.debug('[AGENT] check in (%s)' % paw)
@@ -41,11 +40,10 @@ class SandService:
 
     async def instructions(self, agent):
         sql = 'SELECT * FROM core_chain where host_id = %s and collect is null' % agent['id']
-        instructions = dict(sleep=agent['sleep'], commands=[])
+        instructions = []
         for link in await self.data_svc.dao.raw_select(sql):
-            instructions['sleep'] = link['jitter']
             await self.data_svc.dao.update('core_chain', key='id', value=link['id'], data=dict(collect=datetime.now()))
-            instructions['commands'].append(json.dumps(dict(id=link['id'], command=link['command'])))
+            instructions.append(json.dumps(dict(id=link['id'], sleep=link['jitter'], command=link['command'])))
         return json.dumps(instructions)
 
     async def post_results(self, paw, link_id, output, status):
