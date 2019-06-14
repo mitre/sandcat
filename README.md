@@ -8,7 +8,7 @@ This plugin contains:
 
 Start the agent on a Linux or OSX box with the bash command below
 ```
-while true; do curl -sk -X POST -H 'file:sandcat' https://localhost:8888/file/download > /tmp/sandcat.txt && chmod +x /tmp/sandcat.txt && /tmp/sandcat.txt https://localhost:8888 my_group; sleep 60; done
+while true; do curl -sk -X POST -H 'file:sandcat' https://localhost:8888/file/download > /tmp/sandcat && chmod +x /tmp/sandcat && /tmp/sandcat https://localhost:8888 my_group; sleep 60; done
 ```
 
 Similarly, you can start the agent on Windows machine with the following:
