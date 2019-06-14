@@ -1,7 +1,7 @@
 from plugins.sandcat.app.sand_api import SandApi
 
 name = 'Sandcat'
-description = 'An in-memory agent/server combination'
+description = 'A custom multi-platform RAT'
 address = '/plugin/sandcat/gui'
 
 
