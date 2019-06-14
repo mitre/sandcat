@@ -8,12 +8,12 @@ This plugin contains:
 
 Start the agent on a Linux or OSX box with the bash command below
 ```
-while true; do curl -sk -X POST -H 'file:sandcat' https://localhost:8888/file/download > /tmp/sandcat && chmod +x /tmp/sandcat && /tmp/sandcat https://localhost:8888 my_group; sleep 60; done
+while true; do curl -sk -X POST -H 'file:sandcat-osx' https://localhost:8888/file/download > /tmp/sandcat-osx && chmod +x /tmp/sandcat-osx && /tmp/sandcat-osx https://localhost:8888 my_group; sleep 60; done
 ```
 
 Similarly, you can start the agent on Windows machine with the following:
 ```
-while($true) {[System.Net.ServicePointManager]::ServerCertificateValidationCallback={$True};$url="https://localhost:8888/file/download";$wc=New-Object System.Net.WebClient;$wc.Headers.add("file","sandcat.exe");$output="C:\Users\Public\sandcat.exe";$wc.DownloadFile($url,$output);C:\Users\Public\sandcat.exe https://localhost:8888 my_group; sleep 60}```
+while($true) {[System.Net.ServicePointManager]::ServerCertificateValidationCallback={$True};$url="https://localhost:8888/file/download";$wc=New-Object System.Net.WebClient;$wc.Headers.add("file","sandcat.exe");$output="C:\Users\Public\sandcat.exe";$wc.DownloadFile($url,$output);C:\Users\Public\sandcat.exe https://localhost:8888 my_group; sleep 60}
 ```
 
 ## Updates
