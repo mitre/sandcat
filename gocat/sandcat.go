@@ -72,7 +72,9 @@ func postResults(server string, paw string, command map[string]interface{}) map[
 	address := fmt.Sprintf("%s/sand/results", server)
 	link := fmt.Sprintf("%f", command["id"].(float64))
 	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(encode(result)), "status": status})
-	return makeRequest(address, paw, data)
+	results := makeRequest(address, paw, data)
+	time.Sleep(time.Duration(command["sleep"].(float64)) * time.Second)
+	return results
 }
 
 func main() {
@@ -95,8 +97,9 @@ func main() {
 					command := cmds.Index(i).Elem().String()
 					postResults(os.Args[1], paw, unpack([]byte(command)))
 				}
+			} else {
+				time.Sleep(time.Duration(registration["sleep"].(float64)) * time.Second)
 			}
-			time.Sleep(time.Duration(commands["sleep"].(float64)) * time.Second)
 		}
 	}
 }
