@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 
 from aiohttp import web
-from aiohttp_jinja2 import template
 
 from plugins.sandcat.app.sand_svc import SandService
 
@@ -12,10 +11,6 @@ class SandApi:
     def __init__(self, services):
         self.sand_svc = SandService(services)
         self.utility_svc = services.get('utility_svc')
-
-    @template('sandcat.html')
-    async def splash(self, request):
-        return dict()
 
     async def registration(self, request):
         paw = request.headers.get('X-PAW')

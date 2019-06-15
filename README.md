@@ -1,7 +1,7 @@
 # 54ndc47
 
 This plugin contains:
-* A custom in-memory agent, with variants for Windows, Linux and MacOSX
+* A custom agent, with variants for Windows, Linux and MacOSX
 * API endpoints for the agent to communicate to CALDERA over HTTPS
 
 ## Quick start
