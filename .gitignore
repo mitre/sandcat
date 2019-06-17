@@ -1,4 +1,5 @@
 *.pyc
+.history/*
 *.crt
 *.exe
 *.pyd

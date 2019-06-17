@@ -12,19 +12,12 @@ class SandApi:
         self.sand_svc = SandService(services)
         self.utility_svc = services.get('utility_svc')
 
-    async def registration(self, request):
+    async def beacon(self, request):
         paw = request.headers.get('X-PAW')
         data = json.loads(self.utility_svc.decode_bytes(await request.read()))
         data['server'] = '%s://%s' % (request.scheme, request.host)
-        registration = await self.sand_svc.registration(paw, **data)
-        return web.Response(text=self.utility_svc.encode_string(registration))
-
-    async def instructions(self, request):
-        paw = request.headers.get('X-PAW')
-        agent = await self.sand_svc.check_in(paw)
-        if not agent:
-            return web.Response(text=json.dumps(dict(status=False)))
-        instructions = await self.sand_svc.instructions(agent)
+        agent_id = await self.sand_svc.beacon(paw, **data)
+        instructions = await self.sand_svc.instructions(agent_id)
         return web.Response(text=self.utility_svc.encode_string(instructions))
 
     async def results(self, request):
