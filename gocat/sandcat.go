@@ -8,7 +8,6 @@ import (
 	"os/user"
 	"time"
 	"reflect"
-	"bufio"
 	"./modules"
 )
 
@@ -20,22 +19,11 @@ func stayInTouch(server string, host string, paw string, group string) {
 		for i := 0; i < cmds.Len(); i++ {
 			command := cmds.Index(i).Elem().String()
 			fmt.Println("[54ndc47] running task")
-			modules.Results(os.Args[1], paw, command)
+			modules.Results(server, paw, command)
 		}
 	} else {
 		time.Sleep(60 * time.Second)
 	}
-}
-
-func c2Server() string {
-	file, _ := os.Open("servers.txt")
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return lines[0]
 }
 
 func main() {
@@ -43,7 +31,7 @@ func main() {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
-	server := c2Server()
+	server := "https://localhost:8888"
 	group := "client"
 
 	if len(os.Args) == 2 {
