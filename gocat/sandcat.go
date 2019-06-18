@@ -38,7 +38,6 @@ func main() {
 		server = os.Args[1]
 		group = os.Args[2]	
 	} 
-	fmt.Println(group)
 	for {
 		stayInTouch(server, host, paw, group)
 	}
