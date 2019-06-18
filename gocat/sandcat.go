@@ -34,7 +34,7 @@ func main() {
 	server := "https://localhost:8888"
 	group := "client"
 
-	if len(os.Args) == 2 {
+	if len(os.Args) > 1 {
 		server = os.Args[1]
 		group = os.Args[2]	
 	} 
