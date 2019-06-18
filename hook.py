@@ -7,6 +7,6 @@ address = None
 
 async def initialize(app, services):
     cat_api = SandApi(services=services)
-    services.get('auth_svc').set_unauthorized_route('POST', '/sand/beacon', cat_api.beacon)
-    services.get('auth_svc').set_unauthorized_route('POST', '/sand/results', cat_api.results)
+    app.router.add_route('POST', '/sand/beacon', cat_api.beacon)
+    app.router.add_route('POST', '/sand/results', cat_api.results)
 
