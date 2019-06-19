@@ -31,10 +31,10 @@ func main() {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
-	server := "https://localhost:8888"
+	server := "http://localhost:8888"
 	group := "client"
 
-	if len(os.Args) > 1 {
+	if len(os.Args) == 3 {
 		server = os.Args[1]
 		group = os.Args[2]	
 	} 
