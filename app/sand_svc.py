@@ -30,7 +30,9 @@ class SandService:
         instructions = []
         for link in await self.data_svc.dao.raw_select(sql):
             await self.data_svc.dao.update('core_chain', key='id', value=link['id'], data=dict(collect=datetime.now()))
-            instructions.append(json.dumps(dict(id=link['id'], sleep=link['jitter'], command=link['command'])))
+            payload = await self.data_svc.dao.get('core_payload', dict(ability=link['ability']))
+            instructions.append(json.dumps(dict(id=link['id'], sleep=link['jitter'], command=link['command'],
+                                                payload=payload[0] if payload else None)))
         return json.dumps(instructions)
 
     async def post_results(self, paw, link_id, output, status):
