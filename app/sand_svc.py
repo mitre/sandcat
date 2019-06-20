@@ -9,7 +9,7 @@ class SandService:
         self.utility_svc = services.get('utility_svc')
         self.log = self.utility_svc.create_logger('sandcat')
 
-    async def beacon(self, paw, platform, server, host, group, files):
+    async def beacon(self, paw, platform, server, group, files):
         agent = await self.data_svc.dao.get('core_agent', dict(paw=paw))
         if agent:
             self.log.debug('Beacon (%s)' % paw)
@@ -20,8 +20,7 @@ class SandService:
             return agent[0]['id']
         else:
             self.log.debug('New beacon (%s)' % paw)
-            queued = dict(hostname=host, last_seen=datetime.now(), paw=paw, checks=1, platform=platform,
-                          server=server, files=files)
+            queued = dict(last_seen=datetime.now(), paw=paw, checks=1, platform=platform, server=server, files=files)
             agent_id = await self.data_svc.dao.create('core_agent', queued)
             await self.data_svc.create_group(name=group, paws=[paw])
             return agent_id

