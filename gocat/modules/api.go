@@ -14,8 +14,8 @@ import (
 )
 
 // Beacon is a single call to the C2
-func Beacon(server string, paw string, host string, group string, files string) interface{} {
-	data, _ := json.Marshal(map[string]string{"platform": runtime.GOOS, "host": host, "group": group, "files": files})
+func Beacon(server string, paw string, group string, files string) interface{} {
+	data, _ := json.Marshal(map[string]string{"platform": runtime.GOOS, "group": group, "files": files})
 	address := fmt.Sprintf("%s/sand/beacon", server)
 	bites := request(address, paw, data)
 	var out interface{}
