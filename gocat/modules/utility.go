@@ -23,7 +23,7 @@ func Unpack(b []byte) (out map[string]interface{}) {
 	return
 }
 
-//Exists checks for a file 
+// Exists checks for a file 
 func Exists(path string) bool {
     _, err := os.Stat(path)
     if err == nil { return true }

