@@ -39,7 +39,7 @@ func main() {
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
 	files := os.TempDir()
 	server := "http://localhost:8888"
-	group := "client"
+	group := "my_group"
 
 	if len(os.Args) == 3 {
 		server = os.Args[1]
