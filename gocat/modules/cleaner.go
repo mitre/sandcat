@@ -3,6 +3,7 @@ package modules
 import (
 	"os"
 	"path/filepath"
+	"fmt"
 )
 
 var cleanups []string
@@ -24,6 +25,7 @@ func ApplyCleanup(command map[string]interface{}) {
 func Cleanup(files string) {
 	for i := range cleanups {
 		cmd := Decode(cleanups[len(cleanups)-1-i])
+		fmt.Println(fmt.Sprintf("[+] Cleanup: %s", cmd))
 		Execute(string(cmd))
 	}
 	for _, value := range payloads {
