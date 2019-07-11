@@ -11,13 +11,11 @@ var payloads []string
 
 // ApplyCleanup stores cleanup actions
 func ApplyCleanup(command map[string]interface{}) {
-	cleanup := command["cleanup"].(string)
-	payload := command["payload"].(string)
-	if len(cleanup) > 0 {
-		cleanups = append(cleanups, cleanup)
+	if command["cleanup"] != nil && len(command["cleanup"].(string)) > 1 {
+		cleanups = append(cleanups, command["cleanup"].(string))
 	}
-	if len(payload) > 0 {
-		payloads = append(payloads, payload)
+	if command["payload"] != nil && len(command["payload"].(string)) > 1 {
+		payloads = append(payloads, command["payload"].(string))
 	}
 }
 
