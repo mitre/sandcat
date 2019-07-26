@@ -1,5 +1,10 @@
 import json
+import os
+import random
+import string
+
 from datetime import datetime
+from shutil import which
 
 
 class SandService:
@@ -8,6 +13,14 @@ class SandService:
         self.data_svc = services.get('data_svc')
         self.utility_svc = services.get('utility_svc')
         self.log = self.utility_svc.create_logger('sandcat')
+
+    async def compile(self, platform):
+        if which('go') is not None:
+            key = await self._insert_unique_deployment_key()
+            self.log.debug('New agent compiled with key = %s' % key)
+            main_module = 'plugins/sandcat/gocat/sandcat.go'
+            output = 'plugins/sandcat/payloads/%s' % platform
+            os.system('GOOS=%s go build -o %s -ldflags="-s -w" %s' % (platform, output, main_module))
 
     async def beacon(self, paw, platform, server, group, files):
         agent = await self.data_svc.dao.get('core_agent', dict(paw=paw))
@@ -42,3 +55,16 @@ class SandService:
         await self.data_svc.dao.create('core_result', dict(link_id=link_id, output=output))
         await self.data_svc.dao.update('core_chain', key='id', value=link_id, data=dict(status=int(status), finish=finished))
         return json.dumps(dict(status=True))
+
+    """ PRIVATE """
+
+    @staticmethod
+    async def _insert_unique_deployment_key(size=30):
+        key = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size))
+        distraction = 'plugins/sandcat/gocat/deception/deception.go'
+        lines = open(distraction, 'r').readlines()
+        lines[-1] = 'var key = "%s"' % key
+        out = open(distraction, 'w')
+        out.writelines(lines)
+        out.close()
+        return key
