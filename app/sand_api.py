@@ -11,6 +11,15 @@ class SandApi:
     def __init__(self, services):
         self.sand_svc = SandService(services)
         self.utility_svc = services.get('utility_svc')
+        self.file_svc = services.get('file_svc')
+
+    async def download(self, request):
+        platform = request.headers.get('platform')
+        await self.sand_svc.compile(platform)
+        file_path, headers = await self.file_svc.find_file(platform)
+        if file_path:
+            return web.FileResponse(path=file_path, headers=headers)
+        return web.HTTPNotFound(body='File not found')
 
     async def beacon(self, request):
         paw = request.headers.get('X-PAW')

