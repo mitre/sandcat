@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"flag"
 	"net/http"
 	"os"
 	"os/user"
@@ -46,16 +47,13 @@ func main() {
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
 	files := os.TempDir()
-	server := "http://localhost:8888"
-	group := "my_group"
 
-	if len(os.Args) == 3 {
-		server = os.Args[1]
-		group = os.Args[2]	
-	}
+	server := flag.String("server", "http://localhost:8888", "The fqdn of CALDERA")
+	group := flag.String("group", "my_group", "Attach a group to this agent")
+	flag.Parse()
 
 	deception.Log()
 	for {
-		runBeaconIteration(server, paw, group, files)
+		runBeaconIteration(*server, paw, *group, files)
 	}
 }
