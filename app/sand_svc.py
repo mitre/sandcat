@@ -29,13 +29,11 @@ class SandService:
             last_seen = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             updated = dict(last_seen=last_seen, checks=agent[0]['checks'] + 1, platform=platform, server=server)
             await self.data_svc.update('core_agent', 'paw', paw, data=updated)
-            await self.data_svc.create_group(name=group, paws=[paw])
             return agent[0]['id']
         else:
             self.log.debug('New beacon (%s)' % paw)
-            queued = dict(last_seen=datetime.now(), paw=paw, checks=1, platform=platform, server=server, files=files)
+            queued = dict(last_seen=datetime.now(), paw=paw, checks=1, platform=platform, server=server, files=files, host_group=group)
             agent_id = await self.data_svc.create_agent(agent=queued)
-            await self.data_svc.create_group(name=group, paws=[paw])
             return agent_id
 
     async def instructions(self, agent_id):
