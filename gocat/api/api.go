@@ -33,6 +33,7 @@ func Drop(server string, files string, command map[string]interface{}) {
 		address := fmt.Sprintf("%s/file/download", server)
 		req, _ := http.NewRequest("POST", address, nil)
 		req.Header.Set("file", payload)
+		req.Header.Set("platform", string(runtime.GOOS))
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err == nil {
