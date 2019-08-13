@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"./api"
 	"./cleanup"
-	"./deception"
 	"./util"
 )
 
@@ -52,8 +51,9 @@ func main() {
 	group := flag.String("group", "my_group", "Attach a group to this agent")
 	flag.Parse()
 
-	deception.Log()
 	for {
 		runBeaconIteration(*server, paw, *group, files)
 	}
 }
+
+var key = "OPU8GIV9Z7EIMNS5QPTN5X4DDSZ33U"
