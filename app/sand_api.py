@@ -12,13 +12,14 @@ class SandApi:
         self.sand_svc = SandService(services)
         self.utility_svc = services.get('utility_svc')
         self.file_svc = services.get('file_svc')
+        self.agent_svc = services.get('agent_svc')
 
-    async def beacon(self, request):
+    async def instructions(self, request):
         paw = request.headers.get('X-PAW')
         data = json.loads(self.utility_svc.decode_bytes(await request.read()))
         data['server'] = '%s://%s' % (request.scheme, request.host)
-        agent_id = await self.sand_svc.beacon(paw, **data)
-        instructions = await self.sand_svc.instructions(agent_id)
+        await self.agent_svc.handle_heartbeat(paw, **data)
+        instructions = await self.sand_svc.instructions(paw)
         return web.Response(text=self.utility_svc.encode_string(instructions))
 
     async def results(self, request):

