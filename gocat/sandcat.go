@@ -40,11 +40,11 @@ func main() {
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
 
-	server := flag.String("server", "http://localhost:8888", "The FQDN of CALDERA")
+	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
 	group := flag.String("group", "my_group", "Attach a group to this agent")
 	flag.Parse()
 
 	for { askForInstructions(*server, *group, paw) }
 }
 
-var key = "KMFP9A6VX7S774V93L5ASD9LMG0RSE"
+var key = "S8ULTPMU1W1HM9FH5N2OROMPP2I6FN"

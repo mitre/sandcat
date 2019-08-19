@@ -30,7 +30,7 @@ func Instructions(server string, group string, paw string) interface{} {
 	return out
 }
 
-// Drop the payload from CALDERA
+// Drop the payload
 func Drop(server string, payload string) {
 	location := filepath.Join(payload)
 	if len(payload) > 0 && util.Exists(location) == false {
@@ -50,7 +50,7 @@ func Drop(server string, payload string) {
 	}
 }
 
-// Execute executes a command and posts results to CALDERA
+// Execute executes a command and posts results
 func Execute(server string, paw string, command map[string]interface{}) {
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
