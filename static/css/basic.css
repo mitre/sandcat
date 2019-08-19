@@ -1,0 +1,20 @@
+.prints img {
+    height: 175px;
+    border: none;
+    background-color: inherit;
+    float:right;
+}
+.cat-btn {
+    background-color: var(--theme-color);
+    margin-top: -10px;
+}
+.delivery {
+    text-align: left;
+}
+.malicious-link img {
+    height: 200px;
+    border: green 6px solid;
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+}

