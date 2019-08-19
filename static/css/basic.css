@@ -6,15 +6,15 @@
 }
 .cat-btn {
     background-color: var(--theme-color);
-    margin-top: -10px;
+    margin-top: 0;
 }
 .delivery {
     text-align: left;
 }
 .malicious-link img {
-    height: 200px;
-    border: green 6px solid;
     position: relative;
-    top: 50%;
-    transform: translateY(-50%);
+}
+.paragraph {
+    padding-left: 150px;
+    padding-right: 150px;
 }
