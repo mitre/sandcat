@@ -10,6 +10,7 @@
 }
 .delivery {
     text-align: left;
+    padding: 20px;
 }
 .malicious-link img {
     position: relative;
