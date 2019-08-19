@@ -20,6 +20,11 @@ func Instructions(server string, group string, paw string) interface{} {
 	data, _ := json.Marshal(map[string]string{"platform": runtime.GOOS, "group": group})
 	address := fmt.Sprintf("%s/sand/instructions", server)
 	bites := request(address, paw, data)
+	if bites != nil {
+		fmt.Println("[+] beacon: ALIVE")
+	} else {
+		fmt.Println("[-] beacon: DEAD")
+	}
 	var out interface{}
 	json.Unmarshal(bites, &out)
 	return out
