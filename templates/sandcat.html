@@ -40,7 +40,7 @@
                 <!-- Access -->
 
                 <div class="section-profile">
-                    <div class="row">
+                    <div id="access" class="row">
                         <div class="column section-border" style="flex:50%">
                             <h4>Option #1</h4>
                             <p class="paragraph">
@@ -92,7 +92,7 @@
             document.getElementById(identity).style.display = "block";
         }
         function cloneWebsite(){
-            let section = $('#clone');
+            let section = $('#access');
             section.prop('disabled', true).css('opacity', 0.5);
             $.ajax({
                url: '/plugin/sandcat/clone?url=' + document.getElementById("cloneNew").value,
