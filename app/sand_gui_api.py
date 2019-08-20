@@ -9,7 +9,6 @@ class SandGuiApi:
 
     def __init__(self, services):
         self.auth_svc = services.get('auth_svc')
-        self.utility_svc = services.get('utility_svc')
 
     @template('sandcat.html')
     async def splash(self, request):
@@ -26,8 +25,8 @@ class SandGuiApi:
         location = 'plugins/sandcat/static/malicious/'
         shutil.rmtree(location, ignore_errors=True)
         os.system(f"""wget -E -H -k -K -p -q -nH --cut-dirs=1 %s --directory %s --no-check-certificate""" % (url, location))
-        self.utility_svc.prepend_to_file('%s/index.html' % location, '<script src="/sandcat/js/malicious.js"></script>')
-        self.utility_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Expires" content="0">')
-        self.utility_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Pragma" content="no-cache">')
-        self.utility_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">')
+        self.auth_svc.prepend_to_file('%s/index.html' % location, '<script src="/sandcat/js/malicious.js"></script>')
+        self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Expires" content="0">')
+        self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Pragma" content="no-cache">')
+        self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">')
         return web.Response()
