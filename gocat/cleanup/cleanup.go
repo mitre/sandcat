@@ -23,11 +23,11 @@ func Apply(command map[string]interface{}) {
 }
 
 // Run executes all cleanup activities
-func Run() {
+func Run(profile map[string]string) {
 	for i := range cleanups {
 		cmd := util.Decode(cleanups[len(cleanups)-1-i])
 		fmt.Println(fmt.Sprintf("[+] Cleanup: %s", cmd))
-		execute.Execute(string(cmd))
+		execute.Execute(string(cmd), profile["executor"])
 	}
 	for _, value := range payloads {
 		fmt.Println(fmt.Sprintf("[*] Removing payload: %s", value))
