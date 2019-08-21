@@ -2,7 +2,8 @@ let headers = {
     "file": "sandcat.go",
     "platform": determinePlatform()
 };
-fetch('http://localhost:8888/file/download', {
+let loc = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
+fetch(loc + '/file/download', {
     method: "POST",
     headers: headers})
   .then(resp => resp.blob())
