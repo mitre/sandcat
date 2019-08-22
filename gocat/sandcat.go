@@ -40,7 +40,7 @@ func buildProfile(server string, group string, executor string) map[string]strin
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
-	return map[string]string{"paw": paw, "server": server, "group": group, "platform": runtime.GOOS, "executor": executor} 
+	return map[string]string{"paw": paw, "server": server, "group": group, "platform": runtime.GOOS, "executor": executor, "location": os.Args[0]} 
 }
 
 func main() {
@@ -54,4 +54,4 @@ func main() {
 	for { askForInstructions(profile) }
 }
 
-var key = "DE5GJ62X6RXM6L0UA7UFKN7C4SXBGG"
+var key = "EFE6FKFDAYZ3BD2EIDX040WKBEN7Z1"
