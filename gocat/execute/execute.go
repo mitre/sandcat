@@ -10,6 +10,8 @@ func Execute(command string, executor string) ([]byte, error) {
 		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
 	} else if executor == "cmd" {
 		return exec.Command(command).CombinedOutput()
+	} else if executor == "pwsh" {
+		return exec.Command("pwsh", "-c", command).CombinedOutput()
 	}
 	return exec.Command("sh", "-c", command).CombinedOutput()
 }
