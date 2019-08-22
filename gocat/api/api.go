@@ -54,7 +54,6 @@ func Drop(server string, payload string) {
 func Execute(profile map[string]string, command map[string]interface{}) {
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
-	if cmd == "DIE" { os.Exit(0); }
 	result, err := execute.Execute(cmd, profile["executor"])
 	if err != nil {
 		status = "1"
