@@ -3,7 +3,7 @@ from plugins.sandcat.app.sand_gui_api import SandGuiApi
 
 name = 'Sandcat'
 description = 'A custom multi-platform RAT'
-address = 'plugin/sandcat/gui'
+address = '/plugin/sandcat/gui'
 
 
 async def initialize(app, services):

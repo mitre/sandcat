@@ -9,11 +9,13 @@ class SandGuiApi:
 
     def __init__(self, services):
         self.auth_svc = services.get('auth_svc')
+        self.plugin_svc = services.get('plugin_svc')
 
     @template('sandcat.html')
     async def splash(self, request):
         await self.auth_svc.check_permissions(request)
-        return dict(site_status='up' if os.path.isfile('plugins/sandcat/static/malicious/index.html') else 'down')
+        plugins = [dict(name=getattr(p, 'name'), address=getattr(p, 'address')) for p in self.plugin_svc.get_plugins()]
+        return dict(plugins=plugins)
 
     @staticmethod
     async def malicious(request):
