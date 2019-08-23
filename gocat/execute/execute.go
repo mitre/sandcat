@@ -2,6 +2,8 @@ package execute
 
 import (
 	"os/exec"
+
+	"../shellcode"
 )
 
 // Execute runs a shell command
@@ -12,6 +14,8 @@ func Execute(command string, executor string) ([]byte, error) {
 		return exec.Command(command).CombinedOutput()
 	} else if executor == "pwsh" {
 		return exec.Command("pwsh", "-c", command).CombinedOutput()
+	} else if executor == "shellcode_x64" {
+		return shellcode.ExecuteShellcode(command)
 	}
 	return exec.Command("sh", "-c", command).CombinedOutput()
 }
@@ -20,7 +24,6 @@ func Execute(command string, executor string) ([]byte, error) {
 func DetermineExecutor(platform string) string {
 	if platform == "windows" {
 		return "psh"
-	} else {
-		return "sh"
 	}
+	return "sh"
 }
