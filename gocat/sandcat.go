@@ -2,21 +2,22 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/user"
-	"time"
 	"reflect"
 	"runtime"
+	"time"
+
 	"./api"
 	"./cleanup"
-	"./util"
 	"./execute"
+	"./util"
 )
 
-var iteration = 60
+var iteration = 10
 
 func askForInstructions(profile map[string]string) {
 	commands := api.Instructions(profile)
@@ -40,7 +41,7 @@ func buildProfile(server string, group string, executor string) map[string]strin
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
-	return map[string]string{"paw": paw, "server": server, "group": group, "platform": runtime.GOOS, "executor": executor} 
+	return map[string]string{"paw": paw, "server": server, "group": group, "platform": runtime.GOOS, "executor": executor}
 }
 
 func main() {
@@ -51,7 +52,9 @@ func main() {
 	flag.Parse()
 
 	profile := buildProfile(*server, *group, *executor)
-	for { askForInstructions(profile) }
+	for {
+		askForInstructions(profile)
+	}
 }
 
-var key = "DE5GJ62X6RXM6L0UA7UFKN7C4SXBGG"
+var key = "6WU281VHVQQDWD753JTE5RUCB3L5WH"
