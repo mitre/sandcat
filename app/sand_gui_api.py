@@ -26,7 +26,7 @@ class SandGuiApi:
         url = request.rel_url.query['url']
         location = 'plugins/sandcat/static/malicious/'
         shutil.rmtree(location, ignore_errors=True)
-        os.system(f"""wget -E -H -k -K -p -q -nH --cut-dirs=1 %s --directory %s --no-check-certificate""" % (url, location))
+        os.system(f"""wget -U 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36' -E -H -k -K -p -q -nH --cut-dirs=1 %s --directory %s --no-check-certificate""" % (url, location))
         self.auth_svc.prepend_to_file('%s/index.html' % location, '<script src="/sandcat/js/malicious.js"></script>')
         self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Expires" content="0">')
         self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Pragma" content="no-cache">')
