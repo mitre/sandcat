@@ -13,6 +13,7 @@ class SandApi:
     async def instructions(self, request):
         data = json.loads(self.agent_svc.decode_bytes(await request.read()))
         data['server'] = '%s://%s' % (request.scheme, request.host)
+        data['pid'] = data['ppid'] = 1
         await self.agent_svc.handle_heartbeat(**data)
         instructions = await self.agent_svc.get_instructions(data['paw'])
         return web.Response(text=self.agent_svc.encode_string(instructions))

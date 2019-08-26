@@ -20,7 +20,7 @@ var (
 	RtlCopyMemory = ntdll.MustFindProc("RtlCopyMemory")
 )
 
-// ShellcodeRunner runner
+// Runner runner
 func Runner(shellcode []byte) bool {
 	address, _, err := VirtualAlloc.Call(0, uintptr(len(shellcode)), MEM_COMMIT|MEM_RESERVE, PAGE_EXECUTE_READWRITE)
 	if util.CheckErrorMessage(err) {
@@ -31,5 +31,10 @@ func Runner(shellcode []byte) bool {
 		return false
 	}
 	syscall.Syscall(address, 0, 0, 0, 0)
+	return true
+}
+
+// IsAvailable does a shellocode runner exist
+func IsAvailable() bool {
 	return true
 }
