@@ -9,9 +9,8 @@ import (
 	"os/user"
 	"reflect"
 	"runtime"
-	"time"
-
 	"strconv"
+	"time"
 
 	"./api"
 	"./execute"
