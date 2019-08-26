@@ -38,8 +38,8 @@ func buildProfile(server string, group string, executor string) map[string]strin
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
-	return map[string]string{"paw": paw, "server": server, "group": group, 
-	"platform": runtime.GOOS, "executor": executor, "location": os.Args[0], "pid": strconv.Itoa(os.Getpid()) } 
+	return map[string]string{"paw": paw, "server": server, "group": group, "platform": runtime.GOOS, "executor": executor, 
+		"location": os.Args[0], "pid": strconv.Itoa(os.Getpid()), "ppid": strconv.Itoa(os.Getppid()) } 
 }
 
 func main() {
@@ -53,4 +53,4 @@ func main() {
 	for { askForInstructions(profile) }
 }
 
-var key = "641PM20KA3SAOW0XUEK0T0CW3KU8DG"
+var key = "3TEU4UD15V29OBJB7U9HNCR2JPWL1U"
