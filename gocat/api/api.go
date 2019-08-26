@@ -55,7 +55,6 @@ func Drop(server string, payload string) {
 func Execute(profile map[string]interface{}, command map[string]interface{}) {
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
-	fmt.Println(command)
 	result, err := execute.Execute(cmd, command["executor"].(string))
 	if err != nil {
 		status = "1"
