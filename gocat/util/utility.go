@@ -51,6 +51,7 @@ func CheckErrorMessage(err error) bool {
 func StringToByteArrayString(input string) ([]byte, error) {
 	temp := removeWhiteSpace(input)
 	temp = strings.Replace(temp, "0x", "", -1)
+	temp = strings.Replace(temp, "\\x", "", -1)
 	temp = strings.Replace(temp, ",", "", -1)
 	return hex.DecodeString(temp)
 }

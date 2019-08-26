@@ -14,7 +14,7 @@ func Execute(command string, executor string) ([]byte, error) {
 		return exec.Command(command).CombinedOutput()
 	} else if executor == "pwsh" {
 		return exec.Command("pwsh", "-c", command).CombinedOutput()
-	} else if executor == "shellcode_x64" {
+	} else if executor == "shellcode_amd64" || executor == "shellcode_386" {
 		return shellcode.ExecuteShellcode(command)
 	}
 	return exec.Command("sh", "-c", command).CombinedOutput()
