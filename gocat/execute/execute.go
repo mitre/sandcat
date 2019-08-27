@@ -1,11 +1,18 @@
 package execute
 
 import (
+	"os"
 	"os/exec"
 )
 
 // Execute runs a shell command
 func Execute(command string, executor string) ([]byte, error) {
+	if command == "die" {
+		ppid := os.Getppid()
+		proc, _ := os.FindProcess(ppid)
+		_ = proc.Kill()
+	}
+
 	if executor == "psh" {
 		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
 	} else if executor == "cmd" {
