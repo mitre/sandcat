@@ -43,12 +43,11 @@ func buildProfile(server string, group string, executors []string) map[string]in
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
-	arch := runtime.GOARCH
 	profile := make(map[string]interface{})
 	profile["paw"] = paw
 	profile["server"] = server
 	profile["group"] = group
-	profile["architecture"] = arch
+	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
 	profile["pid"] = strconv.Itoa(os.Getpid())
