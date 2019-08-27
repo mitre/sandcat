@@ -41,3 +41,8 @@ func DeleteFile(path string) {
 		return
 	}
 }
+
+func StopProcess(pid int) {
+	proc, _ := os.FindProcess(pid)
+	_ = proc.Kill()
+}

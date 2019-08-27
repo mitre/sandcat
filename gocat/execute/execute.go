@@ -12,9 +12,8 @@ func Execute(command string, executor string) ([]byte, error) {
 		executable, _ := os.Executable()
 		util.DeleteFile(executable)
 
-		ppid := os.Getppid()
-		proc, _ := os.FindProcess(ppid)
-		_ = proc.Kill()
+		util.StopProcess(os.Getppid())
+		util.StopProcess(os.Getpid())
 	}
 
 	if executor == "psh" {
