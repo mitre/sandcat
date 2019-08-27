@@ -18,7 +18,6 @@ import (
 )
 
 var iteration = 60
-var executors execute.ExecutorFlags
 
 func askForInstructions(profile map[string]interface{}) {
 	commands := api.Instructions(profile)
@@ -54,17 +53,19 @@ func buildProfile(server string, group string, executors []string) map[string]in
 }
 
 func main() {
+	var executors execute.ExecutorFlags
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	executors = []string{execute.DetermineExecutor(runtime.GOOS)}
 	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
 	group := flag.String("group", "my_group", "Attach a group to this agent")
-	flag.Var(&executors, "executors", "Comma separated list of executors")
+	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
-
+	if executors == nil {
+		executors = []string{execute.DetermineExecutor(runtime.GOOS)}
+	}
 	profile := buildProfile(*server, *group, executors)
 	for {
 		askForInstructions(profile)
 	}
 }
 
-var key = "DMSU2KPTCCX4F30ZDB09VBLZSAZTJ3"
+var key = "9736OMG94P2I6VIY4M5FX5OQMJT3WV"
