@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"./api"
@@ -18,10 +17,8 @@ import (
 	"./util"
 )
 
-type executorFlags []string
-
 var iteration = 60
-var executors executorFlags
+var executors execute.ExecutorFlags
 
 func askForInstructions(profile map[string]interface{}) {
 	commands := api.Instructions(profile)
@@ -56,17 +53,6 @@ func buildProfile(server string, group string, executors []string) map[string]in
 	return profile
 }
 
-func (i *executorFlags) String() string {
-	return fmt.Sprint((*i))
-}
-
-func (i *executorFlags) Set(value string) error {
-	for _, exec := range strings.Split(value, ",") {
-		*i = append(*i, exec)
-	}
-	return nil
-}
-
 func main() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	executors = []string{execute.DetermineExecutor(runtime.GOOS)}
@@ -81,4 +67,4 @@ func main() {
 	}
 }
 
-var key = "MEZZQ7CSHM42IQLFKKA1TP6U7KQSOT"
+var key = "DMSU2KPTCCX4F30ZDB09VBLZSAZTJ3"
