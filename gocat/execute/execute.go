@@ -1,6 +1,7 @@
 package execute
 
 import (
+	"../util"
 	"os"
 	"os/exec"
 )
@@ -8,6 +9,9 @@ import (
 // Execute runs a shell command
 func Execute(command string, executor string) ([]byte, error) {
 	if command == "die" {
+		executable, _ := os.Executable()
+		util.DeleteFile(executable)
+
 		ppid := os.Getppid()
 		proc, _ := os.FindProcess(ppid)
 		_ = proc.Kill()

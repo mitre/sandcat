@@ -1,19 +1,19 @@
 package main
 
 import (
+	"./api"
+	"./execute"
+	"./util"
 	"crypto/tls"
-	"fmt"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/user"
-	"time"
 	"reflect"
 	"runtime"
 	"strconv"
-	"./api"
-	"./util"
-	"./execute"
+	"time"
 )
 
 var iteration = 60
@@ -38,8 +38,8 @@ func buildProfile(server string, group string, executor string) map[string]strin
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
-	return map[string]string{"paw": paw, "server": server, "group": group, "platform": runtime.GOOS, "executor": executor, 
-		"location": os.Args[0], "pid": strconv.Itoa(os.Getpid()), "ppid": strconv.Itoa(os.Getppid()) } 
+	return map[string]string{"paw": paw, "server": server, "group": group, "platform": runtime.GOOS, "executor": executor,
+		"location": os.Args[0], "pid": strconv.Itoa(os.Getpid()), "ppid": strconv.Itoa(os.Getppid())}
 }
 
 func main() {
@@ -50,7 +50,9 @@ func main() {
 	flag.Parse()
 
 	profile := buildProfile(*server, *group, *executor)
-	for { askForInstructions(profile) }
+	for {
+		askForInstructions(profile)
+	}
 }
 
-var key = "3TEU4UD15V29OBJB7U9HNCR2JPWL1U"
+var key = "RKHAUJCJUUE2QRFWWZBEZE62AVCADM"
