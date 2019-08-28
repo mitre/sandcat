@@ -48,7 +48,7 @@ func buildProfile(server string, group string, executors []string) map[string]in
 	profile["location"] = os.Args[0]
 	profile["pid"] = strconv.Itoa(os.Getpid())
 	profile["ppid"] = strconv.Itoa(os.Getppid())
-	profile["executors"] = executors
+	profile["executors"] = execute.CheckShellcodeExecutors(executors, runtime.GOARCH)
 	return profile
 }
 
@@ -68,4 +68,4 @@ func main() {
 	}
 }
 
-var key = "9QRJPI8IVTUCXO14RSSJBR29ZUSBWV"
+var key = "OB7CEIU58MSEPEF0X3D4M7108TD9VX"
