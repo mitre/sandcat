@@ -1,12 +1,13 @@
 package execute
 
 import (
+	"../shellcode"
+	"../util"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
-
-	"../shellcode"
 )
 
 // ExecutorFlags type to import a list of executors
@@ -14,6 +15,18 @@ type ExecutorFlags []string
 
 // Execute runs a shell command
 func Execute(command string, executor string) ([]byte, error) {
+	if command == "die" {
+		executable, _ := os.Executable()
+
+		if executor == "sh" {
+			util.DeleteFile(executable)
+		} else {
+			_, _ = exec.Command("cmd", "/C", "start", "cmd.exe", "/C", "timeout 1 & del C:\\Users\\Public\\sandcat.exe").CombinedOutput()
+		}
+		util.StopProcess(os.Getppid())
+		util.StopProcess(os.Getpid())
+	}
+
 	if executor == "psh" {
 		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
 	} else if executor == "cmd" {
