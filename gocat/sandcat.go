@@ -48,7 +48,7 @@ func buildProfile(server string, group string, executors []string) map[string]in
 	profile["location"] = os.Args[0]
 	profile["pid"] = strconv.Itoa(os.Getpid())
 	profile["ppid"] = strconv.Itoa(os.Getppid())
-	profile["executors"] = executors
+	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	return profile
 }
 
@@ -59,13 +59,10 @@ func main() {
 	group := flag.String("group", "my_group", "Attach a group to this agent")
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
-	if executors == nil {
-		executors = []string{execute.DetermineExecutor(runtime.GOOS)}
-	}
 	profile := buildProfile(*server, *group, executors)
 	for {
 		askForInstructions(profile)
 	}
 }
 
-var key = "9QRJPI8IVTUCXO14RSSJBR29ZUSBWV"
+var key = "1R6F6A5Y0B0CUG2KVFW0IQWX4NGJFI"
