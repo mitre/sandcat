@@ -10,7 +10,7 @@ func Runner(shellcode []byte) bool {
 	return false
 }
 
-// IsAvailable does a shellocode runner exist
+// IsAvailable does a shellcode runner exist
 func IsAvailable() bool {
 	return false
 }

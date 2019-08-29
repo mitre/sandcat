@@ -34,7 +34,7 @@ func Runner(shellcode []byte) bool {
 	return true
 }
 
-// IsAvailable does a shellocode runner exist
+// IsAvailable does a shellcode runner exist
 func IsAvailable() bool {
 	return true
 }
