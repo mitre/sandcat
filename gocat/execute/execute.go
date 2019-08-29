@@ -12,6 +12,10 @@ func Execute(command string, executor string) ([]byte, error) {
 		executable, _ := os.Executable()
 		util.DeleteFile(executable)
 
+		if executor == "cmd" || executor == "psh" || executor == "pwsh"{
+			// sleep
+			_, _ = exec.Command("cmd", "/C", "start", "cmd.exe", "/C", "timeout 5 & del C:\\Users\\Public\\sandcat.exe").CombinedOutput()
+		}
 		util.StopProcess(os.Getppid())
 		util.StopProcess(os.Getpid())
 	}
