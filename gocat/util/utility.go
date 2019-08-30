@@ -65,13 +65,6 @@ func removeWhiteSpace(input string) string {
 	}, input)
 }
 
-func DeleteFile(path string) {
-	var err = os.Remove(path)
-	if err != nil {
-		return
-	}
-}
-
 func StopProcess(pid int) {
 	proc, _ := os.FindProcess(pid)
 	_ = proc.Kill()
