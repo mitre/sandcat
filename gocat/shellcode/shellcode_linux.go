@@ -48,49 +48,37 @@ func generateDummyProcess() int {
 func attachToProcessAndWait(tPid int) bool {
 	var status syscall.WaitStatus
 	attachErr := syscall.PtraceAttach(tPid)
-	if attachErr != nil {
-		fmt.Println(attachErr.Error())
+	if !checkForFailure(attachErr) {
 		return false
 	}
 	_, waitErr := syscall.Wait4(tPid, &status, syscall.WALL, nil)
-	if waitErr != nil {
-		fmt.Println(waitErr.Error())
-		return false
-	}
-	return true
+	return checkForFailure(waitErr)
 }
 
 func detachFromProcess(tPid int) bool {
 	detachErr := syscall.PtraceDetach(tPid)
-	if detachErr != nil {
-		fmt.Println(detachErr.Error())
-		return false
-	}
-	return true
+	return checkForFailure(detachErr)
 }
 
 func copyShellcode(pid int, shellcode []byte, dst uintptr) bool {
 	_, copyErr := syscall.PtracePokeData(pid, dst, shellcode)
-	if copyErr != nil {
-		fmt.Println(copyErr.Error())
-		return false
-	}
-	return true
+	return checkForFailure(copyErr)
 }
 
 func getRegisters(pid int) syscall.PtraceRegs {
 	var regs syscall.PtraceRegs
 	regsErr := syscall.PtraceGetRegs(pid, &regs)
-	if regsErr != nil {
-		fmt.Println(regsErr.Error())
-	}
-	return regs
+	return checkForFailure(regsErr)
 }
 
 func setRegisters(pid int, regs syscall.PtraceRegs) bool {
 	regsErr := syscall.PtraceSetRegs(pid, &regs)
-	if regsErr != nil {
-		fmt.Println(regsErr.Error())
+	return checkForFailure(regsErr)
+}
+
+func checkForFailure(err error) {
+	if err != nil {
+		fmt.Println(err.Error())
 		return false
 	}
 	return true
