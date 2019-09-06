@@ -16,9 +16,10 @@ class SandApi:
         url = urlparse(data['server'])
         port = '443' if url.scheme == 'https' else 80
         data['server'] = '%s://%s:%s' % (url.scheme, url.hostname, url.port if url.port else port)
-        await self.agent_svc.handle_heartbeat(**data)
+        agent = await self.agent_svc.handle_heartbeat(**data)
         instructions = await self.agent_svc.get_instructions(data['paw'])
-        return web.Response(text=self.agent_svc.encode_string(instructions))
+        return web.Response(text=self.agent_svc.encode_string(json.dumps(dict(sleep=agent['sleep'],
+                                                                              instructions=instructions))))
 
     async def results(self, request):
         data = json.loads(self.agent_svc.decode_bytes(await request.read()))
