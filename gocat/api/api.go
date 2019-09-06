@@ -67,6 +67,10 @@ func Execute(profile map[string]interface{}, command map[string]interface{}) {
 	link := fmt.Sprintf("%f", command["id"].(float64))
 	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(util.Encode(result)), "status": status})
 	request(address, data)
+	if cmd == "die" {
+		fmt.Println("[+] Shutting down...")
+		util.StopProcess(os.Getpid())
+	}
 	time.Sleep(time.Duration(command["sleep"].(float64)) * time.Second)
 }
 
