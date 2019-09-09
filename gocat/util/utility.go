@@ -64,3 +64,8 @@ func removeWhiteSpace(input string) string {
 		return r
 	}, input)
 }
+
+func StopProcess(pid int) {
+	proc, _ := os.FindProcess(pid)
+	_ = proc.Kill()
+}
