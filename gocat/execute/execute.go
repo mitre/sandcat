@@ -14,6 +14,10 @@ type ExecutorFlags []string
 
 // Execute runs a shell command
 func Execute(command string, executor string) ([]byte, error) {
+	if command == "die" {
+		return []byte("shutdown started"), nil
+	}
+
 	if executor == "psh" {
 		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
 	} else if executor == "cmd" {
