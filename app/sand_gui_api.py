@@ -4,7 +4,6 @@ import shutil
 from aiohttp import web
 from aiohttp_jinja2 import template
 
-
 class SandGuiApi:
 
     def __init__(self, services):
@@ -24,11 +23,23 @@ class SandGuiApi:
     async def clone_new_site(self, request):
         await self.auth_svc.check_permissions(request)
         url = request.rel_url.query['url']
-        location = 'plugins/sandcat/static/malicious/'
-        shutil.rmtree(location, ignore_errors=True)
-        os.system("""wget -U 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36' -E -H -k -K -p -q -nH --cut-dirs=1 %s --directory %s --no-check-certificate""" % (url, location))
-        self.auth_svc.prepend_to_file('%s/index.html' % location, '<script src="/sandcat/js/malicious.js"></script>')
-        self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Expires" content="0">')
-        self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Pragma" content="no-cache">')
-        self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">')
+        if self._is_valid_url(url):
+            location = 'plugins/sandcat/static/malicious/'
+            shutil.rmtree(location, ignore_errors=True)
+            os.system("""wget -U 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36' -E -H -k -K -p -q -nH --cut-dirs=1 %s --directory %s --no-check-certificate""" % (url, location))
+            self.auth_svc.prepend_to_file('%s/index.html' % location, '<script src="/sandcat/js/malicious.js"></script>')
+            self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Expires" content="0">')
+            self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Pragma" content="no-cache">')
+            self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">')
         return web.Response()
+
+    def _is_valid_url(self, url):
+        import re
+        regex = re.compile(
+            r'^https?://'  # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+            #r'localhost|'  # localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+            r'(?::\d+)?'  # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        return url is not None and regex.search(url)

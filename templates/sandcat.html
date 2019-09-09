@@ -100,14 +100,29 @@
         }
 
         function cloneWebsite(){
-            let section = $('#access');
-            section.prop('disabled', true).css('opacity', 0.5);
-            $.ajax({
-               url: '/plugin/sandcat/clone?url=' + document.getElementById("cloneNew").value,
-               type: 'GET',
-               success: function(data, status, options) { section.prop('disabled', false).css('opacity', 1.0); }
-            });
+            let _url = document.getElementById("cloneNew").value;
+            if (validURL(_url)) {
+                let section = $('#access');
+                section.prop('disabled', true).css('opacity', 0.5);
+                $.ajax({
+                url: '/plugin/sandcat/clone?url=' + _url,
+                type: 'GET',
+                success: function(data, status, options) { section.prop('disabled', false).css('opacity', 1.0); }
+                });
+            }else{
+                alert("URL format is incorrect");
+            }
 
+        }
+
+        function validURL(str) {
+            var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+                '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+                '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+                '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+                '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+                '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+            return !!pattern.test(str);
         }
     </script>
 </html>
