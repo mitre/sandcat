@@ -19,7 +19,7 @@
             "file": "sandcat.go",
             "platform": determinePlatform()
         };
-        fetch('http://localhost:8888/file/download', {
+        fetch(window.location.origin + '/file/download', {
             method: "POST",
             headers: headers})
           .then(resp => resp.blob())
