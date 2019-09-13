@@ -45,11 +45,11 @@ func askForInstructions(profile map[string]interface{}) {
 }
 
 func buildProfile(server string, group string, executors []string) map[string]interface{} {
-	host, _ := os.Hostname()
 	user, _ := user.Current()
-	paw := fmt.Sprintf("%s$%s", host, user.Username)
 	profile := make(map[string]interface{})
-	profile["paw"] = paw
+	profile["paw"] = util.GenerateStringOfLength(30)
+	profile["hostname"], _ = os.Hostname()
+	profile["username"] = user.Username
 	profile["server"] = server
 	profile["group"] = group
 	profile["architecture"] = runtime.GOARCH
@@ -69,10 +69,11 @@ func main() {
 	group := flag.String("group", "my_group", "Attach a group to this agent")
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
+	util.Init()
 	profile := buildProfile(*server, *group, executors)
 	for {
 		askForInstructions(profile)
 	}
 }
 
-var key = "IQD1Z334GD1CQMTH3Z82X7QF7OS105"
+var key = "EY237IFCCLO3I8FUMR67SP2XI2LRLE"
