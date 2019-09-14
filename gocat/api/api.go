@@ -32,7 +32,7 @@ func Instructions(profile map[string]interface{}) map[string]interface{} {
 			out["sleep_min"] = 1
 		}
 		out["sleep_max"] = int(out["sleep_max"].(float64))
-		if out["sleep_max"].(int) <= 0 {
+		if out["sleep_max"].(int) < out["sleep_min"] {
 			out["sleep_max"] = out["sleep_min"]
 		}
 		out["instructions"] = commands
