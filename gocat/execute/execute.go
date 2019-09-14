@@ -18,8 +18,10 @@ func Execute(command string, executor string) ([]byte, error) {
 		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
 	} else if executor == "cmd" {
 		return exec.Command("cmd.exe", "/C", command).CombinedOutput()
-	} else if executor == "pwsh" {
+	} else if executor == "pwsh.exe" {
 		return exec.Command("pwsh.exe", "-c", command).CombinedOutput()
+    } else if executor == "pwsh" {
+		return exec.Command("pwsh", "-c", command).CombinedOutput()
 	} else if executor == fmt.Sprintf("shellcode_%s", runtime.GOARCH) {
 		return shellcode.ExecuteShellcode(command)
 	}
@@ -34,14 +36,17 @@ func DetermineExecutor(executors []string, platform string, arch string) []strin
 				executors = append(executors, "psh")
 			}
 			if checkIfExecutorAvailable("pwsh.exe") {
-				executors = append(executors, "pwsh")
+				executors = append(executors, "pwsh.exe")
 			}
 			if checkIfExecutorAvailable("cmd.exe") {
 				executors = append(executors, "cmd")
 			}
 		} else {
-			if checkIfExecutorAvailable("/bin/sh") {
+			if checkIfExecutorAvailable("sh") {
 				executors = append(executors, "sh")
+			}
+			if checkIfExecutorAvailable("pwsh") {
+				executors = append(executors, "pwsh")
 			}
 		}
 	}
