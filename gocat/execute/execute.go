@@ -14,16 +14,12 @@ type ExecutorFlags []string
 
 // Execute runs a shell command
 func Execute(command string, executor string) ([]byte, error) {
-	if command == "die" {
-		return []byte("shutdown started"), nil
-	}
-
 	if executor == "psh" {
 		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
 	} else if executor == "cmd" {
-		return exec.Command("cmd", "/C", command).CombinedOutput()
+		return exec.Command("cmd.exe", "/C", command).CombinedOutput()
 	} else if executor == "pwsh" {
-		return exec.Command("pwsh", "-c", command).CombinedOutput()
+		return exec.Command("pwsh.exe", "-c", command).CombinedOutput()
 	} else if executor == fmt.Sprintf("shellcode_%s", runtime.GOARCH) {
 		return shellcode.ExecuteShellcode(command)
 	}
@@ -34,9 +30,19 @@ func Execute(command string, executor string) ([]byte, error) {
 func DetermineExecutor(executors []string, platform string, arch string) []string {
 	if executors == nil {
 		if platform == "windows" {
-			executors = append(executors, "psh")
+			if checkIfExecutorAvailable("powershell.exe") {
+				executors = append(executors, "psh")
+			}
+			if checkIfExecutorAvailable("pwsh.exe") {
+				executors = append(executors, "pwsh")
+			}
+			if checkIfExecutorAvailable("cmd.exe") {
+				executors = append(executors, "cmd")
+			}
 		} else {
-			executors = append(executors, "sh")
+			if checkIfExecutorAvailable("/bin/sh") {
+				executors = append(executors, "sh")
+			}
 		}
 	}
 	return checkShellcodeExecutors(executors, arch)
@@ -61,4 +67,9 @@ func checkShellcodeExecutors(executors []string, arch string) []string {
 		executors = append(executors, "shellcode_"+arch)
 	}
 	return executors
+}
+
+func checkIfExecutorAvailable(executor string) bool {
+	_, err := exec.LookPath(executor)
+	return err == nil
 }
