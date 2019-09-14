@@ -18,12 +18,11 @@ import (
 	"./util"
 )
 
-var iteration = 60
-
 func askForInstructions(profile map[string]interface{}) {
 	beacon := api.Instructions(profile)
-	if beacon["sleep"] != nil {
-		profile["sleep"] = beacon["sleep"]
+	if beacon["sleep_min"] != nil {
+		profile["sleep_min"] = beacon["sleep_min"]
+		profile["sleep_max"] = beacon["sleep_max"]
 	}
 	if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 		cmds := reflect.ValueOf(beacon["instructions"])
@@ -40,7 +39,7 @@ func askForInstructions(profile map[string]interface{}) {
 			api.Execute(profile, command)
 		}
 	} else {
-		time.Sleep(time.Duration(profile["sleep"].(int)) * time.Second)
+		time.Sleep(time.Duration(util.RandomInterval(profile["sleep_min"].(int), profile["sleep_max"].(int))) * time.Second)
 	}
 }
 
@@ -55,7 +54,8 @@ func buildProfile(server string, group string, executors []string) map[string]in
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
-	profile["sleep"] = iteration
+	profile["sleep_min"] = 60
+	profile["sleep_max"] = profile["sleep_min"]
 	profile["pid"] = strconv.Itoa(os.Getpid())
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
@@ -69,10 +69,11 @@ func main() {
 	group := flag.String("group", "my_group", "Attach a group to this agent")
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
+	util.Init()
 	profile := buildProfile(*server, *group, executors)
 	for {
 		askForInstructions(profile)
 	}
 }
 
-var key = "IQD1Z334GD1CQMTH3Z82X7QF7OS105"
+var key = "8OVLR1CKTGZEXYO9PQZLF4F8RAZBIR"

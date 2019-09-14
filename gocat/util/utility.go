@@ -4,10 +4,17 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 	"unicode"
 )
+
+// Init contains things to run at initialization
+func Init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // Encode base64 encodes bytes
 func Encode(b []byte) []byte {
@@ -65,7 +72,17 @@ func removeWhiteSpace(input string) string {
 	}, input)
 }
 
+// StopProcess stop the current PID
 func StopProcess(pid int) {
 	proc, _ := os.FindProcess(pid)
 	_ = proc.Kill()
+}
+
+// RandomInterval generates a random interval between integers
+func RandomInterval(min int, max int) int {
+	dif := max - min
+	if dif != 0 {
+		return min + rand.Intn(dif)
+	}
+	return max
 }

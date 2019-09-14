@@ -27,7 +27,14 @@ func Instructions(profile map[string]interface{}) map[string]interface{} {
 		var commands interface{}
 		json.Unmarshal(bites, &out)
 		json.Unmarshal([]byte(out["instructions"].(string)), &commands)
-		out["sleep"] = int(out["sleep"].(float64))
+		out["sleep_min"] = int(out["sleep_min"].(float64))
+		if out["sleep_min"].(int) <= 0 {
+			out["sleep_min"] = 1
+		}
+		out["sleep_max"] = int(out["sleep_max"].(float64))
+		if out["sleep_max"].(int) <= 0 {
+			out["sleep_max"] = out["sleep_min"]
+		}
 		out["instructions"] = commands
 	} else {
 		fmt.Println("[-] beacon: DEAD")
