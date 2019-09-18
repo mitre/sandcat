@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -54,6 +55,11 @@ func StringToByteArrayString(input string) ([]byte, error) {
 	temp = strings.Replace(temp, "\\x", "", -1)
 	temp = strings.Replace(temp, ",", "", -1)
 	return hex.DecodeString(temp)
+}
+
+// Sleep sleeps for a desired interval
+func Sleep(interval float64) {
+	time.Sleep(time.Duration(interval) * time.Second)
 }
 
 func removeWhiteSpace(input string) string {
