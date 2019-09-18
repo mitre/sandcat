@@ -13,21 +13,26 @@ import (
 type ExecutorFlags []string
 
 // Execute runs a shell command
-func Execute(command string, executor string) ([]byte, error) {
+func Execute(command string, executor string, resultChan chan []byte, errorChan chan bool) {
 	if command == "die" {
-		return []byte("shutdown started"), nil
+		resultChan <- []byte("shutdown started")
 	}
-
+	var output []byte
+	var err error
 	if executor == "psh" {
-		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
+		output, err = exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
 	} else if executor == "cmd" {
-		return exec.Command("cmd", "/C", command).CombinedOutput()
+		output, err = exec.Command("cmd", "/C", command).CombinedOutput()
 	} else if executor == "pwsh" {
-		return exec.Command("pwsh", "-c", command).CombinedOutput()
+		output, err = exec.Command("pwsh", "-c", command).CombinedOutput()
 	} else if executor == fmt.Sprintf("shellcode_%s", runtime.GOARCH) {
-		return shellcode.ExecuteShellcode(command)
+		output, err = shellcode.ExecuteShellcode(command)
 	}
-	return exec.Command("sh", "-c", command).CombinedOutput()
+	output, err = exec.Command("sh", "-c", command).CombinedOutput()
+	if err != nil {
+		<-errorChan
+	}
+	resultChan <- output
 }
 
 // DetermineExecutor executor type, using sane defaults

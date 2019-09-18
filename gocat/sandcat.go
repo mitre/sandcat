@@ -16,23 +16,6 @@ import (
 	"./util"
 )
 
-func asyncLoop(profile map[string]interface{}) {
-	beacon := api.Instructions(profile)
-	if beacon["sleep"] != nil {
-		profile["sleep"] = beacon["sleep"]
-	}
-	if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
-		cmds := reflect.ValueOf(beacon["instructions"])
-		tasks := make(chan interface{}, cmds.Len())
-		//timeout := make(chan bool, 1)
-		for i := 0; i < cmds.Len(); i++ {
-			cmd := cmds.Index(i).Elem().String()
-			command := util.Unpack([]byte(cmd))
-			tasks <- command
-		}
-	}
-}
-
 func askForInstructions(profile map[string]interface{}) {
 	beacon := api.Instructions(profile)
 	if beacon["sleep"] != nil {
@@ -82,4 +65,4 @@ func main() {
 	}
 }
 
-var key = "RQVPHM7XGP5XPA17R5CWESBB5WRFNG"
+var key = "GRY7DUANDK6XQJLJ7WELLQ24KNHIRJ"
