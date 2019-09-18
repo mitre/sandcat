@@ -65,8 +65,4 @@ func main() {
 	}
 }
 
-<<<<<<< HEAD
 var key = "RQVPHM7XGP5XPA17R5CWESBB5WRFNG"
-=======
-var key = "RQVPHM7XGP5XPA17R5CWESBB5WRFNG"
->>>>>>> task execution is now handled in a new thread that doesn't lock the beacon
