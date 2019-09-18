@@ -16,8 +16,6 @@ import (
 	"./util"
 )
 
-var interval float64 = 60
-
 func askForInstructions(profile map[string]interface{}) {
 	beacon := api.Instructions(profile)
 	if beacon["sleep"] != nil {
@@ -47,7 +45,7 @@ func buildProfile(server string, group string, executors []string) map[string]in
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
-	profile["sleep"] = interval
+	profile["sleep"] = 60
 	profile["pid"] = strconv.Itoa(os.Getpid())
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
