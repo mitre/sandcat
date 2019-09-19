@@ -11,4 +11,4 @@
 .idea/*
 .logs/*
 !.logs/.gitkeep
-
+.idea
