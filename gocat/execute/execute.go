@@ -39,15 +39,15 @@ func Execute(command string, executor string, platform string, resultChan chan m
 func DetermineExecutor(executors []string, platform string, arch string) []string {
 	platformExecutors := map[string]map[string][]string {
 		"windows": {
-			"file":	 	{"cmd.exe", "powershell.exe", "pwsh.exe"},
-			"executor": {"cmd", 	"psh", 			  "pwsh"},
+			"file": {"cmd.exe", "powershell.exe", "pwsh.exe"},
+			"executor": {"cmd", "psh", "pwsh"},
 		},
 		"linux": {
-			"file":     {"sh", "pwsh"},
+			"file": {"sh", "pwsh"},
 			"executor": {"sh", "pwsh"},
 		},
 		"darwin": {
-			"file":     {"sh", "pwsh"},
+			"file": {"sh", "pwsh"},
 			"executor": {"sh", "pwsh"},
 		},
 	}
