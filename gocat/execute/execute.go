@@ -13,9 +13,9 @@ import (
 type ExecutorFlags []string
 
 // Execute runs a shell command
-func Execute(command string, executor string, resultChan chan []byte, errorChan chan bool) {
+func Execute(command string, executor string, resultChan chan map[string]interface{}) {
 	if command == "die" {
-		resultChan <- []byte("shutdown started")
+		resultChan <- map[string]interface{}{"result":[]byte("shutdown started"), "err": nil}
 	}
 	var output []byte
 	var err error
@@ -27,12 +27,10 @@ func Execute(command string, executor string, resultChan chan []byte, errorChan 
 		output, err = exec.Command("pwsh", "-c", command).CombinedOutput()
 	} else if executor == fmt.Sprintf("shellcode_%s", runtime.GOARCH) {
 		output, err = shellcode.ExecuteShellcode(command)
+	} else {
+		output, err = exec.Command("sh", "-c", command).CombinedOutput()
 	}
-	output, err = exec.Command("sh", "-c", command).CombinedOutput()
-	if err != nil {
-		<-errorChan
-	}
-	resultChan <- output
+	resultChan <- map[string]interface{}{"result":output, "err":err}
 }
 
 // DetermineExecutor executor type, using sane defaults
