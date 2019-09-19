@@ -69,7 +69,7 @@ func Execute(profile map[string]interface{}, command map[string]interface{}) {
 	status := "0"
 	var result []byte
 	go util.TimeoutWatchdog(timeoutChan, TIMEOUT)
-	go execute.Execute(cmd, command["executor"].(string), resultChan)
+	go execute.Execute(cmd, command["executor"].(string), profile["platform"].(string), resultChan)
 ExecutionLoop:
 	for {
 		select {
