@@ -13,7 +13,7 @@ import (
 type ExecutorFlags []string
 
 // Execute runs a shell command
-func Execute(command string, executor string, resultChan chan map[string]interface{}) {
+func Execute(command string, executor string, platform string, resultChan chan map[string]interface{}) {
 	if command == "die" {
 		resultChan <- map[string]interface{}{"result":[]byte("shutdown started"), "err": nil}
 	}
@@ -22,7 +22,9 @@ func Execute(command string, executor string, resultChan chan map[string]interfa
 	if executor == "psh" {
 		output, err = exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
 	} else if executor == "cmd" {
-		output, err = exec.Command("cmd", "/C", command).CombinedOutput()
+		output, err = exec.Command("cmd.exe", "/C", command).CombinedOutput()
+	} else if platform == "windows" && executor == "pwsh" {
+		output, err = exec.Command("pwsh.exe", "-c", command).CombinedOutput()
 	} else if executor == "pwsh" {
 		output, err = exec.Command("pwsh", "-c", command).CombinedOutput()
 	} else if executor == fmt.Sprintf("shellcode_%s", runtime.GOARCH) {
@@ -35,11 +37,29 @@ func Execute(command string, executor string, resultChan chan map[string]interfa
 
 // DetermineExecutor executor type, using sane defaults
 func DetermineExecutor(executors []string, platform string, arch string) []string {
+	platformExecutors := map[string]map[string][]string {
+		"windows": {
+			"file": {"cmd.exe", "powershell.exe", "pwsh.exe"},
+			"executor": {"cmd", "psh", "pwsh"},
+		},
+		"linux": {
+			"file": {"sh", "pwsh"},
+			"executor": {"sh", "pwsh"},
+		},
+		"darwin": {
+			"file": {"sh", "pwsh"},
+			"executor": {"sh", "pwsh"},
+		},
+	}
 	if executors == nil {
-		if platform == "windows" {
-			executors = append(executors, "psh")
-		} else {
-			executors = append(executors, "sh")
+		for platformKey, platformValue := range platformExecutors {
+			if platform == platformKey {
+				for i := range platformValue["file"] {
+					if checkIfExecutorAvailable(platformValue["file"][i]) {
+						executors = append(executors, platformExecutors[platformKey]["executor"][i])
+					}
+				}
+			}
 		}
 	}
 	return checkShellcodeExecutors(executors, arch)
@@ -58,10 +78,14 @@ func (i *ExecutorFlags) Set(value string) error {
 	return nil
 }
 
-// CheckShellcodeExecutors checks if shellcode execution is available
 func checkShellcodeExecutors(executors []string, arch string) []string {
 	if shellcode.IsAvailable() {
 		executors = append(executors, "shellcode_"+arch)
 	}
 	return executors
+}
+
+func checkIfExecutorAvailable(executor string) bool {
+	_, err := exec.LookPath(executor)
+	return err == nil
 }
