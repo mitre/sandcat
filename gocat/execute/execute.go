@@ -37,23 +37,28 @@ func Execute(command string, executor string, platform string, resultChan chan m
 
 // DetermineExecutor executor type, using sane defaults
 func DetermineExecutor(executors []string, platform string, arch string) []string {
+	platformExecutors := map[string]map[string][]string {
+		"windows": {
+			"file":	 	{"cmd.exe", "powershell.exe", "pwsh.exe"},
+			"executor": {"cmd", 	"psh", 			  "pwsh"},
+		},
+		"linux": {
+			"file":     {"sh", "pwsh"},
+			"executor": {"sh", "pwsh"},
+		},
+		"darwin": {
+			"file":     {"sh", "pwsh"},
+			"executor": {"sh", "pwsh"},
+		},
+	}
 	if executors == nil {
-		if platform == "windows" {
-			if checkIfExecutorAvailable("powershell.exe") {
-				executors = append(executors, "psh")
-			}
-			if checkIfExecutorAvailable("pwsh.exe") {
-				executors = append(executors, "pwsh")
-			}
-			if checkIfExecutorAvailable("cmd.exe") {
-				executors = append(executors, "cmd")
-			}
-		} else {
-			if checkIfExecutorAvailable("sh") {
-				executors = append(executors, "sh")
-			}
-			if checkIfExecutorAvailable("pwsh") {
-				executors = append(executors, "pwsh")
+		for platformKey, platformValue := range platformExecutors {
+			if platform == platformKey {
+				for i := range platformValue["file"] {
+					if checkIfExecutorAvailable(platformValue["file"][i]) {
+						executors = append(executors, platformExecutors[platformKey]["executor"][i])
+					}
+				}
 			}
 		}
 	}
