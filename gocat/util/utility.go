@@ -4,18 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"math/rand"
 	"os"
 	"strings"
 	"time"
 	"unicode"
 )
-
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 // Encode base64 encodes bytes
 func Encode(b []byte) []byte {
@@ -87,13 +80,4 @@ func StopProcess(pid int) {
 func TimeoutWatchdog(timeoutChan chan bool, timeout time.Duration) {
 	time.Sleep(timeout * time.Second)
 	timeoutChan <- true
-}
-
-// GenerateStringOfLength generates a random string
-func GenerateStringOfLength(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
 }

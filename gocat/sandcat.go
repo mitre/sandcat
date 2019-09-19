@@ -37,7 +37,7 @@ func askForInstructions(profile map[string]interface{}) {
 func buildProfile(server string, group string, executors []string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
-	paw := fmt.Sprintf("%s$%s$%s", host, user.Username, util.GenerateStringOfLength(20))
+	paw := fmt.Sprintf("%s$%s$%s", host, user.Username, key)
 	profile := make(map[string]interface{})
 	profile["paw"] = paw
 	profile["server"] = server
