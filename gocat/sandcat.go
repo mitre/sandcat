@@ -34,7 +34,7 @@ func askForInstructions(profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, executors []string) map[string]interface{} {
+func buildProfile(server string, group string, sleep int, executors []string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s$%s", host, user.Username, key)
@@ -45,7 +45,7 @@ func buildProfile(server string, group string, executors []string) map[string]in
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
-	profile["sleep"] = 60
+	profile["sleep"] = sleep
 	profile["pid"] = strconv.Itoa(os.Getpid())
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
@@ -57,12 +57,13 @@ func main() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
 	group := flag.String("group", "my_group", "Attach a group to this agent")
+	sleep := flag.Int("sleep", 60, "Initial sleep value for sandcat (integer in seconds)")
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
-	profile := buildProfile(*server, *group, executors)
+	profile := buildProfile(*server, *group, *sleep, executors)
 	for {
 		askForInstructions(profile)
 	}
 }
 
-var key = "6JFMEPP68I7VHLL7I4COJOALZK4PG9"
+var key = "W8PTPAKV0E87C6XUXPH6W0WITTJCQX"
