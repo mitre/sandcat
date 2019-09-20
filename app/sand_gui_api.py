@@ -1,10 +1,10 @@
-import os
 import shutil
 import subprocess
 
 from urllib.parse import urlparse
 from aiohttp import web
 from aiohttp_jinja2 import template
+
 
 class SandGuiApi:
 
