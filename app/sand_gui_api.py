@@ -36,9 +36,12 @@ class SandGuiApi:
             self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">')
         return web.Response()
 
-    def _uri_validator(self, url):
+    """ PRIVATE """
+
+    @staticmethod
+    def _uri_validator(url):
         try:
             result = urlparse(url)
-            return all([result.scheme, result.netloc, result.path])
+            return all([result.scheme, result.netloc])
         except:
             return False
