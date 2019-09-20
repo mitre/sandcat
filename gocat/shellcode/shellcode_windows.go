@@ -14,10 +14,10 @@ const (
 )
 
 var (
-	kernel32      = syscall.MustLoadDLL("kernel32.dll")
-	ntdll         = syscall.MustLoadDLL("ntdll.dll")
-	VirtualAlloc  = kernel32.MustFindProc("VirtualAlloc")
-	RtlCopyMemory = ntdll.MustFindProc("RtlCopyMemory")
+	kernel32      *syscall.DLL
+	ntdll         *syscall.DLL
+	VirtualAlloc  *syscall.Proc
+	RtlCopyMemory *syscall.Proc
 )
 
 // Runner runner
@@ -36,5 +36,13 @@ func Runner(shellcode []byte) bool {
 
 // IsAvailable does a shellcode runner exist
 func IsAvailable() bool {
+	var kernel32Err, ntdllErr, rtlCopyMemErr, vAllocErr error
+	kernel32, kernel32Err = syscall.LoadDLL("kernel32.dll")
+	ntdll, ntdllErr = syscall.LoadDLL("ntdll.dll")
+	VirtualAlloc, vAllocErr = kernel32.FindProc("VirtualAlloc")
+	RtlCopyMemory, rtlCopyMemErr = ntdll.FindProc("RtlCopyMemory")
+	if kernel32Err != nil && ntdllErr != nil && rtlCopyMemErr != nil && vAllocErr != nil {
+		return false
+	}
 	return true
 }
