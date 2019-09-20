@@ -67,8 +67,8 @@ func Execute(profile map[string]interface{}, command map[string]interface{}, pay
 	cmd := string(util.Decode(command["command"].(string)))
 	status := "0"
 	var result []byte
-	areAvailable, missingPaths := checkPayloadsAvailable(payloads)
-	if areAvailable {
+	missingPaths := checkPayloadsAvailable(payloads)
+	if len(missingPaths) == 0 {
 		go util.TimeoutWatchdog(timeoutChan, TIMEOUT)
 		go execute.Execute(cmd, command["executor"].(string), profile["platform"].(string), resultChan)
 	ExecutionLoop:
@@ -135,15 +135,12 @@ func writePayload(location string, resp *http.Response) {
 	os.Chmod(location, 0500)
 }
 
-func checkPayloadsAvailable(payloads []string) (bool, []string) {
+func checkPayloadsAvailable(payloads []string) []string {
 	var missing []string
 	for i := range payloads {
 		if util.Exists(filepath.Join(payloads[i])) == false {
 			missing = append(missing, payloads[i])
 		}
 	}
-	if len(missing) == 0 {
-		return true, nil
-	}
-	return false, missing
+	return missing
 }
