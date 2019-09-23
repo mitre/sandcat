@@ -75,9 +75,3 @@ func StopProcess(pid int) {
 	proc, _ := os.FindProcess(pid)
 	_ = proc.Kill()
 }
-
-// TimeoutWatchdog executes a timer that signals to a channel if a command broke it's timeout duration
-func TimeoutWatchdog(timeoutChan chan bool, timeout time.Duration) {
-	time.Sleep(timeout * time.Second)
-	timeoutChan <- true
-}
