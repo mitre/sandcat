@@ -1,38 +1,43 @@
 package execute
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 
 	"../shellcode"
+)
+
+const (
+	// TIMEOUT in seconds represents how long a single command should run before timing out
+	TIMEOUT = 60
+	SUCCESS_STATUS = "0"
+	ERROR_STATUS = "1"
+	TIMEOUT_STATUS = "124"
 )
 
 // ExecutorFlags type to import a list of executors
 type ExecutorFlags []string
 
 // Execute runs a shell command
-func Execute(command string, executor string, platform string, resultChan chan map[string]interface{}) {
-	if command == "die" {
-		resultChan <- map[string]interface{}{"result":[]byte("shutdown started"), "err": nil}
-	}
+func Execute(command string, executor string, platform string) ([]byte, string) {
 	var output []byte
 	var err error
-	if executor == "psh" {
-		output, err = exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command).CombinedOutput()
-	} else if executor == "cmd" {
-		output, err = exec.Command("cmd.exe", "/C", command).CombinedOutput()
-	} else if platform == "windows" && executor == "pwsh" {
-		output, err = exec.Command("pwsh.exe", "-c", command).CombinedOutput()
-	} else if executor == "pwsh" {
-		output, err = exec.Command("pwsh", "-c", command).CombinedOutput()
-	} else if executor == fmt.Sprintf("shellcode_%s", runtime.GOARCH) {
-		output, err = shellcode.ExecuteShellcode(command)
-	} else {
-		output, err = exec.Command("sh", "-c", command).CombinedOutput()
+	status := SUCCESS_STATUS
+	if command == "die" {
+		return []byte("shutdown started"), SUCCESS_STATUS
 	}
-	resultChan <- map[string]interface{}{"result":output, "err":err}
+	if executor == fmt.Sprintf("shellcode_%s", runtime.GOARCH) {
+		output, err = shellcode.ExecuteShellcode(command)
+		if err != nil {
+			status = ERROR_STATUS
+		}
+		return output, status
+	}
+	return runShellExecutor(executor, platform, command)
 }
 
 // DetermineExecutor executor type, using sane defaults
@@ -88,4 +93,47 @@ func checkShellcodeExecutors(executors []string, arch string) []string {
 func checkIfExecutorAvailable(executor string) bool {
 	_, err := exec.LookPath(executor)
 	return err == nil
+}
+
+func buildCommandStatement(executor string, platform string, command string) *exec.Cmd {
+	if executor == "psh" {
+		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command)
+	} else if executor == "cmd" {
+		return exec.Command("cmd.exe", "/C", command)
+	} else if platform == "windows" && executor == "pwsh" {
+		return exec.Command("pwsh.exe", "-c", command)
+	} else if executor == "pwsh" {
+		return exec.Command("pwsh", "-c", command)
+	} else {
+		return exec.Command("sh", "-c", command)
+	}
+}
+
+func runShellExecutor(executor string, platform string, command string) ([]byte, string) {
+	done := make(chan error, 1)
+	status := SUCCESS_STATUS
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd := buildCommandStatement(executor, platform, command)
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+	if err := cmd.Start(); err != nil {
+		return []byte("Encountered an error starting the process!"), ERROR_STATUS
+	}
+	go func() {
+		done <- cmd.Wait()
+	}()
+	select {
+	case <-time.After(TIMEOUT * time.Second):
+		if err := cmd.Process.Kill(); err != nil {
+			return []byte("Timeout reached, but couldn't kill the process"), ERROR_STATUS
+		}
+		return []byte("Timeout reached, process killed"), TIMEOUT_STATUS
+	case err := <-done:
+		stdoutBytes := stdoutBuf.Bytes()
+		stderrBytes := stderrBuf.Bytes()
+		if err != nil {
+			status = ERROR_STATUS
+		}
+		return append(stdoutBytes, stderrBytes...), status
+	}
 }

