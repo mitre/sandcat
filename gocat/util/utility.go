@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"path/filepath"
+	"io"
+	"net/http"
 )
 
 // Encode base64 encodes bytes
@@ -62,6 +65,31 @@ func Sleep(interval float64) {
 	time.Sleep(time.Duration(interval) * time.Second)
 }
 
+//WritePayload creates a payload on disk
+func WritePayload(location string, resp *http.Response) {
+	dst, _ := os.Create(location)
+	defer dst.Close()
+	_, _ = io.Copy(dst, resp.Body)
+	os.Chmod(location, 0500)
+}
+
+//CheckPayloadsAvailable determines if any payloads are not on disk
+func CheckPayloadsAvailable(payloads []string) []string {
+	var missing []string
+	for i := range payloads {
+		if Exists(filepath.Join(payloads[i])) == false {
+			missing = append(missing, payloads[i])
+		}
+	}
+	return missing
+}
+
+//StopProcess kills a PID
+func StopProcess(pid int) {
+	proc, _ := os.FindProcess(pid)
+	_ = proc.Kill()
+}
+
 func removeWhiteSpace(input string) string {
 	return strings.Map(func(r rune) rune {
 		if unicode.IsSpace(r) {
@@ -69,9 +97,4 @@ func removeWhiteSpace(input string) string {
 		}
 		return r
 	}, input)
-}
-
-func StopProcess(pid int) {
-	proc, _ := os.FindProcess(pid)
-	_ = proc.Kill()
 }
