@@ -26,7 +26,9 @@ func askForInstructions(profile map[string]interface{}) {
 		for i := 0; i < cmds.Len(); i++ {
 			cmd := cmds.Index(i).Elem().String()
 			command := util.Unpack([]byte(cmd))
-			go api.ExecuteInstruction(command, profile)
+			fmt.Printf("[*] Running instruction %.0f\n", command["id"])
+			payloads := api.DropPayloads(command["payload"].(string), profile["server"].(string))
+			go api.ExecuteInstruction(command, profile, payloads)
 			util.Sleep(command["sleep"].(float64))
 		}
 	} else {
@@ -60,6 +62,8 @@ func main() {
 	sleep := flag.Int("sleep", 60, "Initial sleep value for sandcat (integer in seconds)")
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
+	
+	api.Ping(*server)
 	profile := buildProfile(*server, *group, *sleep, executors)
 	for {
 		askForInstructions(profile)
