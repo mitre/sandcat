@@ -11,6 +11,9 @@ class SandApi:
         self.file_svc = services.get('file_svc')
         self.agent_svc = services.get('agent_svc')
 
+    async def ping(self, request):
+        return web.Response(text=self.agent_svc.encode_string('pong'))
+
     async def instructions(self, request):
         data = json.loads(self.agent_svc.decode_bytes(await request.read()))
         url = urlparse(data['server'])

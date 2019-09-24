@@ -12,6 +12,7 @@ async def initialize(app, services):
     app.router.add_static('/sandcat', 'plugins/sandcat/static/', append_version=True)
     app.router.add_static('/malicious', 'plugins/sandcat/static/malicious', append_version=True)
     # cat
+    app.router.add_route('POST', '/sand/ping', cat_api.ping)
     app.router.add_route('POST', '/sand/instructions', cat_api.instructions)
     app.router.add_route('POST', '/sand/results', cat_api.results)
     # gui
