@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"../shellcode"
+	"../util"
 )
 
 const (
@@ -21,6 +22,21 @@ const (
 
 // ExecutorFlags type to import a list of executors
 type ExecutorFlags []string
+
+//RunCommand runs the actual command
+func RunCommand(command string, payloads []string, platform string, executor string) (string, []byte, string){
+	cmd := string(util.Decode(command))
+	var status string
+	var result []byte
+	missingPaths := util.CheckPayloadsAvailable(payloads)
+	if len(missingPaths) == 0 {
+		result, status = Execute(cmd, executor, platform)
+	} else {
+		result = []byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
+		status = ERROR_STATUS
+	}
+	return cmd, result, status
+}
 
 // Execute runs a shell command
 func Execute(command string, executor string, platform string) ([]byte, string) {
