@@ -36,7 +36,7 @@ func askForInstructions(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, sleep int, executors []string) map[string]interface{} {
+func buildProfile(server string, group string, father string, sleep int, executors []string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
@@ -44,6 +44,7 @@ func buildProfile(server string, group string, sleep int, executors []string) ma
 	profile["paw"] = paw
 	profile["server"] = server
 	profile["group"] = group
+	profile["father"] = father
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
@@ -59,6 +60,7 @@ func main() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
 	group := flag.String("group", "my_group", "Attach a group to this agent")
+	father := flag.String("father", "", "Father agent's paw of this agent")
 	sleep := flag.Int("sleep", 60, "Initial sleep value for sandcat (integer in seconds)")
 	preferredContact := flag.String("contact", "API", "Preferred contact type to the server")
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
@@ -66,7 +68,7 @@ func main() {
 	
 	coms, _ := contact.CommunicationChannels[*preferredContact]
 	coms.Ping(*server)
-	profile := buildProfile(*server, *group, *sleep, executors)
+	profile := buildProfile(*server, *group, *father, *sleep, executors)
 
 	for {
 		askForInstructions(coms, profile)
