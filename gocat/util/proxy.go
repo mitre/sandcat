@@ -19,9 +19,13 @@ func StartProxy(server string) {
 			return
 		}
 		r.Body = ioutil.NopCloser(bytes.NewReader(body))
-		url := fmt.Sprintf(server, r.RequestURI)
+		url := server + r.RequestURI
 
 		proxyReq, err := http.NewRequest(r.Method, url, bytes.NewReader(body))
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
 		proxyReq.Header = make(http.Header)
 		for h, val := range r.Header {
 			proxyReq.Header[h] = val
@@ -39,21 +43,20 @@ func StartProxy(server string) {
 }
 
 //FindProxy locates a useable host for coms
-func FindProxy() string {
-	//for _, ip := range calculateNetworkIPs(net.ParseIP(localIP)) {
-    //    fmt.Println(ip)
-	//}
-	
-	connected := testConnection("127.0.0.1")
-	if connected {
-		fmt.Println("[+] Located available proxy server", "127.0.0.1")
-		return "http://127.0.0.1:8889"
+func FindProxy(port string) string {
+	for _, ip := range [...]string{"127.0.0.1"}{
+		connected := testConnection(ip, port)
+		if connected {
+			proxy := fmt.Sprintf("http://%s:%s", ip, port)
+			fmt.Println("Located available proxy server", proxy)
+			return proxy
+		}
 	}
 	return ""
 }
 
-func testConnection(ip string) bool {
-	conn, _ := net.DialTimeout("tcp", net.JoinHostPort(ip, "8889"), time.Second)
+func testConnection(ip string, port string) bool {
+	conn, _ := net.DialTimeout("tcp", net.JoinHostPort(ip, port), time.Second)
 	if conn != nil {
 		defer conn.Close()
 		return true
