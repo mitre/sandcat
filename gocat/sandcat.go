@@ -60,7 +60,7 @@ func chooseCommunicationChannel(p2p bool, profile map[string]interface{}) contac
 	coms, _ := contact.CommunicationChannels["API"]
 	if !p2p {
 		return coms
-	} else if coms.Ping(profile["server"].(string)) {
+	} else if !coms.Ping(profile["server"].(string)) {
 		go util.StartProxy(profile["server"].(string))
 	} else {
 		proxy := util.FindProxy("8889")
@@ -93,4 +93,4 @@ func main() {
 	}
 }
 
-var key = "ZV5K1TV7PMDN0VJ8U89SOMVU332M8S"
+var key = "J06B7ZMM5MJS5YPEOSVFHONLILQ401"

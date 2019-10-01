@@ -19,7 +19,7 @@ func StartProxy(server string) {
 			return
 		}
 		r.Body = ioutil.NopCloser(bytes.NewReader(body))
-		url := fmt.Sprintf(server, r.RequestURI)
+		url := server + r.RequestURI
 
 		proxyReq, err := http.NewRequest(r.Method, url, bytes.NewReader(body))
 		if err != nil {
