@@ -20,7 +20,7 @@ const (
 )
 
 //API communicates through HTTP
-type API struct {}
+type API struct { }
 
 //Ping tests connectivity to the server
 func (contact API) Ping(server string) bool {
