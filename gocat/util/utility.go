@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"io"
 	"net/http"
+	"bufio"
 )
 
 // Encode base64 encodes bytes
@@ -88,6 +89,19 @@ func CheckPayloadsAvailable(payloads []string) []string {
 func StopProcess(pid int) {
 	proc, _ := os.FindProcess(pid)
 	_ = proc.Kill()
+}
+
+//ReadFile returns a list of lines for a given file
+func ReadFile(filepath string) []string {
+	file, _ := os.Open(filepath)
+    defer file.Close()
+
+	var lines []string
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines
 }
 
 func removeWhiteSpace(input string) string {
