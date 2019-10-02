@@ -56,13 +56,13 @@ func buildProfile(server string, group string, sleep int, executors []string) ma
 	return profile
 }
 
-func chooseCommunicationChannel(profile map[string]interface{}, p2p string) contact.Contact {
+func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact {
 	coms, _ := contact.CommunicationChannels["API"]
 	if coms.Ping(profile["server"].(string)) {
 		go util.StartProxy(profile["server"].(string))
 		return coms
 	}
-	proxy := util.FindProxy(p2p)
+	proxy := util.FindProxy(util.ReadFile("masters.txt"))
 	if len(proxy) == 0 {
 		return nil
 	} 
@@ -76,14 +76,13 @@ func main() {
 	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
 	group := flag.String("group", "my_group", "Attach a group to this agent")
 	sleep := flag.Int("sleep", 60, "Initial sleep value for sandcat (integer in seconds)")
-	p2p := flag.String("p2p", "8889", "Port to use for peer-to-peer communication")
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
 
 	profile := buildProfile(*server, *group, *sleep, executors)
 	for {
-		coms := chooseCommunicationChannel(profile, *p2p)
+		coms := chooseCommunicationChannel(profile)
 		if coms != nil {
 			for { runAgent(coms, profile) }
 		}
