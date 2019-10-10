@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"bufio"
+	"fmt"
 )
 
 // Encode base64 encodes bytes
@@ -93,7 +94,10 @@ func StopProcess(pid int) {
 
 //ReadFile returns a list of lines for a given file
 func ReadFile(filepath string) []string {
-	file, _ := os.Open(filepath)
+	file, err := os.Open(filepath)
+	if err != nil {
+		fmt.Println(err)
+	}
     defer file.Close()
 
 	var lines []string
