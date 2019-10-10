@@ -58,11 +58,11 @@ func buildProfile(server string, group string, sleep int, executors []string) ma
 
 func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact {
 	coms, _ := contact.CommunicationChannels["API"]
-	if coms.Ping(profile["server"].(string)) {
+	if !coms.Ping(profile["server"].(string)) {
 		go util.StartProxy(profile["server"].(string))
 		return coms
 	}
-	proxy := util.FindProxy(util.ReadFile("masters.txt"))
+	proxy := util.FindProxy()
 	if len(proxy) == 0 {
 		return nil
 	} 
@@ -90,4 +90,4 @@ func main() {
 	}
 }
 
-var key = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
+var key = "G0IHFM6TJMJBBHONLBKP4JAIYXKVBA"

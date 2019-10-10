@@ -7,7 +7,6 @@ import (
 	"time"
 	"io/ioutil"
 	"bytes"
-	"math/rand"
 )
 
 //StartProxy creates an HTTP listener to forward traffic to server
@@ -44,8 +43,7 @@ func StartProxy(server string) {
 }
 
 //FindProxy locates a useable host for coms
-func FindProxy(masters []string) string {
-	shuffle(masters)
+func FindProxy() string {
 	for _, m := range masters {
 		connected := testConnection(m)
 		if connected {
@@ -66,10 +64,4 @@ func testConnection(master string) bool {
 	return false
 }
 
-func shuffle(slice []string) {
-	r := rand.New(rand.NewSource(time.Now().Unix()))
-	for n := len(slice); n > 0; n-- {
-	   randIndex := r.Intn(n)
-	   slice[n-1], slice[randIndex] = slice[randIndex], slice[n-1]
-	}
- }
+ var masters = [...]string{"127.0.0.1:8889"}
