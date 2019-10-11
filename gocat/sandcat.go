@@ -14,6 +14,7 @@ import (
 	"./contact"
 	"./execute"
 	"./util"
+	"./output"
 )
 
 /*
@@ -93,12 +94,11 @@ func main() {
 	flag.Parse()
 	sleepInt, _ := strconv.Atoi(*sleep)
 
-	if *verbose {
-	    fmt.Printf("Started sandcat in verbose mode.\n")
-	    fmt.Printf("server=%s\n", *server)
-	    fmt.Printf("group=%s\n", *group)
-	    fmt.Printf("sleep=%d\n", sleepInt)
-	}
+    output.SetVerbose(*verbose)
+    output.VerbosePrint("Started sandcat in verbose mode.")
+    output.VerbosePrint(fmt.Sprintf("server=%s", *server))
+    output.VerbosePrint(fmt.Sprintf("group=%s", *group))
+    output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
 
 	profile := buildProfile(*server, *group, sleepInt, executors)
 	for {

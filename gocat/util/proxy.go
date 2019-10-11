@@ -7,6 +7,7 @@ import (
 	"time"
 	"io/ioutil"
 	"bytes"
+	"../output"
 )
 
 //StartProxy creates an HTTP listener to forward traffic to server
@@ -23,7 +24,7 @@ func StartProxy(server string) {
 
 		proxyReq, err := http.NewRequest(r.Method, url, bytes.NewReader(body))
 		if err != nil {
-			fmt.Println(err.Error())
+			output.VerbosePrint(err.Error())
 			return
 		}
 		proxyReq.Header = make(http.Header)
@@ -48,7 +49,7 @@ func FindProxy() string {
 		connected := testConnection(m)
 		if connected {
 			proxy := fmt.Sprintf("http://%s", m)
-			fmt.Println("Located available proxy server", proxy)
+			output.VerbosePrint(fmt.Sprintf("Located available proxy server%s", proxy))
 			return proxy
 		}
 	}
