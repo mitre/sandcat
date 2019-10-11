@@ -14,18 +14,18 @@ class SandService:
         if which('go') is not None:
             plugin, file_path = await self.file_svc.find_file_path(name)
 
-            ldflags = ['-X main.key=%s' % (self._generate_key(),)]
+            ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
             for param in ('defaultServer', 'defaultGroup', 'defaultSleep'):
                 if param in headers:
                     ldflags.append('-X main.%s=%s' % (param, headers[param]))
 
             output = 'plugins/%s/payloads/%s-%s' % (plugin, name, platform)
             self.file_svc.log.debug('Dynamically compiling %s' % name)
-            await self.file_svc.compile_go(platform, output, file_path, ldflags=ldflags)
+            await self.file_svc.compile_go(platform, output, file_path, ldflags=' '.join(ldflags))
         return '%s-%s' % (name, platform)
 
     """ PRIVATE """
 
     @staticmethod
-    async def _generate_key(size=30):
+    def _generate_key(size=30):
         return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size))
