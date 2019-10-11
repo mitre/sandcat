@@ -16,6 +16,17 @@ import (
 	"./util"
 )
 
+/*
+These default  values can be overridden during linking - server, group, and sleep can also be overridden
+with command-line arguments at runtime.
+*/
+var (
+    key = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
+    defaultServer = "http://localhost:8888"
+    defaultGroup = "my_group"
+    defaultSleep = "60"
+)
+
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	for {
 		beacon := coms.GetInstructions(profile)
@@ -73,14 +84,23 @@ func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact 
 func main() {
 	var executors execute.ExecutorFlags
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	server := flag.String("server", "http://localhost:8888", "The FQDN of the server")
-	group := flag.String("group", "my_group", "Attach a group to this agent")
-	sleep := flag.Int("sleep", 60, "Initial sleep value for sandcat (integer in seconds)")
+	server := flag.String("server", defaultServer, "The FQDN of the server")
+	group := flag.String("group", defaultGroup, "Attach a group to this agent")
+	sleep := flag.String("sleep", defaultSleep, "Initial sleep value for sandcat (integer in seconds)")
+	verbose := flag.Bool("v", false, "Enable verbose output")
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
+	sleepInt, _ := strconv.Atoi(*sleep)
 
-	profile := buildProfile(*server, *group, *sleep, executors)
+	if *verbose {
+	    fmt.Printf("Started sandcat in verbose mode.\n")
+	    fmt.Printf("server=%s\n", *server)
+	    fmt.Printf("group=%s\n", *group)
+	    fmt.Printf("sleep=%d\n", sleepInt)
+	}
+
+	profile := buildProfile(*server, *group, sleepInt, executors)
 	for {
 		coms := chooseCommunicationChannel(profile)
 		if coms != nil {
@@ -89,5 +109,3 @@ func main() {
 		util.Sleep(300)
 	}
 }
-
-var key = "G0IHFM6TJMJBBHONLBKP4JAIYXKVBA"
