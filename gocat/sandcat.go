@@ -59,7 +59,7 @@ func buildProfile(server string, group string, sleep int, executors []string) ma
 func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact {
 	coms, _ := contact.CommunicationChannels["API"]
 	if coms.Ping(profile["server"].(string)) {
-		go util.StartProxy(profile["server"].(string))
+		//go util.StartProxy(profile["server"].(string))
 		return coms
 	}
 	proxy := util.FindProxy()
