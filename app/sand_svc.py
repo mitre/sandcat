@@ -4,7 +4,7 @@ import string
 from shutil import which
 
 
-class Utility:
+class SandService:
 
     def __init__(self, file_svc):
         self.file_svc = file_svc
