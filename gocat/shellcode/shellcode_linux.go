@@ -1,9 +1,9 @@
 package shellcode
 
 import (
-	"fmt"
 	"os/exec"
 	"syscall"
+	"../output"
 )
 
 // Runner runner
@@ -28,7 +28,7 @@ func generateDummyProcess() int {
 	cmd := exec.Command("sh")
 	cmdErr := cmd.Start()
 	if cmdErr != nil {
-		fmt.Println(cmdErr.Error())
+	    output.VerbosePrint(cmdErr.Error())
 	}
 	return cmd.Process.Pid
 }
@@ -69,7 +69,7 @@ func setRegisters(pid int, regs syscall.PtraceRegs) bool {
 
 func checkForFailure(err error) bool {
 	if err != nil {
-		fmt.Println(err.Error())
+		output.VerbosePrint(err.Error())
 		return false
 	}
 	return true

