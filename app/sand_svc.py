@@ -15,7 +15,7 @@ class SandService:
             plugin, file_path = await self.file_svc.find_file_path(name)
 
             ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
-            for param in ('defaultServer', 'defaultGroup', 'defaultSleep'):
+            for param in ('defaultServer', 'defaultGroup', 'defaultSleep', 'defaultFather'):
                 if param in headers:
                     ldflags.append('-X main.%s=%s' % (param, headers[param]))
 
