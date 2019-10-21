@@ -26,10 +26,17 @@ var (
     defaultServer = "http://localhost:8888"
     defaultGroup = "my_group"
     defaultSleep = "60"
+    defaultFather = ""
 )
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
+	numBeacon := 0
 	for {
+		/* The father is sent only to the first beacon */
+		if numBeacon == 1 {
+			delete(profile, "father")
+		}
+		numBeacon++
 		beacon := coms.GetInstructions(profile)
 		if beacon["sleep"] != nil {
 			profile["sleep"] = beacon["sleep"]
@@ -50,7 +57,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, sleep int, executors []string) map[string]interface{} {
+func buildProfile(server string, group string, father string, sleep int, executors []string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
@@ -58,6 +65,7 @@ func buildProfile(server string, group string, sleep int, executors []string) ma
 	profile["paw"] = paw
 	profile["server"] = server
 	profile["group"] = group
+	profile["father"] = father
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
@@ -87,6 +95,7 @@ func main() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	server := flag.String("server", defaultServer, "The FQDN of the server")
 	group := flag.String("group", defaultGroup, "Attach a group to this agent")
+	father := flag.String("father", defaultFather, "Father agent's paw of this agent")
 	sleep := flag.String("sleep", defaultSleep, "Initial sleep value for sandcat (integer in seconds)")
 	verbose := flag.Bool("v", false, "Enable verbose output")
 
@@ -98,9 +107,10 @@ func main() {
     output.VerbosePrint("Started sandcat in verbose mode.")
     output.VerbosePrint(fmt.Sprintf("server=%s", *server))
     output.VerbosePrint(fmt.Sprintf("group=%s", *group))
+    output.VerbosePrint(fmt.Sprintf("father=%s", *father))
     output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
 
-	profile := buildProfile(*server, *group, sleepInt, executors)
+	profile := buildProfile(*server, *group, *father, sleepInt, executors)
 	for {
 		coms := chooseCommunicationChannel(profile)
 		if coms != nil {
