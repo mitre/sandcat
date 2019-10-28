@@ -138,7 +138,7 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 	err := cmd.Start()
 	pid := cmd.Process.Pid
 	if err != nil {
-		return []byte("Encountered an error starting the process!"), ERROR_STATUS
+		return []byte("Encountered an error starting the process!"), ERROR_STATUS, pid
 	}
 	go func() {
 		done <- cmd.Wait()
@@ -146,7 +146,7 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 	select {
 	case <-time.After(TIMEOUT * time.Second):
 		if err := cmd.Process.Kill(); err != nil {
-			return []byte("Timeout reached, but couldn't kill the process"), ERROR_STATUS
+			return []byte("Timeout reached, but couldn't kill the process"), ERROR_STATUS, pid
 		}
 		return []byte("Timeout reached, process killed"), TIMEOUT_STATUS, pid
 	case err := <-done:

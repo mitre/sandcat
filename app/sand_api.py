@@ -27,5 +27,5 @@ class SandApi:
     async def results(self, request):
         data = json.loads(self.agent_svc.decode_bytes(await request.read()))
         data['time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        status = await self.agent_svc.save_results(data['link_id'], data['output'], data['status'])
+        status = await self.agent_svc.save_results(data['link_id'], data['output'], data['status'], data['pid'])
         return web.Response(text=self.agent_svc.encode_string(status))
