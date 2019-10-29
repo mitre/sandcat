@@ -1,4 +1,6 @@
 // +build linux darwin
+// +builds !windows
+
 package privdetect
 
 import (
