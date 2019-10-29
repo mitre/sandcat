@@ -1,10 +1,5 @@
 package main
 
-import "C"
-import (
-	"../core"
-)
-
 var (
 	key = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
 	defaultServer = "http://localhost:8888"
