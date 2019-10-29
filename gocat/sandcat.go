@@ -15,6 +15,7 @@ import (
 	"./execute"
 	"./util"
 	"./output"
+	"./privdetect"
 )
 
 /*
@@ -50,7 +51,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, sleep int, executors []string) map[string]interface{} {
+func buildProfile(server string, group string, sleep int, executors []string, privilege string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
@@ -65,6 +66,7 @@ func buildProfile(server string, group string, sleep int, executors []string) ma
 	profile["pid"] = strconv.Itoa(os.Getpid())
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
+	profile["privilege"] = privilege
 	return profile
 }
 
@@ -93,14 +95,16 @@ func main() {
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
 	sleepInt, _ := strconv.Atoi(*sleep)
+	privilege := privdetect.Privlevel()
 
     output.SetVerbose(*verbose)
     output.VerbosePrint("Started sandcat in verbose mode.")
     output.VerbosePrint(fmt.Sprintf("server=%s", *server))
     output.VerbosePrint(fmt.Sprintf("group=%s", *group))
     output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
+    output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
 
-	profile := buildProfile(*server, *group, sleepInt, executors)
+	profile := buildProfile(*server, *group, sleepInt, executors, privilege)
 	for {
 		coms := chooseCommunicationChannel(profile)
 		if coms != nil {
