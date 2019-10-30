@@ -2,21 +2,22 @@ package shellcode
 
 import (
 	"os/exec"
+	"strconv"
 	"syscall"
 	"../output"
 )
 
 // Runner runner
-func Runner(shellcode []byte) bool {
+func Runner(shellcode []byte) (bool, string) {
 	tPid := generateDummyProcess()
 	if tPid == 0 || !attachToProcessAndWait(tPid) {
-		return false
+		return false, strconv.Itoa(tPid)
 	}
 	registers := getRegisters(tPid)
 	if registers == (syscall.PtraceRegs{}) || !copyShellcode(tPid, shellcode, uintptr(registers.PC())) || !setRegisters(tPid, registers) || !detachFromProcess(tPid) {
-		return false
+		return false, strconv.Itoa(tPid)
 	}
-	return true
+	return true, strconv.Itoa(tPid)
 }
 
 // IsAvailable does a shellcode runner exist
