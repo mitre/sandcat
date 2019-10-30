@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"../execute"
@@ -93,7 +92,7 @@ func drop(server string, payload string) string {
 func sendExecutionResults(commandID interface{}, server interface{}, result []byte, status string, cmd string, pid int) {
 	address := fmt.Sprintf("%s/sand/results", server)
 	link := fmt.Sprintf("%f", commandID.(float64))
-	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(util.Encode(result)), "status": status, "pid": strconv.Itoa(pid)})
+	data, _ := json.Marshal(map[string]string{"link_id": link, "output": string(util.Encode(result)), "status": status, "pid": pid})
 	request(address, data)
 	if cmd == "die" {
 		output.VerbosePrint("[+] Shutting down...")

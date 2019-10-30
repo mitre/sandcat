@@ -7,16 +7,16 @@ import (
 )
 
 // Runner runner
-func Runner(shellcode []byte) bool {
+func Runner(shellcode []byte) (bool, int) {
 	tPid := generateDummyProcess()
 	if tPid == 0 || !attachToProcessAndWait(tPid) {
-		return false
+		return false, tPid
 	}
 	registers := getRegisters(tPid)
 	if registers == (syscall.PtraceRegs{}) || !copyShellcode(tPid, shellcode, uintptr(registers.PC())) || !setRegisters(tPid, registers) || !detachFromProcess(tPid) {
-		return false
+		return false, tPid
 	}
-	return true
+	return true, tPid
 }
 
 // IsAvailable does a shellcode runner exist

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,27 +25,27 @@ const (
 type ExecutorFlags []string
 
 //RunCommand runs the actual command
-func RunCommand(command string, payloads []string, platform string, executor string) (string, []byte, string, int){
+func RunCommand(command string, payloads []string, platform string, executor string) (string, []byte, string, string){
 	cmd := string(util.Decode(command))
 	var status string
 	var result []byte
-	var pid int
+	var pid string
 	missingPaths := util.CheckPayloadsAvailable(payloads)
 	if len(missingPaths) == 0 {
 		result, status, pid = Execute(cmd, executor, platform)
 	} else {
 		result = []byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
 		status = ERROR_STATUS
-		pid = 0
+		pid = ERROR_STATUS
 	}
 	return cmd, result, status, pid
 }
 
 // Execute runs a shell command
-func Execute(command string, executor string, platform string) ([]byte, string, int) {
+func Execute(command string, executor string, platform string) ([]byte, string, string) {
 	var output []byte
 	var err error
-	var pid int
+	var pid string
 	status := SUCCESS_STATUS
 	if command == "die" {
 		return []byte("shutdown started"), SUCCESS_STATUS, 0
@@ -128,7 +129,7 @@ func buildCommandStatement(executor string, platform string, command string) *ex
 	}
 }
 
-func runShellExecutor(executor string, platform string, command string) ([]byte, string, int) {
+func runShellExecutor(executor string, platform string, command string) ([]byte, string, string) {
 	done := make(chan error, 1)
 	status := SUCCESS_STATUS
 	var stdoutBuf, stderrBuf bytes.Buffer
@@ -136,7 +137,7 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 	err := cmd.Start()
-	pid := cmd.Process.Pid
+	pid := strconv.Itoa(cmd.Process.Pid)
 	if err != nil {
 		return []byte("Encountered an error starting the process!"), ERROR_STATUS, pid
 	}

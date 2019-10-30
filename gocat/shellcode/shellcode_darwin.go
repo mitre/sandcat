@@ -5,9 +5,9 @@ import (
 )
 
 // Runner runner
-func Runner(shellcode []byte) bool {
+func Runner(shellcode []byte) (bool, int) {
 	output.VerbosePrint("[!] Shellcode executor for darwin not available")
-	return false
+	return false, 1
 }
 
 // IsAvailable does a shellcode runner exist
