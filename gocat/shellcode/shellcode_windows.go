@@ -21,7 +21,7 @@ var (
 )
 
 // Runner runner
-func Runner(shellcode []byte) (bool, int) {
+func Runner(shellcode []byte) (bool, string) {
 	address, _, err := VirtualAlloc.Call(0, uintptr(len(shellcode)), MEM_COMMIT|MEM_RESERVE, PAGE_EXECUTE_READWRITE)
 	if util.CheckErrorMessage(err) {
 		return false, ERROR_PID
