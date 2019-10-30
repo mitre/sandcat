@@ -1,3 +1,4 @@
+import os
 import random
 import string
 
@@ -13,13 +14,14 @@ class SandService:
         name, platform = headers.get('file'), headers.get('platform')
         if which('go') is not None:
             plugin, file_path = await self.file_svc.find_file_path(name)
-            ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
-            for param in ('defaultServer', 'defaultGroup', 'defaultSleep'):
+            path = os.path.dirname(os.path.abspath(file_path))
+            ldflags = ['-s', '-w', '-X _%s/core.Key=%s' % (path, self._generate_key(),)]
+            for param in ('DefaultServer', 'DefaultGroup', 'DefaultSleep'):
                 if param in headers:
-                    ldflags.append('-X main.%s=%s' % (param, headers[param]))
+                    ldflags.append('-X _%s/core.%s=%s' % (path, param, headers[param]))
 
             output = 'plugins/%s/payloads/%s-%s' % (plugin, name, platform)
-            self.file_svc.log.debug('`Dynamically compiling %s' % name)
+            self.file_svc.log.debug('Dynamically compiling %s' % name)
             await self.file_svc.compile_go(platform, output, file_path, ldflags=' '.join(ldflags))
         return '%s-%s' % (name, platform)
 
