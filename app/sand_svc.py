@@ -11,7 +11,8 @@ class SandService:
         self.file_svc = file_svc
 
     async def dynamically_compile(self, headers):
-        name, platform = headers.get('file'), headers.get('platform')
+        name, platform, shared = headers.get('file'), headers.get('platform'), headers.get('shared')
+
         if which('go') is not None:
             plugin, file_path = await self.file_svc.find_file_path(name)
             path = os.path.dirname(os.path.abspath(file_path))
