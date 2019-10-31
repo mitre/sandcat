@@ -15,15 +15,15 @@ class SandService:
         if which('go') is not None:
             if name == 'shared.go':
                 await self._compile_new_agent(platform, headers,
-                                              compile_target_name=name,
-                                              output_name=name)
-            else:
-                await self._compile_new_agent(platform, headers,
                                               compile_target_name=name.split('.')[0] + '_' + platform + '.go',
                                               output_name=name,
                                               extension='-lib',
                                               extflags='-extldflags "-Wl,--nxcompat"',
                                               custom_params='GOARCH=amd64 CGO_ENABLED=1 CC=X86_64-w64-mingw32-gcc')
+            else:
+                await self._compile_new_agent(platform, headers,
+                                              compile_target_name=name,
+                                              output_name=name)
         if name == 'shared.go':
             return '%s-%s-lib' % (name, platform)
         return '%s-%s' % (name, platform)
