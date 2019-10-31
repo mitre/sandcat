@@ -11,8 +11,7 @@ class SandService:
         self.file_svc = file_svc
 
     async def dynamically_compile(self, headers):
-        name, platform, shared = headers.get('file'), headers.get('platform'), headers.get('shared')
-
+        name, platform = headers.get('file'), headers.get('platform')
         if which('go') is not None:
             if name == 'shared.go':
                 await self._compile_new_agent(platform, headers,

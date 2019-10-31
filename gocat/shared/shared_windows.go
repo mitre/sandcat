@@ -1,5 +1,7 @@
 package main
 
+import "C"
+
 var (
 	key = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
 	defaultServer = "http://localhost:8888"
