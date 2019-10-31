@@ -3,12 +3,11 @@ package main
 import "C"
 import (
 	"../core"
-	"../execute"
 )
 
 //export VoidFunc
 func VoidFunc() {
-	core.Core(core.DefaultServer, core.DefaultGroup, core.DefaultSleep, execute.ExecutorFlags{}, false)
+	core.Core(core.DefaultServer, core.DefaultGroup, core.DefaultSleep, []string{"psh","cmd"}, false)
 }
 
 func main() {}
