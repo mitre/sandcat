@@ -80,7 +80,7 @@ func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact 
 }
 
 // Core Run the core agent loop
-func Core(server string, group string, sleep string, executors execute.ExecutorFlags, verbose bool) {
+func Core(server string, group string, sleep string, executors []string, verbose bool) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	sleepInt, _ := strconv.Atoi(sleep)
 	privilege := privdetect.Privlevel()
