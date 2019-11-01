@@ -54,7 +54,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 func buildProfile(server string, group string, sleep int, executors []string, privilege string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
-	paw := fmt.Sprintf("%s$%s", host, user.Username)
+	paw := fmt.Sprintf("%s$%s$%s", host, user.Username, privilege)
 	profile := make(map[string]interface{})
 	profile["paw"] = paw
 	profile["server"] = server
