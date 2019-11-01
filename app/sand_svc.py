@@ -19,7 +19,7 @@ class SandService:
                                               output_name=name,
                                               extension='-lib',
                                               buildmode='--buildmode=c-shared',
-                                              extflags='-extldflags "-Wl,--nxcompat"',
+                                              extflags='-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,--high-entropy-va"',
                                               cflags='GOARCH=amd64 CGO_ENABLED=1 CC=X86_64-w64-mingw32-gcc')
             else:
                 await self._compile_new_agent(platform, headers,
