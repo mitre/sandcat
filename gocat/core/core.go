@@ -17,13 +17,6 @@ import (
 	"../util"
 )
 
-var (
-	Key = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
-	DefaultServer = "http://localhost:8888"
-	DefaultGroup = "my_group"
-	DefaultSleep = "60"
-)
-
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	for {
 		beacon := coms.GetInstructions(profile)

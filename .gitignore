@@ -12,3 +12,4 @@
 .logs/*
 !.logs/.gitkeep
 .idea
+sandcat.h
