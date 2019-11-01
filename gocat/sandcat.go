@@ -54,9 +54,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 func buildProfile(server string, group string, sleep int, executors []string, privilege string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
-	paw := fmt.Sprintf("%s$%s$%s", host, user.Username, privilege)
 	profile := make(map[string]interface{})
-	profile["paw"] = paw
 	profile["server"] = server
 	profile["group"] = group
 	profile["architecture"] = runtime.GOARCH
@@ -67,6 +65,8 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
+	paw := fmt.Sprintf("%s$%s$%s$%s", host, user.Username, privilege, profile["executors"])
+	profile["paw"] = paw
 	return profile
 }
 
