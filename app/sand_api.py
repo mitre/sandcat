@@ -21,7 +21,7 @@ class SandApi:
         data['server'] = '%s://%s:%s' % (url.scheme, url.hostname, url.port if url.port else port)
         agent = await self.agent_svc.handle_heartbeat(**data)
         instructions = await self.agent_svc.get_instructions(data['paw'])
-        response = dict(sleep=await self.agent_svc.calculate_sleep(agent), instructions=instructions)
+        response = dict(sleep=await agent.calculate_sleep(), instructions=instructions)
         return web.Response(text=self.agent_svc.encode_string(json.dumps(response)))
 
     async def results(self, request):
