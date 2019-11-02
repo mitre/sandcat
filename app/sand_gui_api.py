@@ -10,12 +10,12 @@ class SandGuiApi:
 
     def __init__(self, services):
         self.auth_svc = services.get('auth_svc')
-        self.plugin_svc = services.get('plugin_svc')
+        self.app_svc = services.get('app_svc')
 
     @template('sandcat.html')
     async def splash(self, request):
         await self.auth_svc.check_permissions(request)
-        plugins = [dict(name=getattr(p, 'name'), address=getattr(p, 'address')) for p in self.plugin_svc.get_plugins()]
+        plugins = [dict(name=getattr(p, 'name'), address=getattr(p, 'address')) for p in self.app_svc.get_plugins()]
         return dict(plugins=plugins)
 
     @staticmethod
