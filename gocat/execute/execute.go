@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"../shellcode"
@@ -134,6 +135,7 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 	status := SUCCESS_STATUS
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd := buildCommandStatement(executor, platform, command)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 	err := cmd.Start()

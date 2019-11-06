@@ -9,8 +9,8 @@ address = '/plugin/sandcat/gui'
 
 async def initialize(app, services):
     file_svc = services.get('file_svc')
-    await file_svc.add_special_payload('sandcat.go', SandService(file_svc).dynamically_compile)
-    await file_svc.add_special_payload('shared.go', SandService(file_svc).dynamically_compile)
+    await file_svc.add_special_payload('sandcat.go', SandService(file_svc).dynamically_compile_executable)
+    await file_svc.add_special_payload('shared.go', SandService(file_svc).dynamically_compile_library)
 
     cat_api = SandApi(services=services)
     cat_gui_api = SandGuiApi(services=services)
