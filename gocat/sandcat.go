@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/google/uuid"
+
 	"./contact"
 	"./execute"
 	"./util"
@@ -54,11 +56,14 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 func buildProfile(server string, group string, sleep int, executors []string, privilege string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
-	paw := fmt.Sprintf("%s$%s", host, user.Username)
+    pawId, _ := uuid.NewRandom()
+
 	profile := make(map[string]interface{})
-	profile["paw"] = paw
+	profile["paw"] = pawId.String()
 	profile["server"] = server
 	profile["group"] = group
+	profile["host"] = host
+	profile["username"] = user.Username
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
