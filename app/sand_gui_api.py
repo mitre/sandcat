@@ -28,12 +28,16 @@ class SandGuiApi:
         if self._uri_validator(url):
             location = 'plugins/sandcat/static/malicious/'
             shutil.rmtree(location, ignore_errors=True)
-            user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36"
-            subprocess.call(["wget","-U", user_agent, "-E","-H","-k","-K","-p","-q","-nH","--cut-dirs=1", url, "--directory", location, "--no-check-certificate"], shell=False)
-            self.auth_svc.prepend_to_file('%s/index.html' % location, '<script src="/sandcat/js/malicious.js"></script>')
+            user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) " \
+                         "Chrome/76.0.3809.100 Safari/537.36"
+            subprocess.call(["wget", "-U", user_agent, "-E", "-H", "-k", "-K", "-p", "-q", "-nH", "--cut-dirs=1", url,
+                             "--directory", location, "--no-check-certificate"], shell=False)
+            self.auth_svc.prepend_to_file('%s/index.html' % location,
+                                          '<script src="/sandcat/js/malicious.js"></script>')
             self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Expires" content="0">')
             self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Pragma" content="no-cache">')
-            self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">')
+            self.auth_svc.prepend_to_file('%s/index.html' % location, '<meta http-equiv="Cache-Control" '
+                                                                      'content="no-cache, no-store, must-revalidate">')
         return web.Response()
 
     """ PRIVATE """
@@ -43,5 +47,5 @@ class SandGuiApi:
         try:
             result = urlparse(url)
             return all([result.scheme, result.netloc])
-        except:
+        except Exception:
             return False
