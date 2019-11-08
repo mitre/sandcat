@@ -90,6 +90,7 @@ func main() {
 	server := flag.String("server", defaultServer, "The FQDN of the server")
 	group := flag.String("group", defaultGroup, "Attach a group to this agent")
 	sleep := flag.String("sleep", defaultSleep, "Initial sleep value for sandcat (integer in seconds)")
+	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
 	verbose := flag.Bool("v", false, "Enable verbose output")
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
@@ -103,8 +104,11 @@ func main() {
     output.VerbosePrint(fmt.Sprintf("group=%s", *group))
     output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
     output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
+    output.VerbosePrint(fmt.Sprintf("initial delay=%d", *delay))
 
 	profile := buildProfile(*server, *group, sleepInt, executors, privilege)
+	util.Sleep(float64(*delay))
+
 	for {
 		coms := chooseCommunicationChannel(profile)
 		if coms != nil {
