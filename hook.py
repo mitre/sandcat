@@ -1,3 +1,6 @@
+import platform
+import subprocess
+
 from plugins.sandcat.app.sand_api import SandApi
 from plugins.sandcat.app.sand_gui_api import SandGuiApi
 from plugins.sandcat.app.sand_svc import SandService
@@ -23,3 +26,9 @@ async def initialize(app, services):
     app.router.add_route('GET', '/plugin/sandcat/gui', cat_gui_api.splash)
     app.router.add_route('GET', '/plugin/sandcat/clone', cat_gui_api.clone_new_site)
     app.router.add_route('GET', '/plugin/sandcat/malicious', cat_gui_api.malicious)
+
+    _start_pet(group='pet')
+
+
+def _start_pet(group):
+    subprocess.Popen(['./plugins/sandcat/payloads/sandcat.go-%s' % platform.system().lower(), '-group', group, '-delay', '5'])
