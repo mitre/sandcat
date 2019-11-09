@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	token = "89603dc9e5dce1fd8ea9dc737622bfe39dfcc851"
+	token = ""
 	c2Client *github.Client
 	username string
 )
