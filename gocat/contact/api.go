@@ -16,9 +16,6 @@ import (
 	"../output"
 )
 
-const (
-	ok = 200
-)
 
 //API communicates through HTTP
 type API struct { }
@@ -29,10 +26,10 @@ func (contact API) Ping(server string) bool {
 	bites := request(address, nil)
 	if(string(bites) == "pong") {
 		output.VerbosePrint("[+] Ping success")
-		return true;
+		return true
 	}
 	output.VerbosePrint("[+] Ping failure")
-	return false;
+	return false
 }
 
 //GetInstructions sends a beacon and returns instructions
@@ -55,7 +52,7 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 }
 
 //DropPayloads downloads all required payloads for a command
-func (contact API) DropPayloads(payload string, server string) []string{
+func (contact API) DropPayloads(payload string, server string, uniqueId string) []string{
 	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
 	var droppedPayloads []string
 	for _, payload := range payloads {
