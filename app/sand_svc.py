@@ -18,7 +18,7 @@ class SandService(BaseService):
             c2_list = await self.data_svc.locate('c2', dict(name=c2))
             c2_module = await self.load_module(module_type=c2_list[0].name, module_info=dict(module=c2_list[0].module,
                                                 config=c2_list[0].config, c2_type=c2_list[0].c2_type))
-            self.c2_svc.start_channel(c2_module)
+            await self.c2_svc.start_channel(c2_module)
             # TODO Encode C2 config data into the sandcat code before compilation
 
         if which('go') is not None:
