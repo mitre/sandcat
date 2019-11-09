@@ -1,16 +1,28 @@
 import random
 import string
 
+from app.utility.base_service import BaseService
 from shutil import which
 
 
-class SandService:
+class SandService(BaseService):
 
-    def __init__(self, file_svc):
-        self.file_svc = file_svc
+    def __init__(self, services):
+        self.file_svc = services.get('file_svc')
+        self.data_svc = services.get('data_svc')
+        self.c2_svc = services.get('c2_svc')
 
     async def dynamically_compile(self, headers):
-        name, platform = headers.get('file'), headers.get('platform')
+        name, platform, c2 = headers.get('file'), headers.get('platform'), headers.get('c2', 'http')
+        if c2 is not 'http':
+            c2_list = await self.data_svc.locate('c2', dict(name=c2))
+            c2_module = await self.load_module(module_type=c2_list[0].name, module_info=dict(module=c2_list[0].module,
+                                                                                             config=c2_list[0].config,
+                                                                                             c2_type=c2_list[
+                                                                                                 0].c2_type))
+            await self.c2_svc.start_channel(c2_module)
+            # TODO Encode C2 config data into the sandcat code before compilation
+
         if which('go') is not None:
             plugin, file_path = await self.file_svc.find_file_path(name)
 
