@@ -20,7 +20,7 @@ class SandService(BaseService):
                                                                                              config=c2_list[0].config,
                                                                                              c2_type=c2_list[
                                                                                                  0].c2_type))
-            await self.c2_svc.start_channel(c2_module)
+            # await self.c2_svc.start_channel(c2_module)
             # TODO Encode C2 config data into the sandcat code before compilation
 
         if which('go') is not None:
