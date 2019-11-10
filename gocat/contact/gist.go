@@ -41,6 +41,7 @@ func (contact GIST) Ping(server string) bool {
 
 //GetInstructions sends a beacon and returns instructions
 func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]interface{} {
+	time.Sleep(time.Duration(1+rand.Intn(9))*time.Second)
 	bites, heartbeat := gistBeacon(profile)
 	var out map[string]interface{}
 	if heartbeat == true {
@@ -132,13 +133,11 @@ func createGist(gistType string, uniqueId string, data []byte) int {
 	public := false
 	gist := github.Gist{Description: &gistDescriptor, Public: &public, Files: files,}
 	_, resp, err := c2Client.Gists.Create(ctx, &gist)
-	time.Sleep(time.Duration(rand.Intn(10))*time.Second)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("%s", err))
 		return 500
 	}
-	status := resp.StatusCode
-	return status
+	return resp.StatusCode
 }
 
 func getGists(gistType string, uniqueID string) []string {
