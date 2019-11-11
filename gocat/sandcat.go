@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"./contact"
 	"./execute"
@@ -27,6 +28,7 @@ var (
     defaultServer = "http://localhost:8888"
     defaultGroup = "my_group"
     defaultSleep = "60"
+    defaultC2 = "API"
     api_key = ""
 )
 
@@ -52,7 +54,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, sleep int, executors []string, privilege string) map[string]interface{} {
+func buildProfile(server string, group string, sleep int, executors []string, privilege string, c2 string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	paw := fmt.Sprintf("%s$%s", host, user.Username)
@@ -68,11 +70,12 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
+	profile["c2"] = strings.ToUpper(c2)
 	return profile
 }
 
 func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact {
-	coms, _ := contact.CommunicationChannels["GIST"]
+	coms, _ := contact.CommunicationChannels[profile["c2"].(string)]
 	if coms.Ping(profile["server"].(string)) {
 		//go util.StartProxy(profile["server"].(string))
 		return coms
@@ -93,6 +96,7 @@ func main() {
 	sleep := flag.String("sleep", defaultSleep, "Initial sleep value for sandcat (integer in seconds)")
 	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
 	verbose := flag.Bool("v", false, "Enable verbose output")
+	c2 := flag.String("c2", defaultC2, "C2 Channel for agent (API and GIST supported)")
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
@@ -106,8 +110,9 @@ func main() {
     output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
     output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
     output.VerbosePrint(fmt.Sprintf("initial delay=%d", *delay))
+	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", *c2))
 
-	profile := buildProfile(*server, *group, sleepInt, executors, privilege)
+	profile := buildProfile(*server, *group, sleepInt, executors, privilege, *c2)
 	util.Sleep(float64(*delay))
 
 	for {
