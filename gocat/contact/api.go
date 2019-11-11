@@ -24,11 +24,11 @@ type API struct { }
 func (contact API) Ping(server string) bool {
 	address := fmt.Sprintf("%s/sand/ping", server)
 	bites := request(address, nil)
-	if(string(bites) == "pong") {
+	if string(bites) == "pong" {
 		output.VerbosePrint("[+] Ping success")
 		return true
 	}
-	output.VerbosePrint("[+] Ping failure")
+	output.VerbosePrint("[-] Ping failure")
 	return false
 }
 
@@ -65,6 +65,7 @@ func (contact API) DropPayloads(payload string, server string, uniqueId string) 
 
 //RunInstruction runs a single instruction
 func (contact API) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
+	output.VerbosePrint("Running instruction for real")
 	cmd, result, status, pid := execute.RunCommand(command["command"].(string), payloads, profile["platform"].(string), command["executor"].(string))
 	sendExecutionResults(command["id"], profile["server"], result, status, cmd, pid)
 }

