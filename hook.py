@@ -17,18 +17,16 @@ async def initialize(app, services):
     cat_api = SandApi(services=services)
     cat_gui_api = SandGuiApi(services=services)
     app.router.add_static('/sandcat', 'plugins/sandcat/static/', append_version=True)
-    app.router.add_static('/malicious', 'plugins/sandcat/static/malicious', append_version=True)
     # cat
     app.router.add_route('POST', '/sand/ping', cat_api.ping)
     app.router.add_route('POST', '/sand/instructions', cat_api.instructions)
     app.router.add_route('POST', '/sand/results', cat_api.results)
     # gui
     app.router.add_route('GET', '/plugin/sandcat/gui', cat_gui_api.splash)
-    app.router.add_route('GET', '/plugin/sandcat/clone', cat_gui_api.clone_new_site)
-    app.router.add_route('GET', '/plugin/sandcat/malicious', cat_gui_api.malicious)
-
-    _start_pet(group='pet')
+    await _start_pet(group='pet')
 
 
-def _start_pet(group):
-    subprocess.Popen(['./plugins/sandcat/payloads/sandcat.go-%s' % platform.system().lower(), '-group', group, '-delay', '5'])
+async def _start_pet(group):
+    subprocess.Popen(['./plugins/sandcat/payloads/sandcat.go-%s' % platform.system().lower(), '-group', group, '-delay', '3'])
+
+
