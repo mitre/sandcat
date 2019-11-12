@@ -17,7 +17,7 @@ class SandService(BaseService):
         if which('go') is not None:
             plugin, file_path = await self.file_svc.find_file_path(name)
             ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
-            for param in ('defaultServer', 'defaultGroup', 'defaultSleep', 'defaultC2', 'c2d'):
+            for param in ('defaultServer', 'defaultGroup', 'defaultSleep', 'defaultC2', 'c2'):
                 if param in headers:
                     if param == 'c2':
                         ldflags.append('-X main.%s=%s' % (await self._get_c2_requirement(headers[param])))
@@ -38,7 +38,7 @@ class SandService(BaseService):
         var = 'githubToken'
         if type.lower() == 'gist':
             c2 = await self.data_svc.locate('c2', dict(enabled=True, c2_type='active'))
-            if not len(c2):
+            if len(c2):
                 c2_module = await self.load_module(module_type=c2[0].name, module_info=dict(module=c2[0].module,
                                                                                             config=c2[0].config,
                                                                                             c2_type=c2[0].c2_type))
