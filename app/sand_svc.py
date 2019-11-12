@@ -38,10 +38,11 @@ class SandService(BaseService):
         var = 'githubToken'
         if type.lower() == 'gist':
             c2 = await self.data_svc.locate('c2', dict(enabled=True, c2_type='active'))
-            c2_module = await self.load_module(module_type=c2[0].name, module_info=dict(module=c2[0].module,
-                                                                                        config=c2[0].config,
-                                                                                        c2_type=c2[0].c2_type))
-            return var, c2_module.encode_config_info()
+            if not len(c2):
+                c2_module = await self.load_module(module_type=c2[0].name, module_info=dict(module=c2[0].module,
+                                                                                            config=c2[0].config,
+                                                                                            c2_type=c2[0].c2_type))
+                return var, c2_module.encode_config_info()
         return var, ''
 
 
