@@ -3,6 +3,7 @@ from datetime import datetime
 
 from aiohttp import web
 from urllib.parse import urlparse
+from app.objects.c_c2 import C2
 
 
 class SandApi:
@@ -19,9 +20,10 @@ class SandApi:
         url = urlparse(data['server'])
         port = '443' if url.scheme == 'https' else 80
         data['server'] = '%s://%s:%s' % (url.scheme, url.hostname, url.port if url.port else port)
+        data['c2'] = C2('API')
         agent = await self.agent_svc.handle_heartbeat(**data)
         instructions = await self.agent_svc.get_instructions(data['paw'])
-        response = dict(sleep=await agent.calculate_sleep(), c2=agent.c2, instructions=instructions)
+        response = dict(sleep=await agent.calculate_sleep(), c2=agent.c2.name, instructions=instructions)
         return web.Response(text=self.agent_svc.encode_string(json.dumps(response)))
 
     async def results(self, request):
