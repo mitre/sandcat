@@ -29,4 +29,3 @@ async def initialize(app, services):
 async def _start_pet(group):
     subprocess.Popen(['./plugins/sandcat/payloads/sandcat.go-%s' % platform.system().lower(), '-group', group, '-delay', '3'])
 
-
