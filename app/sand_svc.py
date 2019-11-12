@@ -44,5 +44,3 @@ class SandService(BaseService):
                                                                                             c2_type=c2[0].c2_type))
                 return var, c2_module.encode_config_info()
         return var, ''
-
-
