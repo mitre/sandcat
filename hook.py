@@ -21,4 +21,3 @@ async def initialize(app, services):
     # gui
     app.router.add_route('GET', '/plugin/sandcat/gui', cat_gui_api.splash)
 
-
