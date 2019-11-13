@@ -4,12 +4,14 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/user"
 	"reflect"
 	"runtime"
 	"strconv"
+	"time"
 
 	"./contact"
 	"./execute"
@@ -54,11 +56,15 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 func buildProfile(server string, group string, sleep int, executors []string, privilege string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
-	paw := fmt.Sprintf("%s$%s", host, user.Username)
+	rand.Seed(time.Now().UnixNano())
+	pawId := rand.Uint64()
+
 	profile := make(map[string]interface{})
-	profile["paw"] = paw
+	profile["paw"] = fmt.Sprintf("%d", pawId)
 	profile["server"] = server
 	profile["group"] = group
+	profile["host"] = host
+	profile["username"] = user.Username
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
