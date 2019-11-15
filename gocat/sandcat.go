@@ -57,10 +57,10 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	rand.Seed(time.Now().UnixNano())
-	pawId := rand.Uint64()
+	pawID := rand.Intn(999999 - 1)
 
 	profile := make(map[string]interface{})
-	profile["paw"] = fmt.Sprintf("%d", pawId)
+	profile["paw"] = fmt.Sprintf("%d", pawID)
 	profile["server"] = server
 	profile["group"] = group
 	profile["host"] = host
