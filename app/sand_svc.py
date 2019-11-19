@@ -18,16 +18,16 @@ class SandService:
         name, platform = headers.get('file'), headers.get('platform')
         if which('go') is not None:
             plugin, file_path = await self.file_svc.find_file_path(name)
+
             ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
             for param in ('defaultServer', 'defaultGroup', 'defaultSleep'):
                 if param in headers:
                     ldflags.append('-X main.%s=%s' % (param, headers[param]))
-            output = 'plugins/%s/payloads/%s-%s' % (plugin, self.compile_name, platform)
-            self.file_svc.log.debug('Dynamically compiling %s' % self.compile_name)
+
+            output = 'plugins/%s/payloads/%s-%s' % (plugin, name, platform)
+            self.file_svc.log.debug('Dynamically compiling %s' % name)
             await self.file_svc.compile_go(platform, output, file_path, ldflags=' '.join(ldflags))
-            return '%s-%s' % (self.compile_name, platform)
-        else:
-            return '%s-%s' % (name, platform)
+        return '%s-%s' % (name, platform)
 
     """ PRIVATE """
 
@@ -40,4 +40,4 @@ class SandService:
         config = self.file_svc.get_service('app_svc').config
         if 'sandcat_compile_name' in config:
             return config['sandcat_compile_name']
-        else: return "notsandcat"
+        return "notsandcat"

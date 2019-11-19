@@ -53,7 +53,8 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, sleep int, executors []string, privilege string) map[string]interface{} {
+func buildProfile(server string, group string, sleep int, executors []string, privilege string,
+                  exe_name string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	rand.Seed(time.Now().UnixNano())
@@ -73,6 +74,7 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
+	profile["exe_name"] = exe_name
 	return profile
 }
 
@@ -98,6 +100,7 @@ func main() {
 	sleep := flag.String("sleep", defaultSleep, "Initial sleep value for sandcat (integer in seconds)")
 	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
 	verbose := flag.Bool("v", false, "Enable verbose output")
+	exe_name := os.Args[0]
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
@@ -112,7 +115,7 @@ func main() {
     output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
     output.VerbosePrint(fmt.Sprintf("initial delay=%d", *delay))
 
-	profile := buildProfile(*server, *group, sleepInt, executors, privilege)
+	profile := buildProfile(*server, *group, sleepInt, executors, privilege, exe_name)
 	util.Sleep(float64(*delay))
 
 	for {
