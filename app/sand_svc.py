@@ -35,7 +35,9 @@ class SandService:
     def _generate_key(size=30):
         return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size))
 
-    @staticmethod
-    def _generate_name():
+    def _generate_name(self):
         """TODO: make random or get from config I guess. Right now output filename still includes platform. """
-        return "notsandcat"
+        config = self.file_svc.get_service('app_svc').config
+        if 'sandcat_compile_name' in config:
+            return config['sandcat_compile_name']
+        else: return "notsandcat"
