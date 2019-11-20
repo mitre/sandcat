@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/user"
@@ -11,6 +12,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"./contact"
 	"./execute"
@@ -20,7 +22,7 @@ import (
 )
 
 const (
-	gistC2 = "GIST"
+    gistC2 = "GIST"
 )
 
 /*
@@ -61,11 +63,15 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 func buildProfile(server string, group string, sleep int, executors []string, privilege string, c2 string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
-	paw := fmt.Sprintf("%s$%s", host, user.Username)
+	rand.Seed(time.Now().UnixNano())
+	pawID := rand.Intn(999999 - 1)
+
 	profile := make(map[string]interface{})
-	profile["paw"] = paw
+	profile["paw"] = fmt.Sprintf("%d", pawID)
 	profile["server"] = server
 	profile["group"] = group
+	profile["host"] = host
+	profile["username"] = user.Username
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
@@ -80,11 +86,12 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 
 func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact {
 	coms, _ := contact.CommunicationChannels[profile["c2"].(string)]
-	if !validC2Configuration(coms, profile["c2"].(string)) {
-		output.VerbosePrint("[-] Invalid C2 Configuration! Defaulting to HTTP")
-		coms, _ = contact.CommunicationChannels[defaultC2]
-		profile["c2"] = defaultC2
-	}
+ 	if !validC2Configuration(coms, profile["c2"].(string)) && profile["c2"].(string) != defaultC2 {
+ 		output.VerbosePrint("[-] Invalid C2 Configuration! Defaulting to HTTP")
+ 		coms, _ = contact.CommunicationChannels[defaultC2]
+ 		profile["c2"] = defaultC2
+ 	}
+
 	if coms.Ping(profile["server"].(string)) {
 		//go util.StartProxy(profile["server"].(string))
 		return coms
@@ -98,13 +105,13 @@ func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact 
 }
 
 func validC2Configuration(coms contact.Contact, c2 string) bool {
-	switch c2 {
-	case gistC2:
-		return coms.C2RequirementsMet(githubToken)
-	default:
-		return false
-	}
-}
+ 	switch c2 {
+ 	case gistC2:
+ 		return coms.C2RequirementsMet(githubToken)
+ 	default:
+ 		return false
+ 	}
+ }
 
 func main() {
 	var executors execute.ExecutorFlags
@@ -113,8 +120,8 @@ func main() {
 	group := flag.String("group", defaultGroup, "Attach a group to this agent")
 	sleep := flag.String("sleep", defaultSleep, "Initial sleep value for sandcat (integer in seconds)")
 	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
-	verbose := flag.Bool("v", false, "Enable verbose output")
 	c2 := flag.String("c2", defaultC2, "C2 Channel for agent (HTTP and GIST supported)")
+	verbose := flag.Bool("v", false, "Enable verbose output")
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
@@ -128,7 +135,7 @@ func main() {
     output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
     output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
     output.VerbosePrint(fmt.Sprintf("initial delay=%d", *delay))
-	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", *c2))
+    output.VerbosePrint(fmt.Sprintf("c2 channel=%s", *c2))
 
 	profile := buildProfile(*server, *group, sleepInt, executors, privilege, *c2)
 	util.Sleep(float64(*delay))
