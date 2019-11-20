@@ -3,8 +3,6 @@ import string
 
 from shutil import which
 
-from app.objects.c_fact import Fact
-
 
 class SandService:
 
