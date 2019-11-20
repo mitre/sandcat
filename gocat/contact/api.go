@@ -16,6 +16,9 @@ import (
 	"../output"
 )
 
+const (
+	ok = 200
+)
 
 //API communicates through HTTP
 type API struct { }
@@ -24,12 +27,12 @@ type API struct { }
 func (contact API) Ping(server string) bool {
 	address := fmt.Sprintf("%s/ping", server)
 	bites := request(address, nil)
-	if string(bites) == "pong" {
+	if(string(bites) == "pong") {
 		output.VerbosePrint("[+] Ping success")
-		return true
+		return true;
 	}
-	output.VerbosePrint("[-] Ping failure")
-	return false
+	output.VerbosePrint("[+] Ping failure")
+	return false;
 }
 
 //GetInstructions sends a beacon and returns instructions
@@ -52,7 +55,7 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 }
 
 //DropPayloads downloads all required payloads for a command
-func (contact API) DropPayloads(payload string, server string, uniqueId string) []string{
+func (contact API) DropPayloads(payload string, server string) []string{
 	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
 	var droppedPayloads []string
 	for _, payload := range payloads {
@@ -67,11 +70,6 @@ func (contact API) DropPayloads(payload string, server string, uniqueId string) 
 func (contact API) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
 	cmd, result, status, pid := execute.RunCommand(command["command"].(string), payloads, profile["platform"].(string), command["executor"].(string))
 	sendExecutionResults(command["id"], profile["server"], result, status, cmd, pid)
-}
-
-//C2RequirementsMet determines if sandcat can use the selected comm channel
-func (contact API) C2RequirementsMet(criteria interface{}) bool {
-	return true
 }
 
 func drop(server string, payload string) string {
