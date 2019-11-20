@@ -137,10 +137,10 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 	err := cmd.Start()
-	if err != nil {
-		return []byte(fmt.Sprintf("Encountered an error starting the process: %q", err.Error())), ERROR_STATUS, shellcode.ERROR_PID
-	}
 	pid := strconv.Itoa(cmd.Process.Pid)
+	if err != nil {
+		return []byte("Encountered an error starting the process!"), ERROR_STATUS, pid
+	}
 	go func() {
 		done <- cmd.Wait()
 	}()

