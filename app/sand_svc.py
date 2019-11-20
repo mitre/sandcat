@@ -10,9 +10,6 @@ class SandService:
 
     def __init__(self, file_svc):
         self.file_svc = file_svc
-        self.compile_name = self._generate_name()
-        self.name_fact = Fact('sandcat.compile.name', self.compile_name)
-        self.log = file_svc.add_service('sand_svc', self)
 
     async def dynamically_compile(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
