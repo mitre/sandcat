@@ -8,7 +8,7 @@ address = '/plugin/sandcat/gui'
 
 async def initialize(app, services):
     file_svc = services.get('file_svc')
-    await file_svc.add_special_payload('sandcat.go', SandService(file_svc).dynamically_compile)
+    await file_svc.add_special_payload('sandcat.go', SandService(services).dynamically_compile)
 
     cat_gui_api = SandGuiApi(services=services)
     app.router.add_static('/sandcat', 'plugins/sandcat/static/', append_version=True)
