@@ -7,7 +7,7 @@ address = '/plugin/sandcat/gui'
 enabled = True
 
 
-async def initialize(app, services):
+async def enable(app, services):
     file_svc = services.get('file_svc')
     await file_svc.add_special_payload('sandcat.go', SandService(file_svc).dynamically_compile)
     cat_gui_api = SandGuiApi(services=services)
