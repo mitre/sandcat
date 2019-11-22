@@ -102,7 +102,7 @@ func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact 
 }
 
 func validC2Configuration(coms contact.Contact, c2 string) bool {
-	if c2Name == c2 {
+	if strings.EqualFold(c2Name, c2) {
 		return coms.C2RequirementsMet(c2Key)
 	}
 	return false

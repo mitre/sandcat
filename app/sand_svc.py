@@ -20,7 +20,8 @@ class SandService(BaseService):
             for param in ('defaultServer', 'defaultGroup', 'defaultSleep', 'defaultC2', 'c2'):
                 if param in headers:
                     if param == 'c2':
-                        ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
+                        for k, v in (await self._get_c2_config(headers[param])).items():
+                            ldflags.append('-X main.c2%s=%s' % (k, v))
                     else:
                         ldflags.append('-X main.%s=%s' % (param, headers[param]))
 
