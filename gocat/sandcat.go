@@ -21,10 +21,6 @@ import (
 	"./privdetect"
 )
 
-const (
-    gistC2 = "GIST"
-)
-
 /*
 These default  values can be overridden during linking - server, group, and sleep can also be overridden
 with command-line arguments at runtime.
@@ -35,7 +31,8 @@ var (
     defaultGroup = "my_group"
     defaultSleep = "60"
     defaultC2 = "HTTP"
-    githubToken = ""
+    c2Name = ""
+    c2Key = ""
 )
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
@@ -105,12 +102,10 @@ func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact 
 }
 
 func validC2Configuration(coms contact.Contact, c2 string) bool {
- 	switch c2 {
- 	case gistC2:
- 		return coms.C2RequirementsMet(githubToken)
- 	default:
- 		return false
- 	}
+	if c2Name == c2 {
+		return coms.C2RequirementsMet(c2Key)
+	}
+	return false
  }
 
 func main() {
