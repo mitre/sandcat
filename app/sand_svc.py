@@ -40,4 +40,4 @@ class SandService(BaseService):
         c2 = await self.data_svc.locate('c2', dict(name=c2_type))
         if len(c2):
             return c2[0].get_config()
-        return '', ''
+        return dict(c2Name='',c2Key='')
