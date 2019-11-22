@@ -42,7 +42,7 @@ class SandService(BaseService):
     def _check_gist_go_dependencies():
         go_path = os.path.join(os.environ['GOPATH'], "src")
         return os.path.exists(os.path.join(go_path, "github.com/google/go-github/github")) and \
-               os.path.exists(os.path.join(go_path, "golang.org/x/oauth2"))
+            os.path.exists(os.path.join(go_path, "golang.org/x/oauth2"))
 
     @staticmethod
     def _copy_file_to_sandcat(file, pkg):
