@@ -11,5 +11,4 @@ class SandGuiApi:
     @template('sandcat.html')
     async def splash(self, request):
         await self.auth_svc.check_permissions(request)
-        plugins = [p for p in await self.data_svc.locate('plugins', match=dict(enabled=True))]
-        return dict(plugins=plugins)
+        return dict()
