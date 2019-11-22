@@ -31,6 +31,7 @@ type GIST struct {}
 
 func init() {
 	output.VerbosePrint("Token: " + token)
+	CommunicationChannels["GIST"] = GIST{}
 }
 
 //Ping tests connectivity to the server

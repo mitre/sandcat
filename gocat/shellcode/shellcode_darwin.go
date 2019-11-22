@@ -1,7 +1,7 @@
 package shellcode
 
 import (
-	"../output"
+	"gocat/output"
 )
 
 // Runner runner

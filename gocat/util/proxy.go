@@ -7,7 +7,7 @@ import (
 	"time"
 	"io/ioutil"
 	"bytes"
-	"../output"
+	"gocat/output"
 )
 
 //StartProxy creates an HTTP listener to forward traffic to server

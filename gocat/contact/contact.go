@@ -15,7 +15,4 @@ type Contact interface {
 }
 
 //CommunicationChannels contains the contact implementations
-var CommunicationChannels = map[string]Contact{
-	"HTTP": API{},
-	"GIST": GIST{},
-}
+var CommunicationChannels = map[string]Contact{}

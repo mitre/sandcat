@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"../shellcode"
-	"../util"
+	"gocat/shellcode"
+	"gocat/util"
 )
 
 const (

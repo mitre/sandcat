@@ -11,14 +11,17 @@ import (
 	"runtime"
 	"strings"
 
-	"../execute"
-	"../util"
-	"../output"
+	"gocat/execute"
+	"gocat/util"
+	"gocat/output"
 )
-
 
 //API communicates through HTTP
 type API struct { }
+
+func init() {
+	CommunicationChannels["HTTP"] = API{}
+}
 
 //Ping tests connectivity to the server
 func (contact API) Ping(server string) bool {

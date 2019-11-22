@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"./contact"
-	"./execute"
-	"./util"
-	"./output"
-	"./privdetect"
+	"gocat/contact"
+	"gocat/execute"
+	"gocat/util"
+	"gocat/output"
+	"gocat/privdetect"
 )
 
 /*
