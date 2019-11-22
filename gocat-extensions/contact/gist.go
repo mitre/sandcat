@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"../execute"
-	"../output"
-	"../util"
+	"gocat/execute"
+	"gocat/output"
+	"gocat/util"
 )
 
 const (
