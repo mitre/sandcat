@@ -6,7 +6,8 @@ description = 'A custom multi-platform RAT'
 address = '/plugin/sandcat/gui'
 
 
-async def enable(app, services):
+async def enable(services):
+    app = services.get('app_svc').application
     file_svc = services.get('file_svc')
     await file_svc.add_special_payload('sandcat.go', SandService(services).dynamically_compile)
     cat_gui_api = SandGuiApi(services=services)
