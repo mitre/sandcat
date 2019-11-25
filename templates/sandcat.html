@@ -11,13 +11,7 @@
     <center style="margin-bottom: 100px">
         <div class="topnav">
           <a href="/">Home</a>
-            {% for plugin in plugins %}
-              {% if plugin.address %}
-                <a href="{{ plugin.address }}">{{ plugin.name }}</a>
-              {% endif %}
-          {% endfor %}
           <div class="topnav-right">
-            <a href="https://github.com/mitre/caldera/wiki" target="_blank">Docs</a>
             <a href="/logout">Logout</a>
           </div>
         </div>
