@@ -40,8 +40,3 @@ class SandService(BaseService):
         if len(c2):
             return c2[0].get_config()
         return '', ''
-
-    @staticmethod
-    def _generate_name():
-        """TODO: make random or get from config I guess. Right now output filename still includes platform. """
-        return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
