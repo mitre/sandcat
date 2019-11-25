@@ -47,3 +47,4 @@ class SandService(BaseService):
         if 'sandcat_compile_name' in config:
             return config['sandcat_compile_name']
         return "notsandcat"
+    
