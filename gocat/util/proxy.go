@@ -1,13 +1,13 @@
 package util 
 
 import (
+	"bytes"
 	"fmt"
+	"gocat/output"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
-	"io/ioutil"
-	"bytes"
-	"../output"
 )
 
 //StartProxy creates an HTTP listener to forward traffic to server

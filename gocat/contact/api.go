@@ -11,9 +11,9 @@ import (
 	"runtime"
 	"strings"
 
-	"../execute"
-	"../util"
-	"../output"
+	"gocat/execute"
+	"gocat/output"
+	"gocat/util"
 )
 
 const (

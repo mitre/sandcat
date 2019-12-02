@@ -4,7 +4,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"../util"
+	"gocat/util"
 )
 
 const (

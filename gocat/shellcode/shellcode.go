@@ -1,7 +1,7 @@
 package shellcode
 
 import (
-	"../util"
+	"gocat/util"
 )
 
 const (

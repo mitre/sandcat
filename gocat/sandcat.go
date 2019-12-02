@@ -13,11 +13,11 @@ import (
 	"strconv"
 	"time"
 
-	"./contact"
-	"./execute"
-	"./util"
-	"./output"
-	"./privdetect"
+	"gocat/contact"
+	"gocat/execute"
+	"gocat/output"
+	"gocat/privdetect"
+	"gocat/util"
 )
 
 /*

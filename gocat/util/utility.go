@@ -4,13 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"io"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
-	"path/filepath"
-	"io"
-	"net/http"
 )
 
 // Encode base64 encodes bytes
