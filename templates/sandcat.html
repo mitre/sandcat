@@ -38,7 +38,7 @@
                                 <option value="windows-psh">Windows (PowerShell)</option>
                                 <option value="windows-cmd">Windows (CMD)</option>
                             </select>
-                            <button id="copyCommand" type="button" class="button-success" onclick="copyCommand()"
+                            <button id="copyCommand" type="button" class="button-success"
                                     style="display:none">Copy Command</button>
                         </div>
                         <div class="column" style="flex:67%;padding:15px;text-align: left">
@@ -94,10 +94,21 @@
                 'useful for running initial access adversaries, which can attempt to drop CATs on other, remote hosts.');
         }
 
-        function copyCommand() {
-            let copyText = $('#delivery-command').html();
-            navigator.clipboard.writeText(copyText);
-            document.execCommand("copy");
-        }
+        let copyCommandBtn = document.querySelector('#copyCommand');
+        copyCommandBtn.addEventListener('click', function(event) {
+          // Select the email link anchor text
+          let command = document.querySelector('#delivery-command');
+          let range = document.createRange();
+          range.selectNode(command);
+          window.getSelection().addRange(range);
+
+          try {
+            document.execCommand('copy');
+          } catch(err) {
+            console.log('Oops, unable to copy');
+          }
+          window.getSelection().removeAllRanges();
+        });
+        
     </script>
 </html>
