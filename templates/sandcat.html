@@ -95,7 +95,7 @@
         }
 
         function copyCommand() {
-            let copyText = $('#delivery-command').text();
+            let copyText = $('#delivery-command').html();
             navigator.clipboard.writeText(copyText);
             document.execCommand("copy");
         }
