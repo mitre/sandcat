@@ -4,6 +4,7 @@
         <link rel="shortcut icon" type="image/png" href="/gui/img/favicon.png"/>
         <link rel="stylesheet" href="/gui/css/shared.css">
         <link rel="stylesheet" href="/gui/css/navbar.css">
+        <link rel="stylesheet" href="/gui/css/basic.css">
         <link rel="stylesheet" href="/sandcat/css/basic.css">
         <link rel="stylesheet" href="/gui/css/modal.css">
     </head>
@@ -14,7 +15,8 @@
             <div id="sandcat-blocks" class="row-canvas">
                 <div class="section-profile">
                     <div class="row">
-                        <div class="duk"><img onclick="openDuk1()" class="duk-icon" src="/gui/img/duk.png"></div>
+                        <div class="topright duk-icon"><img onclick="openDuk1()" src="/gui/img/duk.png"></div>
+
                         <div class="column section-border" style="flex:37%;text-align:left;padding:15px;">
                             <h1 style="font-size:70px;margin-top:-20px;">54ndc47</h1>
                             <h2 style="margin-top:-55px">coordinated access trojan (CAT)</h2>
@@ -24,6 +26,7 @@
                                 You can deploy a CAT by running the 1-line <i>delivery command</i> associated to
                                 your target OS.
                             </p>
+
                             <select id="dcommands" style="width:60%;" onchange="displayCommand()">
                                 <option disabled="disabled" selected>Select target OS</option>
                                 <option value="darwin">MacOS</option>
