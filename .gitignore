@@ -12,3 +12,5 @@
 .logs/*
 !.logs/.gitkeep
 .idea
+shared.h
+sandcat.h
