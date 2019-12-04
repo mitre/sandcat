@@ -11,22 +11,26 @@ class SandService(BaseService):
         self.file_svc = services.get('file_svc')
         self.data_svc = services.get('data_svc')
 
-    async def dynamically_compile(self, headers):
+    async def dynamically_compile_executable(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
         if which('go') is not None:
-            plugin, file_path = await self.file_svc.find_file_path(name)
+            await self._compile_new_agent(platform=platform,
+                                          headers=headers,
+                                          compile_target_name=name,
+                                          output_name=name)
+        return '%s-%s' % (name, platform)
 
-            ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
-            for param in ('defaultServer', 'defaultGroup', 'defaultSleep', 'defaultC2', 'c2'):
-                if param in headers:
-                    if param == 'c2':
-                        ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
-                    else:
-                        ldflags.append('-X main.%s=%s' % (param, headers[param]))
-
-            output = 'plugins/%s/payloads/%s-%s' % (plugin, name, platform)
-            self.file_svc.log.debug('Dynamically compiling %s' % name)
-            await self.file_svc.compile_go(platform, output, file_path, ldflags=' '.join(ldflags))
+    async def dynamically_compile_library(self, headers):
+        name, platform = headers.get('file'), headers.get('platform')
+        if which('X86_64-w64-mingw32-gcc') is not None and platform == 'windows':
+            await self._compile_new_agent(platform=platform,
+                                          headers=headers,
+                                          compile_target_name=name.split('.')[0] + '_' + platform + '.go',
+                                          output_name=name,
+                                          buildmode='--buildmode=c-shared',
+                                          extldflags='-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,'
+                                                     '--high-entropy-va"',
+                                          cflags='GOARCH=amd64 CGO_ENABLED=1 CC=X86_64-w64-mingw32-gcc')
         return '%s-%s' % (name, platform)
 
     """ PRIVATE """
@@ -40,3 +44,16 @@ class SandService(BaseService):
         if len(c2):
             return c2[0].get_config()
         return '', ''
+
+    async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
+                                 extldflags='', cflags=''):
+        plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
+        ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
+        for param in ('defaultServer', 'defaultGroup', 'defaultSleep'):
+            if param in headers:
+                ldflags.append('-X main.%s=%s' % (param, headers[param]))
+        output = 'plugins/%s/payloads/%s-%s' % (plugin, output_name, platform)
+        ldflags.append(extldflags)
+        self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
+        await self.file_svc.compile_go(platform, output, file_path, buildmode=buildmode,
+                                       ldflags=' '.join(ldflags), cflags=cflags)
