@@ -30,7 +30,9 @@ class SandService(BaseService):
                                           buildmode='--buildmode=c-shared',
                                           extldflags='-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,'
                                                      '--high-entropy-va"',
-                                          cflags='GOARCH=amd64 CGO_ENABLED=1 CC=X86_64-w64-mingw32-gcc')
+                                          cflags='GOARCH=amd64 CGO_ENABLED=1 CC=X86_64-w64-mingw32-gcc',
+                                          flag_params=('defaultServer', 'defaultGroup', 'defaultSleep',
+                                                       'defaultExeName')),
         return '%s-%s' % (name, platform)
 
     """ PRIVATE """
@@ -46,10 +48,11 @@ class SandService(BaseService):
         return '', ''
 
     async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
-                                 extldflags='', cflags=''):
+                                 extldflags='', cflags='',
+                                 flag_params=('defaultServer', 'defaultGroup', 'defaultSleep')):
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
-        for param in ('defaultServer', 'defaultGroup', 'defaultSleep'):
+        for param in flag_params:
             if param in headers:
                 ldflags.append('-X main.%s=%s' % (param, headers[param]))
         output = 'plugins/%s/payloads/%s-%s' % (plugin, output_name, platform)
