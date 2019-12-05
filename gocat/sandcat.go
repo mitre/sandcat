@@ -16,9 +16,9 @@ var (
     defaultServer = "http://localhost:8888"
     defaultGroup = "my_group"
     defaultSleep = "60"
-	defaultC2 = "HTTP"
-	c2Name = ""
-	c2Key = ""
+    defaultC2 = "HTTP"
+    c2Name = ""
+    c2Key = ""
 )
 
 func main() {
