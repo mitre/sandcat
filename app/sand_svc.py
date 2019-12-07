@@ -1,6 +1,7 @@
 import os
 import random
 import string
+from importlib import import_module
 
 from shutil import copyfile, which
 from app.utility.base_service import BaseService
@@ -11,6 +12,8 @@ class SandService(BaseService):
     def __init__(self, services):
         self.file_svc = services.get('file_svc')
         self.data_svc = services.get('data_svc')
+        self.log = self.create_logger('sand_svc')
+        self.sandcat_dir = os.path.relpath(os.path.join('plugins', 'sandcat'))
 
     async def dynamically_compile_executable(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
@@ -38,8 +41,8 @@ class SandService(BaseService):
 
     async def install_gocat_extensions(self):
         if which('go') is not None:
-            if self._check_gist_go_dependencies():
-                self._copy_file_to_sandcat(file='gist.go', pkg='contact')
+            for module in self._find_available_extension_modules():
+                self._copy_file_to_sandcat(file=module.file, pkg=module.package)
 
     """ PRIVATE """
 
@@ -67,16 +70,23 @@ class SandService(BaseService):
         await self.file_svc.compile_go(platform, output, file_path, buildmode=buildmode,
                                        ldflags=' '.join(ldflags), cflags=cflags)
 
-    @staticmethod
-    def _check_gist_go_dependencies():
-        go_path = os.path.join(os.environ['GOPATH'], 'src')
-        return os.path.exists(os.path.join(go_path, 'github.com/google/go-github/github')) and \
-            os.path.exists(os.path.join(go_path, 'golang.org/x/oauth2'))
-
-    @staticmethod
-    def _copy_file_to_sandcat(file, pkg):
-        base = os.path.abspath(os.path.join('plugins', 'sandcat'))
+    def _copy_file_to_sandcat(self, file, pkg):
         try:
-            copyfile(os.path.join(base, 'gocat-extensions', pkg, file), os.path.join(base, 'gocat', pkg, file))
+            copyfile(src=os.path.join(self.sandcat_dir, 'gocat-extensions', pkg, file),
+                     dst=os.path.join(self.sandcat_dir, 'gocat', pkg, file))
         except Exception:
             pass
+
+    def _find_available_extension_modules(self):
+        extensions = []
+        for root, dirs, files in os.walk(os.path.join(self.sandcat_dir, 'app', 'extensions'), topdown=False):
+            for file in files:
+                extensions.append(self._load_extension_module(root, file))
+        return extensions
+
+    def _load_extension_module(self, root, file):
+        module = os.path.join(root, file.split('.')[0]).replace('/', '.')
+        try:
+            return getattr(import_module(module), 'load')()
+        except Exception as e:
+            self.log.error('Error loading extension=%s, %s' % (module, e))
