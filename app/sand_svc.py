@@ -74,8 +74,8 @@ class SandService(BaseService):
         try:
             copyfile(src=os.path.join(self.sandcat_dir, 'gocat-extensions', pkg, file),
                      dst=os.path.join(self.sandcat_dir, 'gocat', pkg, file))
-        except Exception:
-            pass
+        except Exception as e:
+            self.log.error('Error copying file %s, %s', file, e)
 
     def _find_available_extension_modules(self):
         extensions = []
