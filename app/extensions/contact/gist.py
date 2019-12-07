@@ -13,5 +13,5 @@ class GIST(Extension):
         super().__init__(file='gist.go', package='contact')
 
     def check_go_dependencies(self):
-        return os.path.exists(os.path.join(self.go_path, 'github.com/google/go-github/github')) and \
-            os.path.exists(os.path.join(self.go_path, 'golang.org/x/oauth2'))
+        return os.path.exists(os.path.join(self.go_src_path, 'github.com/google/go-github/github')) and \
+            os.path.exists(os.path.join(self.go_src_path, 'golang.org/x/oauth2'))
