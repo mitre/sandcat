@@ -22,7 +22,7 @@ class SandService(BaseService):
 
     async def dynamically_compile_library(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
-        if which('go') is not None and which('X86_64-w64-mingw32-gcc') is not None and platform == 'windows':
+        if which('go') is not None and which('x86_64-w64-mingw32-gcc') is not None and platform == 'windows':
             await self._compile_new_agent(platform=platform,
                                           headers=headers,
                                           compile_target_name=name.split('.')[0] + '_' + platform + '.go',
@@ -30,7 +30,7 @@ class SandService(BaseService):
                                           buildmode='--buildmode=c-shared',
                                           extldflags='-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,'
                                                      '--high-entropy-va"',
-                                          cflags='GOARCH=amd64 CGO_ENABLED=1 CC=X86_64-w64-mingw32-gcc',
+                                          cflags='GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc',
                                           flag_params=('defaultServer', 'defaultGroup', 'defaultSleep',
                                                        'defaultExeName')),
         return '%s-%s' % (name, platform)
