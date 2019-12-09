@@ -91,7 +91,7 @@ func chooseCommunicationChannel(profile map[string]interface{}, c2Config map[str
 
 func validC2Configuration(coms contact.Contact, c2Selection string, c2Config map[string]string) bool {
 	if strings.EqualFold(c2Config["c2Name"], c2Selection) {
-		if _, val := contact.CommunicationChannels[c2Selection]; val {
+		if _, valid := contact.CommunicationChannels[c2Selection]; valid {
 			return coms.C2RequirementsMet(c2Config["c2Key"])
 		}
 	}
