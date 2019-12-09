@@ -9,7 +9,10 @@ class Extension(ABC):
     def __init__(self, file, package):
         self.file = file
         self.package = package
-        self.go_src_path = os.path.join(os.environ['GOPATH'], 'src')
+        try:
+            self.go_src_path = os.path.join(os.environ['GOPATH'], 'src')
+        except Exception:
+            pass
 
     @abstractmethod
     def check_go_dependencies(self):
