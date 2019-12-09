@@ -79,7 +79,9 @@ class SandService(BaseService):
 
     def _find_available_extension_modules(self):
         extensions = []
-        for root, dirs, files in os.walk(os.path.join(self.sandcat_dir, 'app', 'extensions'), topdown=False):
+        for root, dirs, files in os.walk(os.path.join(self.sandcat_dir, 'app', 'extensions')):
+            files = [f for f in files if not f[0] == '.' and not f[0] == "_"]
+            dirs[:] = [d for d in dirs if not d[0] == '.' and not d[0] == "_"]
             for file in files:
                 extensions.append(self._load_extension_module(root, file))
         return extensions
