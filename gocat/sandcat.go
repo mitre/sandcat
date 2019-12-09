@@ -16,8 +16,7 @@ var (
     defaultServer = "http://localhost:8888"
     defaultGroup = "my_group"
     defaultSleep = "60"
-    defaultC2 = "HTTP"
-    c2Name = ""
+    c2Name = "HTTP"
     c2Key = ""
 )
 
@@ -33,7 +32,7 @@ func main() {
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
 	
-	c2Config := map[string]string{"c2Name": *c2, "c2Key": c2Key, "defaultC2": defaultC2}
+	c2Config := map[string]string{"c2Name": *c2, "c2Key": c2Key}
 
 	core.Core(*server, *group, *sleep, *delay, executors, c2Config, *verbose)
 }

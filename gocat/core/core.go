@@ -71,10 +71,10 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 
 func chooseCommunicationChannel(profile map[string]interface{}, c2Config map[string]string) contact.Contact {
 	coms, _ := contact.CommunicationChannels[profile["c2"].(string)]
-	if !validC2Configuration(coms, profile["c2"].(string), c2Config) && profile["c2"].(string) != c2Config["defaultC2"]{
+	if !validC2Configuration(coms, profile["c2"].(string), c2Config) {
 		output.VerbosePrint("[-] Invalid C2 Configuration! Defaulting to HTTP")
-		coms, _ = contact.CommunicationChannels[c2Config["defaultC2"]]
-		profile["c2"] = c2Config["defaultC2"]
+		profile["c2"] = "HTTP"
+		coms, _ = contact.CommunicationChannels[profile["c2"].(string)]
 	}
 
 	if coms.Ping(profile["server"].(string)) {
@@ -91,7 +91,9 @@ func chooseCommunicationChannel(profile map[string]interface{}, c2Config map[str
 
 func validC2Configuration(coms contact.Contact, c2Selection string, c2Config map[string]string) bool {
 	if strings.EqualFold(c2Config["c2Name"], c2Selection) {
-		return coms.C2RequirementsMet(c2Config["c2Key"])
+		if _, val := contact.CommunicationChannels[c2Selection]; val {
+			return coms.C2RequirementsMet(c2Config["c2Key"])
+		}
 	}
 	return false
 }
