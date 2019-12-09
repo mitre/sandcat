@@ -9,11 +9,23 @@ class Extension(ABC):
     def __init__(self, file, package):
         self.file = file
         self.package = package
-        try:
-            self.go_src_path = os.path.join(os.environ['GOPATH'], 'src')
-        except Exception:
-            pass
+        self.go_src_path = self._check_go_src_path()
+        self.dependencies = []
 
-    @abstractmethod
     def check_go_dependencies(self):
-        pass
+        valid = False
+        if self.go_src_path:
+            for d in self.dependencies:
+                if not os.path.exists(os.path.join(self.go_src_path, d)):
+                    break
+            valid = True
+        return valid
+
+    """ PRIVATE """
+
+    @staticmethod
+    def _check_go_src_path():
+        try:
+            return os.path.join(os.environ['GOPATH'], 'src')
+        except Exception:
+            return None
