@@ -1,5 +1,3 @@
-import os
-
 from plugins.sandcat.app.utility.base_extension import Extension
 
 
@@ -10,8 +8,5 @@ def load():
 class GIST(Extension):
 
     def __init__(self):
+        self.dependencies = ['github.com/google/go-github/github', 'golang.org/x/oauth2']
         super().__init__(file='gist.go', package='contact')
-
-    def check_go_dependencies(self):
-        return os.path.exists(os.path.join(self.go_src_path, 'github.com/google/go-github/github')) and \
-            os.path.exists(os.path.join(self.go_src_path, 'golang.org/x/oauth2'))
