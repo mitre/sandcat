@@ -11,14 +11,13 @@ var (
 	defaultGroup = "my_group"
 	defaultSleep = "60"
 	defaultExeName = "shared.dll"
-	defaultC2 = "HTTP"
 	c2Name = ""
 	c2Key = ""
 )
 
 //export VoidFunc
 func VoidFunc() {
-	c2Config := map[string]string{"c2Name": c2Name, "c2Key": c2Key, "defaultC2": defaultC2}
+	c2Config := map[string]string{"c2Name": c2Name, "c2Key": c2Key}
 	core.Core(defaultServer, defaultGroup, defaultSleep, 0, defaultExeName, []string{"psh","cmd"}, c2Config, false)
 }
 
