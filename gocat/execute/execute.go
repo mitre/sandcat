@@ -146,17 +146,20 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 		done <- cmd.Wait()
 	}()
 	select {
-	case <-time.After(TIMEOUT * time.Second):
-		if err := cmd.Process.Kill(); err != nil {
-			return []byte("Timeout reached, but couldn't kill the process"), ERROR_STATUS, pid
-		}
-		return []byte("Timeout reached, process killed"), TIMEOUT_STATUS, pid
-	case err := <-done:
-		stdoutBytes := stdoutBuf.Bytes()
-		stderrBytes := stderrBuf.Bytes()
-		if err != nil {
-			status = ERROR_STATUS
-		}
-		return append(stdoutBytes, stderrBytes...), status, pid
+		case <-time.After(TIMEOUT * time.Second):
+			if err := cmd.Process.Kill(); err != nil {
+				return []byte("Timeout reached, but couldn't kill the process"), ERROR_STATUS, pid
+			}
+			return []byte("Timeout reached, process killed"), TIMEOUT_STATUS, pid
+		case err := <-done:
+			stdoutBytes := stdoutBuf.Bytes()
+			stderrBytes := stderrBuf.Bytes()
+			if err != nil {
+				status = ERROR_STATUS
+			}
+			if stderrBytes == nil {
+				return stderrBytes, status, pid
+			}
+			return stdoutBytes, status, pid
 	}
 }
