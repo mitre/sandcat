@@ -157,6 +157,9 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 		if err != nil {
 			status = ERROR_STATUS
 		}
-		return append(stdoutBytes, stderrBytes...), status, pid
+		if len(stderrBytes) > 0 {
+			return stderrBytes, status, pid
+		}
+		return stdoutBytes, status, pid
 	}
 }
