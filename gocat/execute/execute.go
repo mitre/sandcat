@@ -157,7 +157,6 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 		if err != nil {
 			status = ERROR_STATUS
 		}
-		fmt.Println(stderrBytes)
 		if len(stderrBytes) > 0 {
 			return stderrBytes, status, pid
 		}
