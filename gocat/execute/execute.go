@@ -134,6 +134,7 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 	status := SUCCESS_STATUS
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd := buildCommandStatement(executor, platform, command)
+	cmd.SysProcAttr = getPlatformSysProcAttrs()
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 	err := cmd.Start()
@@ -156,6 +157,9 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 		if err != nil {
 			status = ERROR_STATUS
 		}
-		return append(stdoutBytes, stderrBytes...), status, pid
+		if len(stderrBytes) > 0 {
+			return stderrBytes, status, pid
+		}
+		return stdoutBytes, status, pid
 	}
 }

