@@ -26,7 +26,7 @@ class SandService(BaseService):
         _, path = await self.file_svc.find_file_path('sandcat.go-%s' % platform)
         signature = hashlib.md5(open(path, 'rb').read()).hexdigest()
         self.log.debug('sandcat downloaded with hash = %s' % signature)
-        return '%s-%s' % (name, platform), self._generate_name()
+        return '%s-%s' % (name, platform)
 
     async def dynamically_compile_library(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
@@ -41,7 +41,7 @@ class SandService(BaseService):
                                           cflags='GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc',
                                           flag_params=('defaultServer', 'defaultGroup', 'defaultSleep',
                                                        'defaultExeName')),
-        return '%s-%s' % (name, platform), self._generate_name()
+        return '%s-%s' % (name, platform)
 
     async def install_gocat_extensions(self):
         if which('go') is not None:
@@ -53,10 +53,6 @@ class SandService(BaseService):
     @staticmethod
     def _generate_key(size=30):
         return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size))
-
-    @staticmethod
-    def _generate_name(size=16):
-        return ''.join(random.choice(string.ascii_lowercase) for _ in range(size))
 
     async def _get_c2_config(self, c2_type):
         c2 = await self.data_svc.locate('c2', dict(name=c2_type))
