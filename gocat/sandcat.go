@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"os"
 
 	"./core"
 	"./execute"
@@ -26,10 +25,9 @@ func main() {
 	sleep := flag.String("sleep", defaultSleep, "Initial sleep value for sandcat (integer in seconds)")
 	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
 	verbose := flag.Bool("v", false, "Enable verbose output")
-	exe_name := os.Args[0]
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
 
-	core.Core(*server, *group, *sleep, *delay, exe_name, executors, *verbose)
+	core.Core(*server, *group, *sleep, *delay, executors, *verbose)
 }
