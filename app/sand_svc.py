@@ -26,8 +26,9 @@ class SandService(BaseService):
                                           output_name=name)
         _, path = await self.file_svc.find_file_path('sandcat.go-%s' % platform)
         signature = hashlib.md5(open(path, 'rb').read()).hexdigest()
-        self.log.debug('sandcat downloaded with hash = %s' % signature)
-        return '%s-%s' % (name, platform), self.generate_name()
+        display_name = self.generate_name()
+        self.log.debug('sandcat downloaded with hash=%s and name=%s' % (signature, display_name))
+        return '%s-%s' % (name, platform), display_name
 
     async def dynamically_compile_library(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
