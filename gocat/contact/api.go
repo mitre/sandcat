@@ -23,6 +23,11 @@ const (
 //API communicates through HTTP
 type API struct { }
 
+
+func init() {
+	CommunicationChannels["HTTP"] = API{}
+}
+
 //Ping tests connectivity to the server
 func (contact API) Ping(server string) bool {
 	address := fmt.Sprintf("%s/ping", server)
@@ -70,6 +75,11 @@ func (contact API) DropPayloads(payload string, server string) []string{
 func (contact API) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
 	cmd, result, status, pid := execute.RunCommand(command["command"].(string), payloads, profile["platform"].(string), command["executor"].(string))
 	sendExecutionResults(command["id"], profile["server"], result, status, cmd, pid)
+}
+
+//C2RequirementsMet determines if sandcat can use the selected comm channel
+func (contact API) C2RequirementsMet(criteria interface{}) bool {
+	return true
 }
 
 func drop(server string, payload string) string {

