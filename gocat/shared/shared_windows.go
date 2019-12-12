@@ -11,7 +11,7 @@ var (
 	defaultGroup = "my_group"
 	defaultSleep = "60"
 	defaultExeName = "shared.dll"
-	c2Name = ""
+	c2Name = "HTTP"
 	c2Key = ""
 )
 
