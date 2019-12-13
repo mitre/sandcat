@@ -48,7 +48,8 @@ class SandService(BaseService):
     async def install_gocat_extensions(self):
         if which('go') is not None:
             for module in self._find_available_extension_modules():
-                self._copy_file_to_sandcat(file=module.file, pkg=module.package)
+                if module.check_go_dependencies():
+                    self._copy_file_to_sandcat(file=module.file, pkg=module.package)
 
     """ PRIVATE """
 
