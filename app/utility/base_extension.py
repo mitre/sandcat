@@ -17,7 +17,8 @@ class Extension(ABC):
             for d in self.dependencies:
                 if not os.path.exists(os.path.join(self.go_src_path, d)):
                     return False
-        return True
+            return True
+        return False
 
     """ PRIVATE """
 
