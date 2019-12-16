@@ -13,13 +13,12 @@ class Extension(ABC):
         self.dependencies = []
 
     def check_go_dependencies(self):
-        valid = False
         if self.go_src_path:
             for d in self.dependencies:
                 if not os.path.exists(os.path.join(self.go_src_path, d)):
-                    break
-            valid = True
-        return valid
+                    return False
+            return True
+        return False
 
     """ PRIVATE """
 

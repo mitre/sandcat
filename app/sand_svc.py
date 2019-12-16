@@ -13,6 +13,7 @@ class SandService(BaseService):
     def __init__(self, services):
         self.file_svc = services.get('file_svc')
         self.data_svc = services.get('data_svc')
+        self.contact_svc = services.get('contact_svc')
         self.log = self.create_logger('sand_svc')
         self.sandcat_dir = os.path.relpath(os.path.join('plugins', 'sandcat'))
 
@@ -41,13 +42,14 @@ class SandService(BaseService):
                                                      '--high-entropy-va"',
                                           cflags='GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc',
                                           flag_params=('defaultServer', 'defaultGroup', 'defaultSleep',
-                                                       'defaultExeName')),
+                                                       'defaultExeName', 'c2')),
         return '%s-%s' % (name, platform), self.generate_name()
 
     async def install_gocat_extensions(self):
         if which('go') is not None:
             for module in self._find_available_extension_modules():
-                self._copy_file_to_sandcat(file=module.file, pkg=module.package)
+                if module.check_go_dependencies():
+                    self._copy_file_to_sandcat(file=module.file, pkg=module.package)
 
     """ PRIVATE """
 
@@ -56,19 +58,22 @@ class SandService(BaseService):
         return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size))
 
     async def _get_c2_config(self, c2_type):
-        c2 = await self.data_svc.locate('c2', dict(name=c2_type))
-        if len(c2):
-            return c2[0].get_config()
+        for c2 in self.contact_svc.contacts:
+            if c2_type == c2.name:
+                return c2.get_config()
         return '', ''
 
     async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
                                  extldflags='', cflags='',
-                                 flag_params=('defaultServer', 'defaultGroup', 'defaultSleep')):
+                                 flag_params=('defaultServer', 'defaultGroup', 'defaultSleep', 'c2')):
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
         for param in flag_params:
             if param in headers:
-                ldflags.append('-X main.%s=%s' % (param, headers[param]))
+                if param == 'c2':
+                    ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
+                else:
+                    ldflags.append('-X main.%s=%s' % (param, headers[param]))
         output = 'plugins/%s/payloads/%s-%s' % (plugin, output_name, platform)
         ldflags.append(extldflags)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)

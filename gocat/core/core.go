@@ -33,7 +33,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				fmt.Printf("[*] Running instruction %s\n", command["id"])
-				payloads := coms.DropPayloads(command["payload"].(string), profile["server"].(string))
+				payloads := coms.DropPayloads(command["payload"].(string), profile["server"].(string), profile["paw"].(string))
 				go coms.RunInstruction(command, profile, payloads)
 				util.Sleep(command["sleep"].(float64))
 			}
