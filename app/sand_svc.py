@@ -32,16 +32,16 @@ class SandService(BaseService):
 
     async def dynamically_compile_library(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
-        compile_options = {
-            'windows': {
-                'CC': 'x86_64-w64-mingw32-gcc',
-                'cflags': 'GOARCH=amd64 CGO_ENABLED=1',
-                'extldflags': '-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,--high-entropy-va"',
-            },
-            'linux': {
-                'cflags': 'GOARCH=amd64 CGO_ENABLED=1'
-            }
-        }
+        compile_options = dict( 
+            windows = dict(
+                CC = 'x86_64-w64-mingw32-gcc',
+                cflags = 'GOARCH=amd64 CGO_ENABLED=1',
+                extldflags = '-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,--high-entropy-va"',
+            ),
+            linux = dict(
+                cflags = 'GOARCH=amd64 CGO_ENABLED=1'
+            )
+        )
         if which('go') is not None:
             if platform in compile_options.keys():
                 if 'CC' in compile_options[platform].keys():
