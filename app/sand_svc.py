@@ -32,7 +32,7 @@ class SandService(BaseService):
 
     async def dynamically_compile_library(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
-        compile_options = dict( 
+        compile_options = dict(
             windows=dict(
                 CC='x86_64-w64-mingw32-gcc',
                 cflags='GOARCH=amd64 CGO_ENABLED=1',
