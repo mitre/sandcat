@@ -13,3 +13,5 @@ if ($fd == -1) {
 #open fd handle
 open(my $FH, '>&='.$fd) or die "open: $!";
 select((select($FH), $|=1)[0]);
+
+# embedded file goes here

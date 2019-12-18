@@ -1,1 +1,3 @@
+
+# execute process with environment set process name
 exec {"/proc/$$/fd/$fd"} $ENV{'SC_NAME'} or die "exec: $!";
