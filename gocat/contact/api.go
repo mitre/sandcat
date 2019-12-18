@@ -56,7 +56,7 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 
 //DropPayloads downloads all required payloads for a command
 func (contact API) DropPayloads(payload string, server string, uniqueId string) []string{
-	payloads := strings.Split(strings.Replace(strings.TrimSpace(payload), " ", "", -1), ",")
+	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
 	var droppedPayloads []string
 	for _, payload := range payloads {
 		if len(payload) > 0 {
