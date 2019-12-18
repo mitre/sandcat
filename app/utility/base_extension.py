@@ -1,5 +1,4 @@
-import os
-
+import subprocess
 from abc import ABC, abstractmethod
 
 
@@ -13,6 +12,7 @@ class Extension(ABC):
 
     def check_go_dependencies(self):
         for d in self.dependencies:
-            if os.system('go list "{}"'.format(d)) != 0:
+            dep_result = subprocess.run('go list "{}"'.format(d), shell=True, stdout=subprocess.PIPE)
+            if (dep_result.stdout.decode()).strip() != d:
                 return False
         return True
