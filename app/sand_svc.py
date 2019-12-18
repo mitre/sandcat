@@ -97,7 +97,7 @@ class SandService(BaseService):
         return extensions
 
     def _load_extension_module(self, root, file):
-        module = os.path.join(root, file.split('.')[0]).replace('/', '.')
+        module = os.path.join(root, file.split('.')[0]).replace(os.path.sep, '.')
         try:
             return getattr(import_module(module), 'load')()
         except Exception as e:
