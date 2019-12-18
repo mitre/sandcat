@@ -1,5 +1,3 @@
-// +build linux windows !darwin
-// +build amd64 386
 // +build cgo
 
 package main
