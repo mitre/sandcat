@@ -35,11 +35,11 @@ class SandService(BaseService):
         compile_options = dict(
             windows=dict(
                 CC='x86_64-w64-mingw32-gcc',
-                cflags='GOARCH=amd64 CGO_ENABLED=1',
+                cflags='CGO_ENABLED=1',
                 extldflags='-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,--high-entropy-va"',
             ),
             linux=dict(
-                cflags='GOARCH=amd64 CGO_ENABLED=1'
+                cflags='CGO_ENABLED=1'
             )
         )
         if which('go') is not None:
