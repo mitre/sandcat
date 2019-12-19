@@ -14,8 +14,6 @@ import (
 )
 
 const (
-	// TIMEOUT in seconds represents how long a single command should run before timing out
-	TIMEOUT = 60
 	SUCCESS_STATUS = "0"
 	ERROR_STATUS = "1"
 	TIMEOUT_STATUS = "124"
@@ -25,14 +23,14 @@ const (
 type ExecutorFlags []string
 
 //RunCommand runs the actual command
-func RunCommand(command string, payloads []string, platform string, executor string) (string, []byte, string, string){
+func RunCommand(command string, payloads []string, platform string, executor string, timeout int) (string, []byte, string, string){
 	cmd := string(util.Decode(command))
 	var status string
 	var result []byte
 	var pid string
 	missingPaths := util.CheckPayloadsAvailable(payloads)
 	if len(missingPaths) == 0 {
-		result, status, pid = Execute(cmd, executor, platform)
+		result, status, pid = Execute(cmd, executor, platform, timeout)
 	} else {
 		result = []byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
 		status = ERROR_STATUS
@@ -42,7 +40,7 @@ func RunCommand(command string, payloads []string, platform string, executor str
 }
 
 // Execute runs a shell command
-func Execute(command string, executor string, platform string) ([]byte, string, string) {
+func Execute(command string, executor string, platform string, timeout int) ([]byte, string, string) {
 	var output []byte
 	var err error
 	var pid string
@@ -57,7 +55,7 @@ func Execute(command string, executor string, platform string) ([]byte, string, 
 		}
 		return output, status, pid
 	}
-	return runShellExecutor(executor, platform, command)
+	return runShellExecutor(executor, platform, command, timeout)
 }
 
 // DetermineExecutor executor type, using sane defaults
@@ -129,7 +127,7 @@ func buildCommandStatement(executor string, platform string, command string) *ex
 	}
 }
 
-func runShellExecutor(executor string, platform string, command string) ([]byte, string, string) {
+func runShellExecutor(executor string, platform string, command string, timeout int) ([]byte, string, string) {
 	done := make(chan error, 1)
 	status := SUCCESS_STATUS
 	var stdoutBuf, stderrBuf bytes.Buffer
@@ -146,7 +144,7 @@ func runShellExecutor(executor string, platform string, command string) ([]byte,
 		done <- cmd.Wait()
 	}()
 	select {
-	case <-time.After(TIMEOUT * time.Second):
+	case <-time.After(time.Duration(timeout) * time.Second):
 		if err := cmd.Process.Kill(); err != nil {
 			return []byte("Timeout reached, but couldn't kill the process"), ERROR_STATUS, pid
 		}
