@@ -32,17 +32,29 @@ class SandService(BaseService):
 
     async def dynamically_compile_library(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
-        if which('go') is not None and which('x86_64-w64-mingw32-gcc') is not None and platform == 'windows':
-            await self._compile_new_agent(platform=platform,
-                                          headers=headers,
-                                          compile_target_name=name.split('.')[0] + '_' + platform + '.go',
-                                          output_name=name,
-                                          buildmode='--buildmode=c-shared',
-                                          extldflags='-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,'
-                                                     '--high-entropy-va"',
-                                          cflags='GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc',
-                                          flag_params=('defaultServer', 'defaultGroup', 'defaultSleep',
-                                                       'defaultExeName', 'c2')),
+        compile_options = dict(
+            windows=dict(
+                CC='x86_64-w64-mingw32-gcc',
+                cflags='CGO_ENABLED=1',
+                extldflags='-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,--high-entropy-va"',
+            ),
+            linux=dict(
+                cflags='CGO_ENABLED=1'
+            )
+        )
+        if which('go') is not None:
+            if platform in compile_options.keys():
+                if 'CC' in compile_options[platform].keys() and which(compile_options[platform]['CC']) is not None:
+                    compile_options[platform]['cflags'] += ' CC=%s' % compile_options[platform]['CC']
+                    # key is deleted from compile_options to use dict as kwargs for called function.
+                    del compile_options[platform]['CC']
+                await self._compile_new_agent(platform=platform,
+                                              headers=headers,
+                                              compile_target_name='shared.go',
+                                              output_name=name,
+                                              buildmode='--buildmode=c-shared',
+                                              **compile_options[platform],
+                                              flag_params=('defaultServer', 'defaultGroup', 'defaultSleep', 'c2')),
         return '%s-%s' % (name, platform), self.generate_name()
 
     async def install_gocat_extensions(self):
