@@ -15,8 +15,8 @@ var (
     key = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
     defaultServer = "http://localhost:8888"
     defaultGroup = "my_group"
-	defaultSleep = "60"
-	defaultWatchdog = "-1" // in minutes
+    defaultSleep = "60"
+    defaultWatchdog = "-1" // in minutes
     c2Name = "HTTP"
     c2Key = ""
 )
