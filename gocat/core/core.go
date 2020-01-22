@@ -22,8 +22,17 @@ import (
 )
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
+	checkin := time.Now()
 	for {
 		beacon := coms.GetInstructions(profile)
+		if len(beacon) != 0 {
+			checkin = time.Now()
+		} else {
+			if profile["watchdog"].(int) >=0 && float64(time.Now().Sub(checkin).Minutes()) > float64(profile["watchdog"].(int)){
+				fmt.Printf("[+] Shutting Down\n")
+				util.StopProcess(os.Getpid())
+			}
+		}
 		if beacon["sleep"] != nil {
 			profile["sleep"] = beacon["sleep"]
 		}
@@ -43,7 +52,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, group string, sleep int, executors []string, privilege string, c2 string) map[string]interface{} {
+func buildProfile(server string, group string, sleep int, executors []string, privilege string, c2 string, watchdog int) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 	rand.Seed(time.Now().UnixNano())
@@ -65,6 +74,7 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 	profile["privilege"] = privilege
 	profile["exe_name"] = filepath.Base(os.Args[0])
 	profile["c2"] = strings.ToUpper(c2)
+	profile["watchdog"] = watchdog
 
 	return profile
 }
@@ -98,10 +108,11 @@ func validC2Configuration(coms contact.Contact, c2Selection string, c2Config map
 	return false
 }
 
-func Core(server string, group string, sleep string, delay int, executors []string, c2 map[string]string, verbose bool) {
+func Core(server string, group string, sleep string, delay int, executors []string, c2 map[string]string, verbose bool, watchdog string) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	sleepInt, _ := strconv.Atoi(sleep)
+	watchdogInt, _ := strconv.Atoi(watchdog)
 	privilege := privdetect.Privlevel()
 
 	output.SetVerbose(verbose)
@@ -109,11 +120,12 @@ func Core(server string, group string, sleep string, delay int, executors []stri
 	output.VerbosePrint(fmt.Sprintf("server=%s", server))
 	output.VerbosePrint(fmt.Sprintf("group=%s", group))
 	output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
+	output.VerbosePrint(fmt.Sprintf("watchdog=%d", watchdogInt))
 	output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
 	output.VerbosePrint(fmt.Sprintf("initial delay=%d", delay))
 	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", c2["c2Name"]))
 
-	profile := buildProfile(server, group, sleepInt, executors, privilege, c2["c2Name"])
+	profile := buildProfile(server, group, sleepInt, executors, privilege, c2["c2Name"], watchdogInt)
 	util.Sleep(float64(delay))
 
 	for {

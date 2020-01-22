@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -100,10 +99,6 @@ func sendExecutionResults(commandID interface{}, server interface{}, result []by
 	link := fmt.Sprintf("%s", commandID.(string))
 	data, _ := json.Marshal(map[string]string{"id": link, "output": string(util.Encode(result)), "status": status, "pid": pid})
 	request(address, data)
-	if cmd == "die" {
-		output.VerbosePrint("[+] Shutting down...")
-		util.StopProcess(os.Getpid())
-	}
 }
 
 func request(address string, data []byte) []byte {

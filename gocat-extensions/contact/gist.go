@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -120,10 +119,6 @@ func gistResults(uniqueId string, commandID interface{}, result []byte, status s
 		output.VerbosePrint(fmt.Sprintf("[-] Results %s GIST: FAILED", link))
 	} else {
 		output.VerbosePrint(fmt.Sprintf("[+] Results %s GIST: SUCCESS", link))
-	}
-	if cmd == "die" {
-		output.VerbosePrint("[+] Shutting down...")
-		util.StopProcess(os.Getpid())
 	}
 }
 
