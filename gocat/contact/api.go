@@ -46,6 +46,7 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 		json.Unmarshal(bites, &out)
 		json.Unmarshal([]byte(out["instructions"].(string)), &commands)
 		out["sleep"] = int(out["sleep"].(float64))
+		out["watchdog"] = int(out["watchdog"].(float64))
 		out["instructions"] = commands
 	} else {
 		output.VerbosePrint("[-] beacon: DEAD")

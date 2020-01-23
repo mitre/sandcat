@@ -16,7 +16,7 @@ var (
     defaultServer = "http://localhost:8888"
     defaultGroup = "my_group"
     defaultSleep = "60"
-    defaultWatchdog = "-1" // in minutes
+    defaultWatchdog = "0" // in minutes
     c2Name = "HTTP"
     c2Key = ""
 )
@@ -26,7 +26,7 @@ func main() {
 	server := flag.String("server", defaultServer, "The FQDN of the server")
 	group := flag.String("group", defaultGroup, "Attach a group to this agent")
 	sleep := flag.String("sleep", defaultSleep, "Initial sleep value for sandcat (integer in seconds)")
-	watchdog := flag.String("watchdog", defaultWatchdog, "Kill the agent x minutes after the last successful beacon (use -1 for infinite)")
+	watchdog := flag.String("watchdog", defaultWatchdog, "Kill the agent x minutes after the last successful beacon (use 0 for infinite/disabled)")
 	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
 	verbose := flag.Bool("v", false, "Enable verbose output")
 	c2 := flag.String("c2", c2Name, "C2 Channel for agent")

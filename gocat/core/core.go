@@ -27,11 +27,9 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 		beacon := coms.GetInstructions(profile)
 		if len(beacon) != 0 {
 			checkin = time.Now()
-		} else {
-			if profile["watchdog"].(int) >=0 && float64(time.Now().Sub(checkin).Minutes()) > float64(profile["watchdog"].(int)){
-				fmt.Printf("[+] Shutting Down\n")
-				util.StopProcess(os.Getpid())
-			}
+		}
+		if beacon["watchdog"] != nil {
+			profile["watchdog"] = beacon["watchdog"]
 		}
 		if beacon["sleep"] != nil {
 			profile["sleep"] = beacon["sleep"]
@@ -41,7 +39,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 			for i := 0; i < cmds.Len(); i++ {
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
-				fmt.Printf("[*] Running instruction %s\n", command["id"])
+				output.VerbosePrint(fmt.Sprintf("[*] Running instruction %s\n", command["id"]))
 				payloads := coms.DropPayloads(command["payload"].(string), profile["server"].(string), profile["paw"].(string))
 				go coms.RunInstruction(command, profile, payloads)
 				util.Sleep(command["sleep"].(float64))
@@ -49,6 +47,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 		} else {
 			util.Sleep(float64(profile["sleep"].(int)))
 		}
+		util.EvaluateWatchdog(checkin, profile)
 	}
 }
 
