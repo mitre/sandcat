@@ -67,14 +67,13 @@ func buildProfile(server string, group string, sleep int, executors []string, pr
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
 	profile["sleep"] = sleep
-	profile["pid"] = strconv.Itoa(os.Getpid())
-	profile["ppid"] = strconv.Itoa(os.Getppid())
+	profile["pid"] = os.Getpid()
+	profile["ppid"] = os.Getppid()
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
 	profile["exe_name"] = filepath.Base(os.Args[0])
 	profile["c2"] = strings.ToUpper(c2)
 	profile["watchdog"] = watchdog
-
 	return profile
 }
 
