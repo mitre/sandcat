@@ -45,9 +45,6 @@ func Execute(command string, executor string, platform string, timeout int) ([]b
 	var err error
 	var pid string
 	status := SUCCESS_STATUS
-	if command == "die" {
-		return []byte("shutdown started"), SUCCESS_STATUS, shellcode.SUCCESS_PID
-	}
 	if executor == fmt.Sprintf("shellcode_%s", runtime.GOARCH) {
 		output, err, pid = shellcode.ExecuteShellcode(command)
 		if err != nil {
