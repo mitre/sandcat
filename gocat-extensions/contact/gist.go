@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -60,6 +59,7 @@ func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]i
 			json.Unmarshal(bites, &out)
 			json.Unmarshal([]byte(out["instructions"].(string)), &commands)
 			out["sleep"] = int(out["sleep"].(float64))
+			out["watchdog"] = int(out["watchdog"].(float64))
 			out["instructions"] = commands
 		}
 	} else {
@@ -120,10 +120,6 @@ func gistResults(uniqueId string, commandID interface{}, result []byte, status s
 		output.VerbosePrint(fmt.Sprintf("[-] Results %s GIST: FAILED", link))
 	} else {
 		output.VerbosePrint(fmt.Sprintf("[+] Results %s GIST: SUCCESS", link))
-	}
-	if cmd == "die" {
-		output.VerbosePrint("[+] Shutting down...")
-		util.StopProcess(os.Getpid())
 	}
 }
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -47,6 +46,7 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 		json.Unmarshal(bites, &out)
 		json.Unmarshal([]byte(out["instructions"].(string)), &commands)
 		out["sleep"] = int(out["sleep"].(float64))
+		out["watchdog"] = int(out["watchdog"].(float64))
 		out["instructions"] = commands
 	} else {
 		output.VerbosePrint("[-] beacon: DEAD")
@@ -100,10 +100,6 @@ func sendExecutionResults(commandID interface{}, server interface{}, result []by
 	link := fmt.Sprintf("%s", commandID.(string))
 	data, _ := json.Marshal(map[string]string{"id": link, "output": string(util.Encode(result)), "status": status, "pid": pid})
 	request(address, data)
-	if cmd == "die" {
-		output.VerbosePrint("[+] Shutting down...")
-		util.StopProcess(os.Getpid())
-	}
 }
 
 func request(address string, data []byte) []byte {
