@@ -81,13 +81,14 @@ func chooseCommunicationChannel(profile map[string]interface{}, c2Config map[str
 func validC2Configuration(coms contact.Contact, c2Selection string, c2Config map[string]string) bool {
 	if strings.EqualFold(c2Config["c2Name"], c2Selection) {
 		if _, valid := contact.CommunicationChannels[c2Selection]; valid {
-			return coms.C2RequirementsMet(c2Config["c2Key"])
+			return coms.C2RequirementsMet(c2Config)
 		}
 	}
 	return false
 }
 
-func Core(server string, group string, sleep string, delay int, executors []string, c2 map[string]string, verbose bool, watchdog string) {
+//Core is the main function as wrapped by sandcat.go
+func Core(server string, delay int, executors []string, c2 map[string]string, verbose bool) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	privilege := privdetect.Privlevel()
