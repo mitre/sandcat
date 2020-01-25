@@ -55,7 +55,7 @@ class SandService(BaseService):
                                               output_name=name,
                                               buildmode='--buildmode=c-shared',
                                               **compile_options[platform],
-                                              flag_params=('defaultServer', 'defaultGroup', 'defaultSleep', 'c2')),
+                                              flag_params=('server', 'c2')),
         return '%s-%s' % (name, platform), self.generate_name()
 
     async def install_gocat_extensions(self):

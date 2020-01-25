@@ -9,7 +9,7 @@ export SC_DEFAULTGROUP=${SC_DEFAULTGROUP:-'my_group'}
 declare -a binaries=("python3" "python" "perl")
 
 # used for curl requests that require additional header values
-CURL_CMD=(curl -s -X POST -H "defaultServer:$SC_DEFAULTSERVER" -H "defaultGroup:$SC_DEFAULTGROUP")
+CURL_CMD=(curl -s -X POST -H "server:$SC_DEFAULTSERVER")
 for i in "${binaries[@]}"
 do
     cmd=$(command -v $i)
