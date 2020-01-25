@@ -8,7 +8,6 @@ import (
 	"os/user"
 	"reflect"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 	"path/filepath"
@@ -20,25 +19,14 @@ import (
 	"../privdetect"
 )
 
-var (
-	globalSleep int
-	globalWatchdog int
-)
-
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	checkin := time.Now()
 	for {
 		beacon := coms.GetInstructions(profile)
-		profile["paw"] = beacon["paw"]
 		if len(beacon) != 0 {
+			profile["paw"] = beacon["paw"]
 			checkin = time.Now()
-		}
-		if beacon["watchdog"] != nil {
-			globalWatchdog = beacon["watchdog"].(int)
-		}
-		if beacon["sleep"] != nil {
-			globalSleep = beacon["sleep"].(int)
-		}
+		} 
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
 			for i := 0; i < cmds.Len(); i++ {
@@ -50,9 +38,13 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 				util.Sleep(command["sleep"].(float64))
 			}
 		} else {
-			util.Sleep(float64(globalSleep))
+			if len(beacon) > 0 {
+				util.Sleep(float64(beacon["sleep"].(int)))
+				util.EvaluateWatchdog(checkin, beacon["watchdog"].(int))
+			} else {
+				util.Sleep(float64(15))
+			}
 		}
-		util.EvaluateWatchdog(checkin, globalWatchdog)
 	}
 }
 
@@ -98,19 +90,10 @@ func validC2Configuration(coms contact.Contact, c2Selection string, c2Config map
 func Core(server string, group string, sleep string, delay int, executors []string, c2 map[string]string, verbose bool, watchdog string) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	sleepInt, _ := strconv.Atoi(sleep)
-	watchdogInt, _ := strconv.Atoi(watchdog)
 	privilege := privdetect.Privlevel()
-
-	globalSleep = sleepInt
-	globalWatchdog = watchdogInt
-
 	output.SetVerbose(verbose)
 	output.VerbosePrint("Started sandcat in verbose mode.")
 	output.VerbosePrint(fmt.Sprintf("server=%s", server))
-	output.VerbosePrint(fmt.Sprintf("group=%s", group))
-	output.VerbosePrint(fmt.Sprintf("sleep=%d", sleepInt))
-	output.VerbosePrint(fmt.Sprintf("watchdog=%d", watchdogInt))
 	output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
 	output.VerbosePrint(fmt.Sprintf("initial delay=%d", delay))
 	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", c2["c2Name"]))
