@@ -77,8 +77,7 @@ class SandService(BaseService):
         return '', ''
 
     async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
-                                 extldflags='', cflags='',
-                                 flag_params=('defaultServer', 'defaultGroup', 'defaultSleep', 'c2')):
+                                 extldflags='', cflags='', flag_params=('server', 'c2', 'apiBeacon', 'apiResult')):
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
         for param in flag_params:

