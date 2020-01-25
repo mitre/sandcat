@@ -33,20 +33,6 @@ func init() {
 	CommunicationChannels["GIST"] = GIST{}
 }
 
-//Ping tests connectivity to the server
-func (contact GIST) Ping(profile map[string]interface{}) bool {
-	ctx := context.Background()
-	c2Client := createNewClient()
-	user, _, err := c2Client.Users.Get(ctx, "")
-	if err == nil {
-		username = *user.Login
-		output.VerbosePrint("[+] Ping success")
-		return true
-	}
-	output.VerbosePrint("[-] Ping failure")
-	return false
-}
-
 //GetInstructions sends a beacon and returns instructions
 func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]interface{} {
 	checkValidSleepInterval(profile)
