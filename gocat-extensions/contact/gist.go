@@ -72,7 +72,7 @@ func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]i
 func (contact GIST) DropPayloads(payload string, server string, uniqueID string) []string {
 	payloadNames := strings.Split(strings.Replace(payload, " ", "", -1), ",")
 	if len(payloadNames) > 0 {
-		return gistPayloadDrop(uniqueId, payloadNames)
+		return gistPayloadDrop(uniqueID, payloadNames)
 	}
 	return []string{}
 }

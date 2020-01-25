@@ -3,7 +3,6 @@ package core
 import (
 	"crypto/tls"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/user"
@@ -54,11 +53,8 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 func buildProfile(server string, group string, sleep int, executors []string, privilege string, c2 string, watchdog int) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
-	rand.Seed(time.Now().UnixNano())
-	pawID := rand.Intn(999999 - 1)
 
 	profile := make(map[string]interface{})
-	profile["paw"] = fmt.Sprintf("%d", pawID)
 	profile["server"] = server
 	profile["group"] = group
 	profile["host"] = host
