@@ -16,8 +16,6 @@ var (
     server = "http://localhost:8888"
     c2Name = "HTTP"
 	c2Key = ""
-	apiBeacon = "/beacon"
-	apiResult = "/result"
 )
 
 func main() {
@@ -30,6 +28,6 @@ func main() {
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
 	
-	c2Config := map[string]string{"c2Name": *c2, "c2Key": c2Key, "apiBeacon": apiBeacon, "apiResult": apiResult}
+	c2Config := map[string]string{"c2Name": *c2, "c2Key": c2Key}
 	core.Core(*server, *delay, executors, c2Config, *verbose)
 }
