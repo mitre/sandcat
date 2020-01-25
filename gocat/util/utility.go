@@ -107,8 +107,8 @@ func removeWhiteSpace(input string) string {
 	}, input)
 }
 
-func EvaluateWatchdog(lastcheckin time.Time, profile map[string]interface{}) {
-	if profile["watchdog"].(int) >0 && float64(time.Now().Sub(lastcheckin).Minutes()) > float64(profile["watchdog"].(int)){
+func EvaluateWatchdog(lastcheckin time.Time, watchdog int) {
+	if watchdog >0 && float64(time.Now().Sub(lastcheckin).Minutes()) > float64(watchdog){
 		StopProcess(os.Getpid())
 	}
 }
