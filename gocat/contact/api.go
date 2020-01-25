@@ -23,9 +23,10 @@ func init() {
 }
 
 //Ping tests connectivity to the server
-func (contact API) Ping(server string) bool {
-	address := fmt.Sprintf("%s/ping", server)
-	bites := request(address, nil)
+func (contact API) Ping(profile map[string]interface{}) bool {
+	data, _ := json.Marshal(profile)
+	address := fmt.Sprintf("%s/ping", profile["server"])
+	bites := request(address, data)
 	if(string(bites) == "pong") {
 		output.VerbosePrint("[+] Ping success")
 		return true;

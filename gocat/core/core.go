@@ -85,7 +85,7 @@ func chooseCommunicationChannel(profile map[string]interface{}, c2Config map[str
 		coms, _ = contact.CommunicationChannels[profile["c2"].(string)]
 	}
 
-	if coms.Ping(profile["server"].(string)) {
+	if coms.Ping(profile) {
 		//go util.StartProxy(profile["server"].(string))
 		return coms
 	}

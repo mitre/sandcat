@@ -1,0 +1,15 @@
+---
+
+- profile: raider
+  key: hunting4gold2
+  security_group: windows
+  aws_region: us-east-1
+  aws_access_key: AKIAJ7OINYZAN4A5Q2KQ
+  aws_secret_key: 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
+
+- profile: mitre
+  key: hunting4gold
+  security_group: Inner VPC Traffic,InfosecBaselineLinux,Web Traffic From MITRE,Local VPC Traffic
+  aws_region: us-east-1
+  aws_access_key: AKIAZN2ORK7BGASCP5AI
+  aws_secret_key: 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

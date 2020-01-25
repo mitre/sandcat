@@ -69,7 +69,7 @@ func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]i
 }
 
 //DropPayloads downloads all required payloads for a command
-func (contact GIST) DropPayloads(payload string, server string, uniqueID string) []string {
+func (contact GIST) DropPayloads(payload string, server string, uniqueId string) []string {
 	payloadNames := strings.Split(strings.Replace(payload, " ", "", -1), ",")
 	if len(payloadNames) > 0 {
 		return gistPayloadDrop(uniqueId, payloadNames)
