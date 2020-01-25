@@ -24,6 +24,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	checkin := time.Now()
 	for {
 		beacon := coms.GetInstructions(profile)
+		profile["paw"] = beacon["paw"]
 		if len(beacon) != 0 {
 			checkin = time.Now()
 		}
