@@ -33,20 +33,6 @@ func init() {
 	CommunicationChannels["GIST"] = GIST{}
 }
 
-//Ping tests connectivity to the server
-func (contact GIST) Ping(server string) bool {
-	ctx := context.Background()
-	c2Client := createNewClient()
-	user, _, err := c2Client.Users.Get(ctx, "")
-	if err == nil {
-		username = *user.Login
-		output.VerbosePrint("[+] Ping success")
-		return true
-	}
-	output.VerbosePrint("[-] Ping failure")
-	return false
-}
-
 //GetInstructions sends a beacon and returns instructions
 func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]interface{} {
 	checkValidSleepInterval(profile)
@@ -69,10 +55,10 @@ func (contact GIST) GetInstructions(profile map[string]interface{}) map[string]i
 }
 
 //DropPayloads downloads all required payloads for a command
-func (contact GIST) DropPayloads(payload string, server string, uniqueId string) []string {
+func (contact GIST) DropPayloads(payload string, server string, uniqueID string) []string {
 	payloadNames := strings.Split(strings.Replace(payload, " ", "", -1), ",")
 	if len(payloadNames) > 0 {
-		return gistPayloadDrop(uniqueId, payloadNames)
+		return gistPayloadDrop(uniqueID, payloadNames)
 	}
 	return []string{}
 }
