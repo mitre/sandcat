@@ -71,7 +71,7 @@ func chooseCommunicationChannel(profile map[string]interface{}, c2Config map[str
 	coms, _ := contact.CommunicationChannels[c2Config["c2Name"]]
 	if !validC2Configuration(coms, c2Config) {
 		output.VerbosePrint("[-] Invalid C2 Configuration! Defaulting to HTTP")
-		coms, _ = contact.CommunicationChannels[c2Config["c2Name"]]
+		coms, _ = contact.CommunicationChannels["HTTP"]
 	}
 	return coms
 }
