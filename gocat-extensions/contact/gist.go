@@ -72,10 +72,9 @@ func (contact GIST) RunInstruction(command map[string]interface{}, profile map[s
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
 func (contact GIST) C2RequirementsMet(criteria map[string]string) bool {
-	//if len(criteria.(string)) > 0 {
-	//	token = criteria.(string)
-	//	return true
-	//}
+	if len(criteria) > 0 {
+		return true
+	}
 	return false
 }
 
