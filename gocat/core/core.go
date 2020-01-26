@@ -64,23 +64,21 @@ func buildProfile(server string, executors []string, privilege string, c2 string
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
 	profile["exe_name"] = filepath.Base(os.Args[0])
-	profile["c2"] = strings.ToUpper(c2)
 	return profile
 }
 
 func chooseCommunicationChannel(profile map[string]interface{}, c2Config map[string]string) contact.Contact {
-	coms, _ := contact.CommunicationChannels[profile["c2"].(string)]
-	if !validC2Configuration(coms, profile["c2"].(string), c2Config) {
+	coms, _ := contact.CommunicationChannels[c2Config["c2Name"]]
+	if !validC2Configuration(coms, c2Config) {
 		output.VerbosePrint("[-] Invalid C2 Configuration! Defaulting to HTTP")
-		profile["c2"] = "HTTP"
-		coms, _ = contact.CommunicationChannels[profile["c2"].(string)]
+		coms, _ = contact.CommunicationChannels[c2Config["c2Name"]]
 	}
 	return coms
 }
 
-func validC2Configuration(coms contact.Contact, c2Selection string, c2Config map[string]string) bool {
-	if strings.EqualFold(c2Config["c2Name"], c2Selection) {
-		if _, valid := contact.CommunicationChannels[c2Selection]; valid {
+func validC2Configuration(coms contact.Contact, c2Config map[string]string) bool {
+	if strings.EqualFold(c2Config["c2Name"], c2Config["c2Name"]) {
+		if _, valid := contact.CommunicationChannels[c2Config["c2Name"]]; valid {
 			return coms.C2RequirementsMet(c2Config)
 		}
 	}
@@ -90,7 +88,6 @@ func validC2Configuration(coms contact.Contact, c2Selection string, c2Config map
 //Core is the main function as wrapped by sandcat.go
 func Core(server string, delay int, executors []string, c2 map[string]string, verbose bool) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
 	privilege := privdetect.Privlevel()
 	output.SetVerbose(verbose)
 	output.VerbosePrint("Started sandcat in verbose mode.")
