@@ -89,8 +89,7 @@ class SandService(BaseService):
         output = 'plugins/%s/payloads/%s-%s' % (plugin, output_name, platform)
         ldflags.append(extldflags)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
-        await self.file_svc.compile_go(platform, output, file_path, buildmode=buildmode,
-                                       ldflags=' '.join(ldflags), cflags=cflags)
+        await self.file_svc.compile_go(platform, output, file_path, buildmode=buildmode, ldflags=' '.join(ldflags), cflags=cflags)
 
     def _copy_file_to_sandcat(self, file, pkg):
         try:
