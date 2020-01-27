@@ -20,6 +20,7 @@ import (
 )
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
+    watchdog := 0
 	checkin := time.Now()
 	for {
 		beacon := coms.GetInstructions(profile)
@@ -40,11 +41,11 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 		} else {
 			if len(beacon) > 0 {
 				util.Sleep(float64(beacon["sleep"].(int)))
-				profile["watchdog"] = beacon["watchdog"].(int)
+				watchdog = beacon["watchdog"].(int)
 			} else {
 				util.Sleep(float64(15))
 			}
-			util.EvaluateWatchdog(checkin, profile["watchdog"].(int))
+			util.EvaluateWatchdog(checkin, watchdog)
 		}
 	}
 }
