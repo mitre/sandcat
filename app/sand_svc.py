@@ -10,13 +10,12 @@ from app.utility.base_service import BaseService
 
 class SandService(BaseService):
 
-    def __init__(self, services, popular_process_names):
+    def __init__(self, services):
         self.file_svc = services.get('file_svc')
         self.data_svc = services.get('data_svc')
         self.contact_svc = services.get('contact_svc')
         self.log = self.create_logger('sand_svc')
         self.sandcat_dir = os.path.relpath(os.path.join('plugins', 'sandcat'))
-        self.popular_process_names = popular_process_names
 
     async def dynamically_compile_executable(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
@@ -27,7 +26,7 @@ class SandService(BaseService):
                                           output_name=name)
         _, path = await self.file_svc.find_file_path('sandcat.go-%s' % platform)
         signature = hashlib.md5(open(path, 'rb').read()).hexdigest()
-        display_name = random.choice(self.popular_process_names.get(platform))
+        display_name = await self.contact_svc.build_filename(platform)
         self.log.debug('sandcat downloaded with hash=%s and name=%s' % (signature, display_name))
         return '%s-%s' % (name, platform), display_name
 

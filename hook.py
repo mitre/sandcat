@@ -7,11 +7,9 @@ address = '/plugin/sandcat/gui'
 
 
 async def enable(services):
-    popular_process_names = [a for a in services.get('data_svc').strip_yml('plugins/sandcat/conf/default.yml')]
-
     app = services.get('app_svc').application
     file_svc = services.get('file_svc')
-    sand_svc = SandService(services, popular_process_names[0])
+    sand_svc = SandService(services)
     await file_svc.add_special_payload('sandcat.go', sand_svc.dynamically_compile_executable)
     await file_svc.add_special_payload('shared.go', sand_svc.dynamically_compile_library)
     cat_gui_api = SandGuiApi(services=services)
