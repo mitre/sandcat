@@ -23,11 +23,12 @@ func main() {
 	server := flag.String("server", server, "The FQDN of the server")
 	c2 := flag.String("c2", c2Name, "C2 Channel for agent")
 	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
+	father_paw := flag.String("father_paw", "", "Father agent's paw of this agent")
 	verbose := flag.Bool("v", false, "Enable verbose output")
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()
 	
 	c2Config := map[string]string{"c2Name": *c2, "c2Key": c2Key}
-	core.Core(*server, *delay, executors, c2Config, *verbose)
+	core.Core(*server, *delay, executors, c2Config, *verbose, *father_paw)
 }
