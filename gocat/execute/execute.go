@@ -67,8 +67,8 @@ func DetermineExecutor(executors []string, platform string, arch string) []strin
 			"executor": {"sh", "pwsh"},
 		},
 		"darwin": {
-			"file": {"sh", "pwsh"},
-			"executor": {"sh", "pwsh"},
+			"file": {"sh", "pwsh", "osascript"},
+			"executor": {"sh", "pwsh", "osa"},
 		},
 	}
 	if executors == nil {
@@ -111,15 +111,20 @@ func checkIfExecutorAvailable(executor string) bool {
 }
 
 func buildCommandStatement(executor string, platform string, command string) *exec.Cmd {
-	if executor == "psh" {
+	switch executor {
+	case "psh":
 		return exec.Command("powershell.exe", "-ExecutionPolicy", "Bypass", "-C", command)
-	} else if executor == "cmd" {
+	case "cmd":
 		return exec.Command("cmd.exe", "/C", command)
-	} else if platform == "windows" && executor == "pwsh" {
-		return exec.Command("pwsh.exe", "-c", command)
-	} else if executor == "pwsh" {
-		return exec.Command("pwsh", "-c", command)
-	} else {
+	case "pwsh":
+		if platform == "windows" {
+			return exec.Command("pwsh.exe", "-c", command)
+		} else {
+			return exec.Command("pwsh", "-c", command)
+		}
+	case "osa" :
+		return exec.Command("osascript", "-e", command)
+	default:
 		return exec.Command("sh", "-c", command)
 	}
 }
