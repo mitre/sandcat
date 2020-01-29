@@ -1,4 +1,3 @@
-import hashlib
 import os
 import random
 import string
@@ -14,6 +13,7 @@ class SandService(BaseService):
         self.file_svc = services.get('file_svc')
         self.data_svc = services.get('data_svc')
         self.contact_svc = services.get('contact_svc')
+        self.app_svc = services.get('app_svc')
         self.log = self.create_logger('sand_svc')
         self.sandcat_dir = os.path.relpath(os.path.join('plugins', 'sandcat'))
 
@@ -24,11 +24,7 @@ class SandService(BaseService):
                                           headers=headers,
                                           compile_target_name=name,
                                           output_name=name)
-        _, path = await self.file_svc.find_file_path('sandcat.go-%s' % platform)
-        signature = hashlib.md5(open(path, 'rb').read()).hexdigest()
-        display_name = await self.contact_svc.build_filename(platform)
-        self.log.debug('sandcat downloaded with hash=%s and name=%s' % (signature, display_name))
-        return '%s-%s' % (name, platform), display_name
+        return await self.app_svc.retrieve_compiled_file(name, platform)
 
     async def dynamically_compile_library(self, headers):
         name, platform = headers.get('file'), headers.get('platform')
