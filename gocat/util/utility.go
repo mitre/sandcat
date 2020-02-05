@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -11,7 +12,14 @@ import (
 	"path/filepath"
 	"io"
 	"net/http"
+
+	"../output"
 )
+
+var maxFailedAttempts = 10
+
+// ListFlags takes comma separate list as input flags
+type ListFlags []string
 
 // Encode base64 encodes bytes
 func Encode(b []byte) []byte {
@@ -111,4 +119,31 @@ func EvaluateWatchdog(lastcheckin time.Time, watchdog int) {
 	if watchdog >0 && float64(time.Now().Sub(lastcheckin).Minutes()) > float64(watchdog){
 		StopProcess(os.Getpid())
 	}
+}
+
+func EvaluateRotateServer(attempts *int, serverCounter *int, servers []string, profile map[string]interface{}) map[string]interface{} {
+	if *attempts > maxFailedAttempts {
+		if *serverCounter < len(servers) {
+			output.VerbosePrint("Rotating to new server...")
+			*serverCounter++
+			*attempts = 0
+			profile["server"] = servers[*serverCounter]
+		} else {
+			profile["server"] = servers[0]
+		}
+	}
+	return profile
+}
+
+// String get string format of input
+func (i *ListFlags) String() string {
+	return fmt.Sprint((*i))
+}
+
+// Set value of the executor list
+func (i *ListFlags) Set(value string) error {
+	for _, exec := range strings.Split(value, ",") {
+		*i = append(*i, exec)
+	}
+	return nil
 }

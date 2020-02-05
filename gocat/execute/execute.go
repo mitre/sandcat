@@ -19,9 +19,6 @@ const (
 	TIMEOUT_STATUS = "124"
 )
 
-// ExecutorFlags type to import a list of executors
-type ExecutorFlags []string
-
 //RunCommand runs the actual command
 func RunCommand(command string, payloads []string, platform string, executor string, timeout int) (string, []byte, string, string){
 	cmd := string(util.Decode(command))
@@ -83,19 +80,6 @@ func DetermineExecutor(executors []string, platform string, arch string) []strin
 		}
 	}
 	return checkShellcodeExecutors(executors, arch)
-}
-
-// String get string format of input
-func (i *ExecutorFlags) String() string {
-	return fmt.Sprint((*i))
-}
-
-// Set value of the executor list
-func (i *ExecutorFlags) Set(value string) error {
-	for _, exec := range strings.Split(value, ",") {
-		*i = append(*i, exec)
-	}
-	return nil
 }
 
 func checkShellcodeExecutors(executors []string, arch string) []string {

@@ -19,9 +19,11 @@ import (
 	"../privdetect"
 )
 
-func runAgent(coms contact.Contact, profile map[string]interface{}) {
+func runAgent(coms contact.Contact, profile map[string]interface{}, servers []string) {
     watchdog := 0
 	checkin := time.Now()
+	attempts := 0
+	serverCounter := 0
 	for {
 		beacon := coms.GetInstructions(profile)
 		if len(beacon) != 0 {
@@ -44,18 +46,20 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 				watchdog = beacon["watchdog"].(int)
 			} else {
 				util.Sleep(float64(15))
+				attempts++
 			}
 			util.EvaluateWatchdog(checkin, watchdog)
+			profile = util.EvaluateRotateServer(&attempts, &serverCounter, servers, profile)
 		}
 	}
 }
 
-func buildProfile(server string, executors []string, privilege string, c2 string) map[string]interface{} {
+func buildProfile(servers []string, executors []string, privilege string, c2 string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 
 	profile := make(map[string]interface{})
-	profile["server"] = server
+	profile["server"] = servers[0]
 	profile["host"] = host
 	profile["username"] = user.Username
 	profile["architecture"] = runtime.GOARCH
@@ -88,23 +92,23 @@ func validC2Configuration(coms contact.Contact, c2Config map[string]string) bool
 }
 
 //Core is the main function as wrapped by sandcat.go
-func Core(server string, delay int, executors []string, c2 map[string]string, verbose bool) {
+func Core(servers []string, delay int, executors []string, c2 map[string]string, verbose bool) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	privilege := privdetect.Privlevel()
 	output.SetVerbose(verbose)
 	output.VerbosePrint("Started sandcat in verbose mode.")
-	output.VerbosePrint(fmt.Sprintf("server=%s", server))
+	output.VerbosePrint(fmt.Sprintf("server=%s", servers[0]))
 	output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
 	output.VerbosePrint(fmt.Sprintf("initial delay=%d", delay))
 	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", c2["c2Name"]))
 
-	profile := buildProfile(server, executors, privilege, c2["c2Name"])
+	profile := buildProfile(servers, executors, privilege, c2["c2Name"])
 	util.Sleep(float64(delay))
 
 	for {
 		coms := chooseCommunicationChannel(profile, c2)
 		if coms != nil {
-			for { runAgent(coms, profile) }
+			for { runAgent(coms, profile, servers) }
 		}
 		util.Sleep(300)
 	}

