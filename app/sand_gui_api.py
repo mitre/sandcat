@@ -11,4 +11,5 @@ class SandGuiApi:
     @template('sandcat.html')
     async def splash(self, request):
         await self.auth_svc.check_permissions(request)
-        return dict()
+        delivery_cmds = await self.data_svc.locate('abilities', dict(ability_id='2f34977d-9558-4c12-abad-349716777c6b'))
+        return dict(delivery_cmds=delivery_cmds)
