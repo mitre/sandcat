@@ -1,95 +1,29 @@
-<html>
-    <head>
-        <title>Sandcat | 54ndc47</title>
-        <link rel="shortcut icon" type="image/png" href="/gui/img/favicon.png"/>
-        <link rel="stylesheet" href="/gui/css/shared.css">
-        <link rel="stylesheet" href="/gui/css/navbar.css">
-        <link rel="stylesheet" href="/gui/css/basic.css">
-        <link rel="stylesheet" href="/sandcat/css/basic.css">
-        <link rel="stylesheet" href="/gui/css/modal.css">
-    </head>
-    <body>
-    <div class="navbar plugin"></div>
-    <center style="margin-bottom: 100px">
-        <div>
-            <div id="sandcat-blocks" class="row-canvas">
-                <div class="section-profile">
-                    <div class="row">
-                        <div class="topright duk-icon"><img onclick="openDuk1()" src="/gui/img/duk.png"></div>
-
-                        <div class="column section-border" style="flex:37%;text-align:left;padding:15px;">
-                            <h1 style="font-size:70px;margin-top:-20px;">54ndc47</h1>
-                            <h2 style="margin-top:-55px">coordinated access trojan (CAT)</h2>
-                            <p>
-                                A sand cat is a desert cat that leaves no footprint. In that vein,
-                                54ndc47 is a post-compromise agent designed to run without detection on any host operating system (OS).
-                                You can deploy a CAT by running the 1-line <i>delivery command</i> associated to
-                                your target OS.
-                            </p>
-                             <select id="dcommands" onchange="displayCommand()">
-                                <option value="" disabled selected>Select an OS</option>
-                                {% for cmd in delivery_cmds %}
-                                    <option value="{{ cmd.test }}">{{ cmd.platform }}</option>
-                                {% endfor %}
-                             </select>
-                            <button id="copyCommand" type="button" class="button-success"
-                                    style="display:none">Copy Command</button>
-                        </div>
-                        <div class="column" style="flex:67%;padding:15px;text-align: left">
-                            <div style="background-color: var(--primary-background);padding: 15px;border-radius: 25px">
-                                <code id="delivery-command" style="text-align: left;font-size:14px;"></code>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<div id="sandcat-section-1" class="section-profile">
+    <div class="row">
+        <div class="topleft duk-icon"><img onclick="removeSection('sandcat-section-1')" src="/gui/img/x.png"></div>
+        <div class="column section-border" style="flex:37%;text-align:left;padding:15px;">
+            <h1 style="font-size:70px;margin-top:-20px;">54ndc47</h1>
+            <h2 style="margin-top:-55px">coordinated access trojan (CAT)</h2>
+            <p>
+                A sand cat is a desert cat that leaves no footprint. In that vein,
+                54ndc47 is a post-compromise agent designed to run without detection on any host operating system (OS).
+                You can deploy a CAT by running the 1-line <i>delivery command</i> associated to
+                your target OS.
+            </p>
+             <select id="dcommands" onchange="displayCommand()">
+                <option value="" disabled selected>Select an OS</option>
+                {% for cmd in delivery_cmds %}
+                    <option value="{{ cmd.test }}">{{ cmd.platform }}</option>
+                {% endfor %}
+             </select>
+            <button id="copyCommand" type="button" class="button-success"
+                    style="display:none">Copy Command</button>
+        </div>
+        <div class="column" style="flex:67%;padding:15px;text-align: left">
+            <div style="background-color: var(--primary-background);padding: 15px;border-radius: 25px">
+                <code id="delivery-command" style="text-align: left;font-size:14px;"></code>
             </div>
         </div>
-
-        <div id="duk-modal" class="modal">
-            <form class="modal-content">
-                <div class="container">
-                    <div class="row duk-modal">
-                        <span onclick="document.getElementById('duk-modal').style.display='none'" class="close" title="Close Modal">&times;</span>
-                        <div class="column" style="flex:8%">
-                            <img src="/gui/img/duk.png"/>
-                        </div>
-                        <div class="column" style="flex:92%">
-                            <p id="duk-text" style="color: white"></p>
-                        </div>
-                    </div>
-                </div>
-             </form>
-        </div>
-
-        </center>
-    </body>
-    <script src="/gui/jquery/jquery.js"></script>
-    <script src="/gui/js/shared.js"></script>
-    <script>
-        function displayCommand(){
-            $('#delivery-command').text(atob(document.getElementById("dcommands").value));
-        }
-        function openDuk1(){
-            document.getElementById("duk-modal").style.display="block";
-            $('#duk-text').text('Did you know... you can deploy a CAT locally, on the same host as the server? You would ' +
-                'do this to test an adversary before running it in the wild. Additionally, a locally deployed CAT is ' +
-                'useful for running initial access adversaries, which can attempt to drop CATs on other, remote hosts.');
-        }
-
-        let copyCommandBtn = document.querySelector('#copyCommand');
-        copyCommandBtn.addEventListener('click', function(event) {
-          let command = document.querySelector('#delivery-command');
-          let range = document.createRange();
-          range.selectNode(command);
-          window.getSelection().addRange(range);
-
-          try {
-            document.execCommand('copy');
-          } catch(err) {
-            console.log('Oops, unable to copy');
-          }
-          window.getSelection().removeAllRanges();
-        });
-        
-    </script>
-</html>
+    </div>
+</div>
+<script src="/sandcat/js/sandcat.js"></script>
