@@ -13,7 +13,7 @@
              <select id="dcommands" onchange="displayCommand()">
                 <option value="" disabled selected>Select an OS</option>
                 {% for cmd in delivery_cmds %}
-                    <option value="{{ cmd.test }}">{{ cmd.platform }}</option>
+                    <option value="{{ cmd.ability_id }}">{{ cmd.platform }}</option>
                 {% endfor %}
              </select>
             <button id="copyCommand" type="button" class="button-success"
@@ -26,4 +26,26 @@
         </div>
     </div>
 </div>
-<script src="/sandcat/js/sandcat.js"></script>
+<script>
+    function displayCommand(){
+        function displayMe(data){
+            $('#delivery-command').text(atob(data[0].test));
+        }
+        let cmd = $('#dcommands option:selected');
+        restRequest('POST', {'index':'ability','ability_id':cmd.val(),'platform':cmd.text()}, displayMe);
+    }
+
+    let copyCommandBtn = document.querySelector('#copyCommand');
+    copyCommandBtn.addEventListener('click', function(event) {
+        let command = document.querySelector('#delivery-command');
+        let range = document.createRange();
+        range.selectNode(command);
+        window.getSelection().addRange(range);
+        try {
+            document.execCommand('copy');
+        } catch(err) {
+            console.log('Oops, unable to copy');
+        }
+        window.getSelection().removeAllRanges();
+    });
+</script>
