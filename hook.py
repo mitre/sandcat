@@ -13,6 +13,5 @@ async def enable(services):
     await file_svc.add_special_payload('sandcat.go', sand_svc.dynamically_compile_executable)
     await file_svc.add_special_payload('shared.go', sand_svc.dynamically_compile_library)
     cat_gui_api = SandGuiApi(services=services)
-    app.router.add_static('/sandcat', 'plugins/sandcat/static/', append_version=True)
     app.router.add_route('GET', '/plugin/sandcat/gui', cat_gui_api.splash)
     await sand_svc.install_gocat_extensions()
