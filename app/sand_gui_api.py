@@ -1,5 +1,7 @@
 from aiohttp_jinja2 import template
 
+from app.service.auth_svc import check_authorization
+
 
 class SandGuiApi:
 
@@ -8,6 +10,7 @@ class SandGuiApi:
         self.app_svc = services.get('app_svc')
         self.data_svc = services.get('data_svc')
 
+    @check_authorization
     @template('sandcat.html')
     async def splash(self, request):
         await self.auth_svc.check_permissions(request)
