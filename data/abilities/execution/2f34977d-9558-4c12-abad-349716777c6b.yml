@@ -23,7 +23,7 @@
     windows:
       psh:
         command: |
-          server="#{app.redirect.http}";
+          $server="#{app.redirect.http}";
           $url="$server/file/download";
           $wc=New-Object System.Net.WebClient;
           $wc.Headers.add("platform","windows");
