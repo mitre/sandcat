@@ -50,12 +50,13 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	}
 }
 
-func buildProfile(server string, executors []string, privilege string, c2 string) map[string]interface{} {
+func buildProfile(server string, group string, executors []string, privilege string, c2 string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
 
 	profile := make(map[string]interface{})
 	profile["server"] = server
+	profile["group"] = group
 	profile["host"] = host
 	profile["username"] = user.Username
 	profile["architecture"] = runtime.GOARCH
@@ -88,17 +89,18 @@ func validC2Configuration(coms contact.Contact, c2Config map[string]string) bool
 }
 
 //Core is the main function as wrapped by sandcat.go
-func Core(server string, delay int, executors []string, c2 map[string]string, verbose bool) {
+func Core(server string, group string, delay int, executors []string, c2 map[string]string, verbose bool) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	privilege := privdetect.Privlevel()
 	output.SetVerbose(verbose)
 	output.VerbosePrint("Started sandcat in verbose mode.")
 	output.VerbosePrint(fmt.Sprintf("server=%s", server))
+	output.VerbosePrint(fmt.Sprintf("group=%s", group))
 	output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
 	output.VerbosePrint(fmt.Sprintf("initial delay=%d", delay))
 	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", c2["c2Name"]))
 
-	profile := buildProfile(server, executors, privilege, c2["c2Name"])
+	profile := buildProfile(server, group, executors, privilege, c2["c2Name"])
 	util.Sleep(float64(delay))
 
 	for {
