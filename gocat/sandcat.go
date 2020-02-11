@@ -21,6 +21,7 @@ var (
 func main() {
 	var executors execute.ExecutorFlags
 	server := flag.String("server", server, "The FQDN of the server")
+	group := flag.String("group", "red", "Attach a group to this agent")
 	c2 := flag.String("c2", c2Name, "C2 Channel for agent")
 	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
 	verbose := flag.Bool("v", false, "Enable verbose output")
@@ -29,5 +30,5 @@ func main() {
 	flag.Parse()
 	
 	c2Config := map[string]string{"c2Name": *c2, "c2Key": c2Key}
-	core.Core(*server, *delay, executors, c2Config, *verbose)
+	core.Core(*server, *group, *delay, executors, c2Config, *verbose)
 }
