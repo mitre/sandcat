@@ -1,3 +1,5 @@
+// +build windows
+
 package contact
 
 import (
@@ -225,6 +227,9 @@ func (receiver SmbPipeReceiver) forwardSendExecResults(message P2pMessage, profi
     }
     clientProfile["server"] = profile["server"]
     result := clientProfile["result"].(map[string]interface{})
+
+    //debugging
+    output.VerbosePrint(fmt.Sprintf("[*] Forwarding execution results: %v", result))
 
     // Wait for client to reconnect to pipe before attempting to forward request upstream.
     conn, err := listener.Accept()
