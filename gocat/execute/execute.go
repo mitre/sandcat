@@ -23,7 +23,7 @@ const (
 type ExecutorFlags []string
 
 //RunCommand runs the actual command
-func RunCommand(command string, payloads []string, platform string, executor string, timeout int) (string, []byte, string, string){
+func RunCommand(command string, payloads []string, platform string, executor string, timeout int) ([]byte, string, string){
 	cmd := string(util.Decode(command))
 	var status string
 	var result []byte
@@ -36,7 +36,7 @@ func RunCommand(command string, payloads []string, platform string, executor str
 		status = ERROR_STATUS
 		pid = ERROR_STATUS
 	}
-	return cmd, result, status, pid
+	return result, status, pid
 }
 
 // Execute runs a shell command
