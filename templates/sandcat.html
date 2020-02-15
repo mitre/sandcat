@@ -1,6 +1,7 @@
 <div id="sandcat-section-1" class="section-profile">
     <div class="row">
         <div class="topleft duk-icon"><img onclick="removeSection('sandcat-section-1')" src="/gui/img/x.png"></div>
+        <div class="topright duk-icon"><img onclick="openDuk3()" src="/gui/img/duk.png"></div>
         <div class="column section-border" style="flex:25%;text-align:left;padding:15px;">
             <h1 style="font-size:70px;margin-top:-20px;">54ndc47</h1>
             <h2 style="margin-top:-55px">coordinated access trojan (CAT)</h2>
@@ -48,4 +49,10 @@
         }
         window.getSelection().removeAllRanges();
     });
+
+    function openDuk3(){
+        document.getElementById("duk-modal").style.display="block";
+        $('#duk-text').text('Did you know... You can deploy 54ndc47 as a red or blue agent? By default, it will ' +
+            'deploy as red but you can swap this by adding a start parameter of "-group blue".');
+    }
 </script>
