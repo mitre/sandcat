@@ -10,9 +10,10 @@ import (
 	"runtime"
 	"strings"
 
-	"../execute"
-	"../util"
+	"../executors/execute"
+	_ "../executors/shells"
 	"../output"
+	"../util"
 )
 
 var (
