@@ -11,7 +11,7 @@ const (
 	ERROR_STATUS 	= "1"
 	TIMEOUT_STATUS 	= "124"
 	SUCCESS_PID 	= "0"
-	ERROR_PID		= "1"
+	ERROR_PID 		= "1"
 )
 
 type Executor interface {
@@ -31,7 +31,7 @@ func AvailableExecutors() (values []string) {
 var Executors = map[string]Executor{}
 
 //RunCommand runs the actual command
-func RunCommand(command string, payloads []string, platform string, executor string, timeout int) ([]byte, string, string){
+func RunCommand(command string, payloads []string, executor string, timeout int) ([]byte, string, string){
 	cmd := string(util.Decode(command))
 	var status string
 	var result []byte
