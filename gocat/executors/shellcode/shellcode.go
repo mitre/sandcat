@@ -1,5 +1,3 @@
-// +build linux windows darwin
-
 package shellcode
 
 import (
@@ -17,8 +15,8 @@ func init() {
 	runner := &Shellcode{
 		archName: "shellcode_"+runtime.GOARCH,
 	}
-	if runner.checkIfAvailable() {
-		execute.Executors[runner.archName] = runner.Shellcode
+	if runner.CheckIfAvailable() {
+		execute.Executors[runner.archName] = runner
 	}
 }
 
@@ -35,6 +33,6 @@ func (s *Shellcode) String() string {
 	return s.archName
 }
 
-func (s *Shellcode) checkIfAvailable() bool {
+func (s *Shellcode) CheckIfAvailable() bool {
 	return IsAvailable()
 }
