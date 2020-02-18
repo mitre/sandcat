@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"../executors/execute"
-	_ "../executors/shells"
 	"../output"
 	"../util"
 )

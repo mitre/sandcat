@@ -18,6 +18,9 @@ import (
 	"../output"
 	"../privdetect"
 	"../util"
+
+	_ "../executors/shells" // necessary to initialize all submodules
+	_ "../executors/shellcode" // necessary to initialize all submodules
 )
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
