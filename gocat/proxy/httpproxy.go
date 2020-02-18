@@ -1,10 +1,10 @@
 package proxy
 
 import (
+    "bytes"
     "fmt"
     "net/http"
     "io/ioutil"
-    "bytes"
     "../output"
     "../contact"
 )
@@ -16,50 +16,55 @@ func init() {
 	P2pReceiverChannels["http"] = HttpReceiver{}
 }
 
-// HttpReceiver Implementation. Assumes Agent can reach C2 server via HTTP
-
-// Listen on port for client connection.
+// Start receiving peer-to-peer messages via HTTP. Forward them to this agent's server via HTTP proxy.
 func (receiver HttpReceiver) StartReceiver(profile map[string]interface{}, p2pReceiverConfig map[string]string, upstreamComs contact.Contact) {
+    // Make sure the agent uses HTTP with the C2.
     switch upstreamComs.(type) {
     case contact.API:
-        go receiver.startReceiverHelper(profile, p2pReceiverConfig["p2pReceiver"])
+        // p2pReceiverConfig["p2pReceiver"] will contain the port number to listen on.
+        go startHttpProxy(profile, p2pReceiverConfig["p2pReceiver"])
     default:
         output.VerbosePrint(fmt.Sprintf("[-] Cannot start HTTP proxy receiver if agent is not using HTTP communication with the C2."))
     }
 }
 
-// Helper method for StartReceiver. Must be run as a go routine.
-func (receiver HttpReceiver) startReceiverHelper(profile map[string]interface{}, portStr string) {
+// Helper method for StartReceiver. Must be run as a go routine. Starts HTTP proxy to forward messages from peers to
+// the C2 server.
+func startHttpProxy(profile map[string]interface{}, portStr string) {
     listenPort := ":" + portStr
     server := profile["server"].(string)
 
-    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+    http.HandleFunc("/", func(writer http.ResponseWriter, reader *http.Request) {
+        // Get data from message that client peer sent.
 		httpClient := http.Client{}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := ioutil.ReadAll(reader.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		r.Body = ioutil.NopCloser(bytes.NewReader(body))
-		url := server + r.RequestURI
+		reader.Body = ioutil.NopCloser(bytes.NewReader(body))
 
-		proxyReq, err := http.NewRequest(r.Method, url, bytes.NewReader(body))
+		// Determine where to forward the request.
+		url := server + reader.RequestURI
+
+        // Forward the request to the C2 server, and send back the response.
+		proxyReq, err := http.NewRequest(reader.Method, url, bytes.NewReader(body))
 		if err != nil {
 			output.VerbosePrint(err.Error())
 			return
 		}
 		proxyReq.Header = make(http.Header)
-		for h, val := range r.Header {
-			proxyReq.Header[h] = val
+		for header, val := range reader.Header {
+			proxyReq.Header[header] = val
 		}
 		resp, err := httpClient.Do(proxyReq)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
+			http.Error(writer, err.Error(), http.StatusBadGateway)
 			return
 		}
 		defer resp.Body.Close()
 		bites, _ := ioutil.ReadAll(resp.Body)
-		w.Write(bites)
+		writer.Write(bites)
 	})
 	http.ListenAndServe(listenPort, nil)
 }
