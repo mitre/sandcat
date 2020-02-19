@@ -95,7 +95,10 @@ func drop(server string, payload string) string {
 
 func sendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
 	address := fmt.Sprintf("%s%s", profile["server"], apiBeacon)
-	profileCopy := profile
+	profileCopy := make(map[string]interface{})
+	for k,v := range profile {
+		profileCopy[k] = v
+	  }
 	profileCopy["result"] = result
 	data, _ := json.Marshal(profileCopy)
 	request(address, data)
