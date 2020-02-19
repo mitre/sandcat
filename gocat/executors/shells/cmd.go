@@ -14,11 +14,12 @@ type Cmd struct {
 
 func init() {
 	shell := &Cmd{
-		path: "cmd.exe" ,
+		shortName: "cmd",
+		path: "cmd.exe",
 		execArgs: []string{"/C"},
 	}
 	if shell.CheckIfAvailable() {
-		execute.Executors[shell.path] = shell
+		execute.Executors[shell.shortName] = shell
 	}
 }
 
@@ -27,7 +28,7 @@ func (c *Cmd) Run(command string, timeout int) ([]byte, string, string) {
 }
 
 func (c *Cmd) String() string {
-	return c.path
+	return c.shortName
 }
 
 func (c *Cmd) CheckIfAvailable() bool {

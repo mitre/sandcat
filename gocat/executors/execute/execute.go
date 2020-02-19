@@ -11,7 +11,7 @@ const (
 	ERROR_STATUS 	= "1"
 	TIMEOUT_STATUS 	= "124"
 	SUCCESS_PID 	= "0"
-	ERROR_PID 		= "1"
+	ERROR_PID 	= "1"
 )
 
 type Executor interface {

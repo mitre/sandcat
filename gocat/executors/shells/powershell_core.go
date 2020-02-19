@@ -27,7 +27,7 @@ func init() {
 		execArgs: []string{"-C"},
 	}
 	if shell.CheckIfAvailable() {
-		execute.Executors[shell.path] = shell
+		execute.Executors[shell.shortName] = shell
 	}
 }
 

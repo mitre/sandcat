@@ -20,7 +20,7 @@ func init() {
 		execArgs: []string{"-ExecutionPolicy", "Bypass", "-C"},
 	}
 	if shell.CheckIfAvailable() {
-		execute.Executors[shell.path] = shell
+		execute.Executors[shell.shortName] = shell
 	}
 }
 
