@@ -43,9 +43,9 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 					if len(payload) > 0 {
 						location := filepath.Join(payload)
 						if util.Exists(location) == false {
-							location, _ := coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
-							droppedPayloads = append(droppedPayloads, location)
+							location, _ = coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
 						}
+						droppedPayloads = append(droppedPayloads, location)
 					}
 				}
 				go coms.RunInstruction(command, profile, droppedPayloads)
