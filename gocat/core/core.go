@@ -59,7 +59,6 @@ func buildProfile(server string, group string, executors []string, privilege str
 	profile["host"] = host
 	user, err := user.Current()
 	if err != nil {
-		output.VerbosePrint(err.Error())
 		profile["username"], err = exec.Command("whoami").CombinedOutput()
 	} else {
 		profile["username"] = user.Username
@@ -109,7 +108,6 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 	util.Sleep(float64(delay))
 	for {
 		coms := chooseCommunicationChannel(profile, c2)
-		output.VerbosePrint(fmt.Sprint(coms))
 		if coms != nil {
 			for {
 				runAgent(coms, profile)
