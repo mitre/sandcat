@@ -36,11 +36,12 @@ var P2pReceiverChannels = map[string]P2pReceiver{}
 
 // Build p2p message and return the bytes of its JSON marshal.
 func BuildP2pMsgBytes(paw string, messageType int, payload []byte) []byte {
-    p2pMsg := make(map[string]interface{})
-    p2pMsg["RequestingAgentPaw"] = paw
-    p2pMsg["MessageType"] = messageType
-    p2pMsg["Payload"] = payload
-    p2pMsg["Populated"] = true
+    p2pMsg := &P2pMessage{
+        RequestingAgentPaw: paw,
+        MessageType: messageType,
+        Payload: payload,
+        Populated: true,
+    }
     p2pMsgData, _ := json.Marshal(p2pMsg)
     return p2pMsgData
 }
@@ -48,8 +49,10 @@ func BuildP2pMsgBytes(paw string, messageType int, payload []byte) []byte {
 // Convert bytes of JSON marshal into P2pMessage struct
 func BytesToP2pMsg(data []byte) P2pMessage {
     var message P2pMessage
-    json.Unmarshal(data, &message)
-    return message
+    if err := json.Unmarshal(data, &message); err == nil {
+        return message
+    }
+    return P2pMessage{}
 }
 
 // Check if message is empty.
