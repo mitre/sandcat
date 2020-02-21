@@ -59,8 +59,8 @@ func Execute(command string, executor string, platform string, timeout int) ([]b
 func DetermineExecutor(executors []string, platform string, arch string) []string {
 	platformExecutors := map[string]map[string][]string {
 		"windows": {
-			"file": {"cmd.exe", "powershell.exe", "pwsh.exe"},
-			"executor": {"cmd", "psh", "pwsh"},
+			"file": {"powershell.exe", "cmd.exe", "pwsh.exe"},
+			"executor": {"psh", "cmd", "pwsh"},
 		},
 		"linux": {
 			"file": {"sh", "pwsh"},
