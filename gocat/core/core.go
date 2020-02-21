@@ -5,29 +5,30 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/user"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
 	"time"
-	"path/filepath"
 
 	"../contact"
 	"../execute"
-	"../util"
 	"../output"
 	"../privdetect"
+	"../util"
 )
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
-    watchdog := 0
+	watchdog := 0
 	checkin := time.Now()
 	for {
 		beacon := coms.GetInstructions(profile)
 		if len(beacon) != 0 {
 			profile["paw"] = beacon["paw"]
 			checkin = time.Now()
-		} 
+		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
 			for i := 0; i < cmds.Len(); i++ {
@@ -52,13 +53,16 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 
 func buildProfile(server string, group string, executors []string, privilege string, c2 string) map[string]interface{} {
 	host, _ := os.Hostname()
-	user, _ := user.Current()
-
 	profile := make(map[string]interface{})
 	profile["server"] = server
 	profile["group"] = group
 	profile["host"] = host
-	profile["username"] = user.Username
+	user, err := user.Current()
+	if err != nil {
+		profile["username"], err = exec.Command("whoami").CombinedOutput()
+	} else {
+		profile["username"] = user.Username
+	}
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
@@ -102,11 +106,12 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 
 	profile := buildProfile(server, group, executors, privilege, c2["c2Name"])
 	util.Sleep(float64(delay))
-
 	for {
 		coms := chooseCommunicationChannel(profile, c2)
 		if coms != nil {
-			for { runAgent(coms, profile) }
+			for {
+				runAgent(coms, profile)
+			}
 		}
 		util.Sleep(300)
 	}

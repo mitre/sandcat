@@ -4,13 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"io"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
-	"path/filepath"
-	"io"
-	"net/http"
 )
 
 // Encode base64 encodes bytes
@@ -108,7 +108,7 @@ func removeWhiteSpace(input string) string {
 }
 
 func EvaluateWatchdog(lastcheckin time.Time, watchdog int) {
-	if watchdog >0 && float64(time.Now().Sub(lastcheckin).Minutes()) > float64(watchdog){
+	if watchdog > 0 && float64(time.Now().Sub(lastcheckin).Minutes()) > float64(watchdog) {
 		StopProcess(os.Getpid())
 	}
 }
