@@ -38,16 +38,11 @@ func RunCommand(command string, payloads []string, executor string, timeout int)
 	var pid string
 	missingPaths := util.CheckPayloadsAvailable(payloads)
 	if len(missingPaths) == 0 {
-		result, status, pid = execute(cmd, executor, timeout)
+		result, status, pid = Executors[executor].Run(cmd, timeout)
 	} else {
 		result = []byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
 		status = ERROR_STATUS
 		pid = ERROR_STATUS
 	}
 	return result, status, pid
-}
-
-// Execute runs a shell command
-func execute(command string, executor string, timeout int) ([]byte, string, string) {
-	return Executors[executor].Run(command, timeout)
 }
