@@ -14,10 +14,13 @@ import (
 	"time"
 
 	"../contact"
-	"../execute"
+	"../executors/execute"
 	"../output"
 	"../privdetect"
 	"../util"
+
+	_ "../executors/shellcode" // necessary to initialize all submodules
+	_ "../executors/shells"    // necessary to initialize all submodules
 )
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
@@ -68,7 +71,7 @@ func buildProfile(server string, group string, executors []string, privilege str
 	profile["location"] = os.Args[0]
 	profile["pid"] = os.Getpid()
 	profile["ppid"] = os.Getppid()
-	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
+	profile["executors"] = execute.AvailableExecutors()
 	profile["privilege"] = privilege
 	profile["exe_name"] = filepath.Base(os.Args[0])
 	return profile

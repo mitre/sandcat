@@ -4,7 +4,8 @@ import (
 	"syscall"
 	"unsafe"
 
-	"../util"
+	"../execute"
+	"../../util"
 )
 
 const (
@@ -24,14 +25,14 @@ var (
 func Runner(shellcode []byte) (bool, string) {
 	address, _, err := VirtualAlloc.Call(0, uintptr(len(shellcode)), MEM_COMMIT|MEM_RESERVE, PAGE_EXECUTE_READWRITE)
 	if util.CheckErrorMessage(err) {
-		return false, ERROR_PID
+		return false, execute.ERROR_PID
 	}
 	_, _, err = RtlCopyMemory.Call(address, (uintptr)(unsafe.Pointer(&shellcode[0])), uintptr(len(shellcode)))
 	if util.CheckErrorMessage(err) {
-		return false, ERROR_PID
+		return false, execute.ERROR_PID
 	}
 	syscall.Syscall(address, 0, 0, 0, 0)
-	return true, SUCCESS_PID
+	return true, execute.SUCCESS_PID
 }
 
 // IsAvailable does a shellcode runner exist

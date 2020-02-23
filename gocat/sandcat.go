@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"./core"
-	"./execute"
+	"./util"
 )
 
 /*
@@ -19,7 +19,7 @@ var (
 )
 
 func main() {
-	var executors execute.ExecutorFlags
+	var executors util.ListFlags
 	server := flag.String("server", server, "The FQDN of the server")
 	group := flag.String("group", "red", "Attach a group to this agent")
 	c2 := flag.String("c2", c2Name, "C2 Channel for agent")

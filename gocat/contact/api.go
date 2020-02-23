@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"strings"
 
-	"../execute"
-	"../util"
+	"../executors/execute"
 	"../output"
+	"../util"
 )
 
 var (
@@ -62,7 +62,7 @@ func (contact API) DropPayloads(payload string, server string, uniqueId string) 
 func (contact API) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
     timeout := int(command["timeout"].(float64))
 	result := make(map[string]interface{})
-	output, status, pid := execute.RunCommand(command["command"].(string), payloads, profile["platform"].(string), command["executor"].(string), timeout)
+	output, status, pid := execute.RunCommand(command["command"].(string), payloads, command["executor"].(string), timeout)
 	result["id"] = command["id"]
 	result["output"] = output
 	result["status"] = status
