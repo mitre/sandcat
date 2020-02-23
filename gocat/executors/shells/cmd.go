@@ -8,6 +8,7 @@ import (
 )
 
 type Cmd struct {
+	shortName string
 	path string
 	execArgs []string
 }
