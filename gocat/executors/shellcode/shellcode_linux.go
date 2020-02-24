@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"strconv"
 	"syscall"
-	"../output"
+	"../../output"
 )
 
 // Runner runner
