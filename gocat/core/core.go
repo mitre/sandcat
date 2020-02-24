@@ -19,6 +19,7 @@ import (
 	"../privdetect"
 	"../util"
 
+	_ "../executors/assembly"  // necessary to initialize all submodules
 	_ "../executors/shellcode" // necessary to initialize all submodules
 	_ "../executors/shells"    // necessary to initialize all submodules
 )
