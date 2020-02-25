@@ -5,23 +5,27 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/user"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
 	"time"
-	"path/filepath"
 
 	"../contact"
-	"../execute"
 	"../proxy"
-	"../util"
+	"../executors/execute"
 	"../output"
 	"../privdetect"
+	"../util"
+
+	_ "../executors/shellcode" // necessary to initialize all submodules
+	_ "../executors/shells"    // necessary to initialize all submodules
 )
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
-    watchdog := 0
+	watchdog := 0
 	checkin := time.Now()
 	for {
 		beacon := coms.GetInstructions(profile)
@@ -65,19 +69,22 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 
 func buildProfile(server string, group string, executors []string, privilege string, c2 string) map[string]interface{} {
 	host, _ := os.Hostname()
-	user, _ := user.Current()
-
 	profile := make(map[string]interface{})
 	profile["server"] = server
 	profile["group"] = group
 	profile["host"] = host
-	profile["username"] = user.Username
+	user, err := user.Current()
+	if err != nil {
+		profile["username"], err = exec.Command("whoami").CombinedOutput()
+	} else {
+		profile["username"] = user.Username
+	}
 	profile["architecture"] = runtime.GOARCH
 	profile["platform"] = runtime.GOOS
 	profile["location"] = os.Args[0]
 	profile["pid"] = os.Getpid()
 	profile["ppid"] = os.Getppid()
-	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
+	profile["executors"] = execute.AvailableExecutors()
 	profile["privilege"] = privilege
 	profile["exe_name"] = filepath.Base(os.Args[0])
 	return profile
@@ -134,7 +141,6 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 
 	profile := buildProfile(server, group, executors, privilege, c2["c2Name"])
 	util.Sleep(float64(delay))
-
 	for {
 		coms := chooseCommunicationChannel(profile, c2)
 		if coms != nil {
@@ -149,7 +155,9 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 		    }
 
 		    // Run agent
-			for { runAgent(coms, profile) }
+			for {
+				runAgent(coms, profile)
+			}
 		}
 		util.Sleep(300)
 	}

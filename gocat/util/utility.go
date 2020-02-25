@@ -4,13 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"io"
+	"net/http"
+	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
-	"path/filepath"
-	"io"
-	"net/http"
 )
 
 // Encode base64 encodes bytes
@@ -108,7 +109,20 @@ func removeWhiteSpace(input string) string {
 }
 
 func EvaluateWatchdog(lastcheckin time.Time, watchdog int) {
-	if watchdog >0 && float64(time.Now().Sub(lastcheckin).Minutes()) > float64(watchdog){
+	if watchdog > 0 && float64(time.Now().Sub(lastcheckin).Minutes()) > float64(watchdog) {
 		StopProcess(os.Getpid())
 	}
+}
+
+type ListFlags []string
+
+func (l *ListFlags) String() string {
+	return fmt.Sprint(*l)
+}
+
+func (l *ListFlags) Set(value string) error {
+	for _, item := range strings.Split(value, ",") {
+		*l = append(*l, item)
+	}
+	return nil
 }

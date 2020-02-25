@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"strconv"
 	"syscall"
-	"../output"
+	"../../output"
 )
 
 // Runner runner
@@ -29,7 +29,7 @@ func generateDummyProcess() int {
 	cmd := exec.Command("sh")
 	cmdErr := cmd.Start()
 	if cmdErr != nil {
-	    output.VerbosePrint(cmdErr.Error())
+		output.VerbosePrint(cmdErr.Error())
 	}
 	return cmd.Process.Pid
 }
