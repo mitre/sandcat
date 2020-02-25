@@ -67,6 +67,8 @@ func buildProfile(server string, group string, executors []string, privilege str
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
 	profile["exe_name"] = filepath.Base(os.Args[0])
+	profile["c2"] = reflect.ValueOf(contact.CommunicationChannels).MapKeys()
+	output.VerbosePrint(fmt.Sprintln(profile["c2"]))
 	return profile
 }
 
