@@ -24,6 +24,7 @@ type P2pReceiver interface {
 // Defines message structure for p2p
 type P2pMessage struct {
     RequestingAgentPaw string // Paw of agent sending the original request.
+    SendResponseTo string // return address for responses
     MessageType int
     Payload []byte
     Populated bool
@@ -35,9 +36,10 @@ var P2pReceiverChannels = map[string]P2pReceiver{}
 // Helper Functions
 
 // Build p2p message and return the bytes of its JSON marshal.
-func BuildP2pMsgBytes(paw string, messageType int, payload []byte) []byte {
+func BuildP2pMsgBytes(paw string, messageType int, payload []byte, respondTo string) []byte {
     p2pMsg := &P2pMessage{
         RequestingAgentPaw: paw,
+        SendResponseTo: respondTo,
         MessageType: messageType,
         Payload: payload,
         Populated: true,
