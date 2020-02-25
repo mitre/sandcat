@@ -155,9 +155,9 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 		    }
 
 		    // Run agent
-			for {
-				runAgent(coms, profile)
-			}
+            for {
+                runAgent(coms, profile)
+            }
 		}
 		util.Sleep(300)
 	}
