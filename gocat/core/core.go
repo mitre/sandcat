@@ -27,7 +27,9 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 		if len(beacon) != 0 {
 			profile["paw"] = beacon["paw"]
 			checkin = time.Now()
-		} 
+		}
+		if beacon["contact"] != nil {
+		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
 			for i := 0; i < cmds.Len(); i++ {
@@ -53,6 +55,10 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 func buildProfile(server string, group string, executors []string, privilege string, c2 string) map[string]interface{} {
 	host, _ := os.Hostname()
 	user, _ := user.Current()
+	availContacts := []string{}
+	for k := range contact.CommunicationChannels {
+		availContacts = append(availContacts,k)
+	}
 
 	profile := make(map[string]interface{})
 	profile["server"] = server
@@ -67,8 +73,7 @@ func buildProfile(server string, group string, executors []string, privilege str
 	profile["executors"] = execute.DetermineExecutor(executors, runtime.GOOS, runtime.GOARCH)
 	profile["privilege"] = privilege
 	profile["exe_name"] = filepath.Base(os.Args[0])
-	profile["c2"] = reflect.ValueOf(contact.CommunicationChannels).MapKeys()
-	output.VerbosePrint(fmt.Sprintln(profile["c2"]))
+	profile["c2"] = availContacts
 	return profile
 }
 
