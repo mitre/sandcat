@@ -23,6 +23,22 @@ import (
 	_ "../executors/shells"    // necessary to initialize all submodules
 )
 
+// Will download each individual payload listed, and will return the full file paths of each downloaded payload.
+func downloadPayloads(payloadListStr string, coms contact.Contact, profile map[string]interface{}) []string {
+    var droppedPayloads []string
+    payloads := strings.Split(strings.Replace(payloadListStr, " ", "", -1), ",")
+    for _, payload := range payloads {
+        if len(payload) > 0 {
+            location := filepath.Join(payload)
+            if util.Exists(location) == false {
+                location, _ = coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
+            }
+            droppedPayloads = append(droppedPayloads, location)
+        }
+    }
+    return droppedPayloads
+}
+
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	watchdog := 0
 	checkin := time.Now()
@@ -38,8 +54,8 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				output.VerbosePrint(fmt.Sprintf("[*] Running instruction %s", command["id"]))
-				payloads := coms.DropPayloads(command["payload"].(string), profile["server"].(string), profile["paw"].(string))
-				go coms.RunInstruction(command, profile, payloads)
+                droppedPayloads := downloadPayloads(command["payload"].(string), coms, profile)
+				go coms.RunInstruction(command, profile, droppedPayloads)
 				util.Sleep(command["sleep"].(float64))
 			}
 		} else {
