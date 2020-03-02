@@ -7,8 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"runtime"
-	"strings"
 
 	"../executors/execute"
 	"../output"
@@ -46,16 +44,32 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 	return out
 }
 
-//DropPayloads downloads all required payloads for a command
-func (contact API) DropPayloads(payload string, server string, uniqueId string) []string{
-	payloads := strings.Split(strings.Replace(payload, " ", "", -1), ",")
-	var droppedPayloads []string
-	for _, payload := range payloads {
-		if len(payload) > 0 {
-			droppedPayloads = append(droppedPayloads, drop(server, payload))
-		}
-	}
-	return droppedPayloads
+// Will fetch all required payloads. If writeToDisk is true, then return []byte will be nil, and
+// payload will be written to disk (return string will contain filepath). If writeToDisk is false, then []byte will contain the payload bytes,
+// and the returned string will be an empty string
+func (contact API) GetPayloadBytes(payload string, server string, uniqueID string, platform string, writeToDisk bool) (string, []byte) {
+    var payloadBytes []byte
+    location := ""
+    output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload bytes: %s", payload))
+    address := fmt.Sprintf("%s/file/download", server)
+    req, _ := http.NewRequest("POST", address, nil)
+    req.Header.Set("file", payload)
+    req.Header.Set("platform", platform)
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err == nil && resp.StatusCode == ok {
+        if writeToDisk {
+            location = filepath.Join(payload)
+            util.WritePayload(location, resp)
+        } else {
+            // Not writing to disk - return the payload bytes.
+            buf, err := ioutil.ReadAll(resp.Body)
+            if err == nil {
+                payloadBytes = buf
+            }
+        }
+    }
+	return location, payloadBytes
 }
 
 //RunInstruction runs a single instruction
@@ -67,7 +81,7 @@ func (contact API) RunInstruction(command map[string]interface{}, profile map[st
 	result["output"] = output
 	result["status"] = status
 	result["pid"] = pid
- 	sendExecutionResults(profile, result)
+ 	contact.SendExecutionResults(profile, result)
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
@@ -76,24 +90,8 @@ func (contact API) C2RequirementsMet(criteria map[string]string) bool {
 	return true
 }
 
-func drop(server string, payload string) string {
-	location := filepath.Join(payload)
-	if len(payload) > 0 && util.Exists(location) == false {
-		output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload: %s", payload))
-		address := fmt.Sprintf("%s/file/download", server)
-		req, _ := http.NewRequest("POST", address, nil)
-		req.Header.Set("file", payload)
-		req.Header.Set("platform", string(runtime.GOOS))
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err == nil && resp.StatusCode == ok {
-			util.WritePayload(location, resp)
-		}
-	}
-	return location
-}
-
-func sendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
+//SendExecutionResults will send the execution results to the server.
+func (contact API) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
 	address := fmt.Sprintf("%s%s", profile["server"], apiBeacon)
 	profileCopy := make(map[string]interface{})
 	for k,v := range profile {
