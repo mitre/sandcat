@@ -2,6 +2,7 @@ package proxy
 
 import (
     "encoding/json"
+    "strings"
     "../contact"
 )
 
@@ -36,7 +37,32 @@ var P2pReceiverChannels = map[string]P2pReceiver{}
 // Contains the C2 Contact implementations strictly for peer-to-peer communications.
 var P2pClientChannels = map[string]contact.Contact{}
 
+var OnlineHosts = "" // comma-separated list of online agents to try p2p comms with. Can be changed server-side.
+var P2pHostList = parseOnlineHosts(OnlineHosts)
+
+// Returns list of online hostnames for p2p comms.
+func parseOnlineHosts(hostListStr string) []string {
+	var hostList []string
+	for _, hostname := range strings.Split(hostListStr, ",") {
+		if len(hostname) > 0 {
+			hostList = append(hostList, hostname)
+		}
+	}
+	return hostList
+}
+
 // Helper Functions
+
+// Returns list of available P2pClientChannels map keys.
+func GetP2pClientChannelNames() []string {
+	clientNames := make([]string, len(P2pClientChannels))
+	i := 0
+	for name := range P2pClientChannels {
+		clientNames[i] = name
+		i++
+	}
+	return clientNames
+}
 
 // Build p2p message and return the bytes of its JSON marshal.
 func BuildP2pMsgBytes(paw string, messageType int, payload []byte, srcAddr string) []byte {

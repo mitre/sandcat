@@ -42,12 +42,42 @@ func downloadPayloads(payloadListStr string, coms contact.Contact, profile map[s
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	watchdog := 0
+	failCount := 0
+	currentP2pHostIndex := 0
+	currentP2pClientIndex := 0
+	numAvailableHosts := len(proxy.P2pHostList)
+	p2pClientNames := proxy.GetP2pClientChannelNames()
+	numP2pClientChannels := len(p2pClientNames)
 	checkin := time.Now()
+	output.VerbosePrint(fmt.Sprintf("[*] Available p2p client methods: %q", p2pClientNames))
+	output.VerbosePrint(fmt.Sprintf("[*] Available p2p hosts: %q", proxy.P2pHostList))
 	for {
 		beacon := coms.GetInstructions(profile)
 		if len(beacon) != 0 {
 			profile["paw"] = beacon["paw"]
 			checkin = time.Now()
+			failCount = 0
+		} else {
+			failCount++
+			if failCount >= 3 && numAvailableHosts > 0 && numP2pClientChannels > 0 {
+				// Current connection to C2 down. Try switching to P2P comms.
+				p2pHostname := proxy.P2pHostList[currentP2pHostIndex]
+				p2pClientName := p2pClientNames[currentP2pClientIndex]
+				p2pClient := proxy.P2pClientChannels[p2pClientName]
+				if p2pClient != nil {
+					output.VerbosePrint(fmt.Sprintf("[*] Falling back to P2P comms method %s with agent at %s", p2pClientName, p2pHostname))
+					failCount = 0
+					profile["server"] = p2pHostname
+					coms = p2pClient
+				} else {
+					output.VerbosePrint(fmt.Sprintf("[-] P2P client for %s not found. Skipping.", p2pClientName))
+				}
+				currentP2pClientIndex = (currentP2pClientIndex + 1) % numP2pClientChannels
+				if currentP2pClientIndex == 0 {
+					// Roll over to next online host.
+					currentP2pHostIndex = (currentP2pHostIndex + 1) % numAvailableHosts
+				}
+			}
 		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
