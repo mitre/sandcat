@@ -26,7 +26,7 @@ func main() {
 	c2 := flag.String("c2", c2Name, "C2 Channel for agent")
 	delay := flag.Int("delay", 0, "Delay starting this agent by n-seconds")
 	verbose := flag.Bool("v", false, "Enable verbose output")
-	p2pReceiversOn := flag.Bool("p2pReceiversOn", false, "Enable peer-to-peer receivers")
+	p2pReceiversOn := flag.Bool("p2pReceiversOn", p2pReceiversOn, "Enable peer-to-peer receivers")
 
 	flag.Var(&executors, "executors", "Comma separated list of executors (first listed is primary)")
 	flag.Parse()

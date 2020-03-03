@@ -26,36 +26,28 @@ import (
 
 // Will download each individual payload listed, and will return the full file paths of each downloaded payload.
 func downloadPayloads(payloadListStr string, coms contact.Contact, profile map[string]interface{}) []string {
-    var droppedPayloads []string
-    payloads := strings.Split(strings.Replace(payloadListStr, " ", "", -1), ",")
-    for _, payload := range payloads {
-        if len(payload) > 0 {
-            location := filepath.Join(payload)
-            if util.Exists(location) == false {
-                location, _ = coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
-            }
-            droppedPayloads = append(droppedPayloads, location)
-        }
-    }
-    return droppedPayloads
+	var droppedPayloads []string
+	payloads := strings.Split(strings.Replace(payloadListStr, " ", "", -1), ",")
+	for _, payload := range payloads {
+		if len(payload) > 0 {
+			location := filepath.Join(payload)
+			if util.Exists(location) == false {
+				location, _ = coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
+			}
+			droppedPayloads = append(droppedPayloads, location)
+		}
+	}
+	return droppedPayloads
 }
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	watchdog := 0
 	checkin := time.Now()
-	failCount := 0
 	for {
 		beacon := coms.GetInstructions(profile)
 		if len(beacon) != 0 {
-		    failCount = 0
 			profile["paw"] = beacon["paw"]
 			checkin = time.Now()
-		} else {
-            failCount = failCount + 1
-            if failCount >= 3 {
-                // Current c2 comms likely down. Fall back to alternative communication channel (e.g. p2p)
-
-            }
 		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
@@ -63,7 +55,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				output.VerbosePrint(fmt.Sprintf("[*] Running instruction %s", command["id"]))
-                droppedPayloads := downloadPayloads(command["payload"].(string), coms, profile)
+				droppedPayloads := downloadPayloads(command["payload"].(string), coms, profile)
 				go coms.RunInstruction(command, profile, droppedPayloads)
 				util.Sleep(command["sleep"].(float64))
 			}
@@ -137,18 +129,16 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 	for {
 		coms := chooseCommunicationChannel(profile, c2)
 		if coms != nil {
-		    if p2pReceiversOn {
-                // If any p2p receivers are available, start them.
-                for receiverName, p2pReceiver := range proxy.P2pReceiverChannels {
-                    if p2pReceiver != nil {
-                        go p2pReceiver.StartReceiver(profile, coms)
-                    } else {
-                        output.VerbosePrint(fmt.Sprintf("[-] P2P Receiver for %s not found. Skipping.", receiverName))
-                    }
-                }
-            }
-
-		    // Run agent
+			if p2pReceiversOn {
+				// If any p2p receivers are available, start them.
+				for receiverName, p2pReceiver := range proxy.P2pReceiverChannels {
+					if p2pReceiver != nil {
+						go p2pReceiver.StartReceiver(profile, coms)
+					} else {
+						output.VerbosePrint(fmt.Sprintf("[-] P2P Receiver for %s not found. Skipping.", receiverName))
+					}
+				}
+			}
 			for {
 				runAgent(coms, profile)
 			}
