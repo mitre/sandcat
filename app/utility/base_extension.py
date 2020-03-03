@@ -5,9 +5,9 @@ from abc import ABC, abstractmethod
 class Extension(ABC):
 
     @abstractmethod
-    def __init__(self, file, package):
-        self.file = file
-        self.package = package
+    def __init__(self, files):
+        """files is list of 2-tuples of the form (filename, package)"""
+        self.files = files
         self.dependencies = []
 
     def check_go_dependencies(self):
