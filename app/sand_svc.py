@@ -19,11 +19,8 @@ class SandService(BaseService):
 
     async def dynamically_compile_executable(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
-        name, platform, extension_list_str = headers.get('file'), headers.get('platform'), headers.get('gocat-extensions', None)
-        extension_names = []
-        if extension_list_str:
-            extension_names = extension_list_str.split(',')
-
+        name, platform = headers.get('file'), headers.get('platform')
+        extension_names = [ext_name for ext_name in headers.get('gocat-extensions', "").split(',') if ext_name]
         if which('go') is not None:
             await self._compile_new_agent(platform=platform,
                                           headers=headers,
@@ -34,11 +31,8 @@ class SandService(BaseService):
 
     async def dynamically_compile_library(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
-        name, platform, extension_list_str = headers.get('file'), headers.get('platform'), headers.get('gocat-extensions', None)
-        extension_names = []
-        if extension_list_str:
-            extension_names = extension_list_str.split(',')
-
+        name, platform = headers.get('file'), headers.get('platform')
+        extension_names = [ext_name for ext_name in headers.get('gocat-extensions', "").split(',') if ext_name]
         compile_options = dict(
             windows=dict(
                 CC='x86_64-w64-mingw32-gcc',
