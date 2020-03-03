@@ -18,13 +18,13 @@ const (
 
 //P2pReceiver defines required functions for relaying messages between peers and an upstream peer/c2.
 type P2pReceiver interface {
-	StartReceiver(profile map[string]interface{}, p2pReceiverConfig map[string]string, upstreamComs contact.Contact)
+	StartReceiver(profile map[string]interface{}, upstreamComs contact.Contact) // Must be run as a go routine.
 }
 
 // Defines message structure for p2p
 type P2pMessage struct {
     RequestingAgentPaw string // Paw of agent sending the original request.
-    SendResponseTo string // return address for responses
+    SourceAddress string // return address for responses (e.g. IP + port, pipe path)
     MessageType int
     Payload []byte
     Populated bool
@@ -33,13 +33,16 @@ type P2pMessage struct {
 // P2pReceiverChannels contains the P2pReceiver implementations
 var P2pReceiverChannels = map[string]P2pReceiver{}
 
+// Contains the C2 Contact implementations strictly for peer-to-peer communications.
+var P2pClientChannels = map[string]contact.Contact{}
+
 // Helper Functions
 
 // Build p2p message and return the bytes of its JSON marshal.
-func BuildP2pMsgBytes(paw string, messageType int, payload []byte, respondTo string) []byte {
+func BuildP2pMsgBytes(paw string, messageType int, payload []byte, srcAddr string) []byte {
     p2pMsg := &P2pMessage{
         RequestingAgentPaw: paw,
-        SendResponseTo: respondTo,
+        SourceAddress: srcAddr,
         MessageType: messageType,
         Payload: payload,
         Populated: true,

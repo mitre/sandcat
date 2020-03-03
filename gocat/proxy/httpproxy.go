@@ -10,26 +10,29 @@ import (
 )
 
 //HttpReceiver forwards data received from HTTP requests to the upstream server via HTTP. Implements the P2pReceiver interface.
-type HttpReceiver struct { }
+type HttpReceiver struct {
+    PortStr string
+}
 
 func init() {
-	P2pReceiverChannels["http"] = HttpReceiver{}
+	P2pReceiverChannels["http"] = HttpReceiver{ PortStr: "8889" } // default listening port
 }
 
 // Start receiving peer-to-peer messages via HTTP. Forward them to this agent's server via HTTP proxy.
-func (receiver HttpReceiver) StartReceiver(profile map[string]interface{}, p2pReceiverConfig map[string]string, upstreamComs contact.Contact) {
+// This method will be run as a go routine.
+func (receiver HttpReceiver) StartReceiver(profile map[string]interface{}, upstreamComs contact.Contact) {
     // Make sure the agent uses HTTP with the C2.
     switch upstreamComs.(type) {
     case contact.API:
         // p2pReceiverConfig["p2pReceiver"] will contain the port number to listen on.
-        go startHttpProxy(profile, p2pReceiverConfig["p2pReceiver"])
+        output.VerbosePrint(fmt.Sprintf("[*] Starting HTTP proxy receiver on local port %s", receiver.PortStr))
+        startHttpProxy(profile, receiver.PortStr)
     default:
         output.VerbosePrint(fmt.Sprintf("[-] Cannot start HTTP proxy receiver if agent is not using HTTP communication with the C2."))
     }
 }
 
-// Helper method for StartReceiver. Must be run as a go routine. Starts HTTP proxy to forward messages from peers to
-// the C2 server.
+// Helper method for StartReceiver. Starts HTTP proxy to forward messages from peers to the C2 server.
 func startHttpProxy(profile map[string]interface{}, portStr string) {
     listenPort := ":" + portStr
     server := profile["server"].(string)
