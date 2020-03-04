@@ -1,7 +1,7 @@
 ---
 
 - id: 2f34977d-9558-4c12-abad-349716777c6b
-  name: Deploy 54ndc47
+  name: 54ndc47
   description: A GoLang agent which communicates through the HTTP contact
   tactic: initial-access
   technique:
