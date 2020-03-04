@@ -37,11 +37,8 @@ var P2pReceiverChannels = map[string]P2pReceiver{}
 // Contains the C2 Contact implementations strictly for peer-to-peer communications.
 var P2pClientChannels = map[string]contact.Contact{}
 
-var OnlineHosts = "" // comma-separated list of online agents to try p2p comms with. Can be changed server-side.
-var P2pHostList = parseOnlineHosts(OnlineHosts)
-
 // Returns list of online hostnames for p2p comms.
-func parseOnlineHosts(hostListStr string) []string {
+func GetOnlineHosts(hostListStr string) []string {
 	var hostList []string
 	for _, hostname := range strings.Split(hostListStr, ",") {
 		if len(hostname) > 0 {
