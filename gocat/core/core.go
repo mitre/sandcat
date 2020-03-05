@@ -28,13 +28,18 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 			profile["paw"] = beacon["paw"]
 			checkin = time.Now()
 		}
+		if _, valid := profile["error"]; valid {
+			delete(profile, "error")
+		}
 		if beacon["contact"] != nil {
-			c2 := beacon["contact"].(string)
+			c2 := strings.ToUpper(beacon["contact"].(string))
 			output.VerbosePrint(fmt.Sprintf("[*] Switching to %s channel", c2))
 			if _, valid := contact.CommunicationChannels[c2]; valid {
 				coms, _ = contact.CommunicationChannels[c2]
 			} else {
-				output.VerbosePrint(fmt.Sprintf("[-] %s channel not supported", c2))
+				error := fmt.Sprintf("[-] %s channel not supported", c2)
+				output.VerbosePrint(error)
+				profile["error"] = error
 			}
 		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
@@ -64,7 +69,7 @@ func buildProfile(server string, group string, executors []string, privilege str
 	user, _ := user.Current()
 	availContacts := []string{}
 	for k := range contact.CommunicationChannels {
-		availContacts = append(availContacts,k)
+		availContacts = append(availContacts,strings.ToLower(k))
 	}
 
 	profile := make(map[string]interface{})
