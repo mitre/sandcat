@@ -51,6 +51,7 @@ func activateP2pReceivers(profile map[string]interface{}, coms contact.Contact) 
 			output.VerbosePrint(fmt.Sprintf("[-] P2P Receiver for %s not found. Skipping.", receiverName))
 		}
 	}
+	receiversActivated = true
 }
 
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
@@ -66,7 +67,6 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 			if useP2pReceivers && !receiversActivated {
 				activateP2pReceivers(profile, coms)
 				output.VerbosePrint("[*] Started up P2P receivers.")
-				receiversActivated = true
 			}
 		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
