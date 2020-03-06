@@ -3,10 +3,7 @@ package main
 import (
 	"flag"
 	"strconv"
-<<<<<<< HEAD
-=======
 
->>>>>>> master
 	"./core"
 	"./util"
 )
