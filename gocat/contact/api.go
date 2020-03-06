@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"sync"
 
 	"../executors/execute"
 	"../output"
@@ -73,7 +74,7 @@ func (contact API) GetPayloadBytes(payload string, server string, uniqueID strin
 }
 
 //RunInstruction runs a single instruction
-func (contact API) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
+func (contact API) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string, wg *sync.WaitGroup) {
     timeout := int(command["timeout"].(float64))
 	result := make(map[string]interface{})
 	output, status, pid := execute.RunCommand(command["command"].(string), payloads, command["executor"].(string), timeout)
@@ -81,7 +82,8 @@ func (contact API) RunInstruction(command map[string]interface{}, profile map[st
 	result["output"] = output
 	result["status"] = status
 	result["pid"] = pid
- 	contact.SendExecutionResults(profile, result)
+	 contact.SendExecutionResults(profile, result)
+	 (*wg).Done()
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel

