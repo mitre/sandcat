@@ -52,8 +52,8 @@ func activateP2pReceivers(profile map[string]interface{}, coms contact.Contact) 
 		} else {
 			output.VerbosePrint(fmt.Sprintf("[-] P2P Receiver for %s not found. Skipping.", receiverName))
 		}
-		receiversActivated = true
 	}
+	receiversActivated = true
 }
 
 // Helper function to switch P2P communication methods and agents. Returns new p2pClient coms.
