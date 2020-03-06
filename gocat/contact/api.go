@@ -96,8 +96,9 @@ func (contact API) SendExecutionResults(profile map[string]interface{}, result m
 	profileCopy := make(map[string]interface{})
 	for k,v := range profile {
 		profileCopy[k] = v
-	  }
-	profileCopy["result"] = result
+	}
+	results := [1]map[string]interface{}{result}
+	profileCopy["results"] = results
 	data, _ := json.Marshal(profileCopy)
 	request(address, data)
 }
