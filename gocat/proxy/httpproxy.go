@@ -35,6 +35,10 @@ func (receiver *HttpReceiver) StartReceiver(profile map[string]interface{}, upst
 	}
 }
 
+func (receiver *HttpReceiver) UpdateServerAndComs(newServer string, newComs contact.Contact) {
+	receiver.UpstreamServer = newServer
+}
+
 // Helper method for StartReceiver. Starts HTTP proxy to forward messages from peers to the C2 server.
 func (receiver *HttpReceiver) startHttpProxy() {
 	listenPort := ":" + receiver.PortStr
