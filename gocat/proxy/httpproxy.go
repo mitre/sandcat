@@ -27,6 +27,7 @@ func (receiver *HttpReceiver) StartReceiver(profile map[string]interface{}, upst
 	switch upstreamComs.(type) {
 	case contact.API:
 		receiver.UpstreamServer = profile["server"].(string)
+		output.VerbosePrint(fmt.Sprintf("[*] Starting HTTP proxy receiver on local port %s", receiver.PortStr))
 		output.VerbosePrint(fmt.Sprintf("[*] HTTP proxy receiver has upstream contact at %s", receiver.UpstreamServer))
 		receiver.startHttpProxy()
 	default:
