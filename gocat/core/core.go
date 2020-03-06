@@ -96,17 +96,17 @@ func buildProfile(server string, group string, executors []string, privilege str
 
 func chooseCommunicationChannel(profile map[string]interface{}, c2Config map[string]string) contact.Contact {
 	coms, _ := contact.CommunicationChannels[c2Config["c2Name"]]
-	if !validC2Configuration(coms, c2Config) {
+	if !validC2Configuration(profile, coms, c2Config) {
 		output.VerbosePrint("[-] Invalid C2 Configuration! Defaulting to HTTP")
 		coms, _ = contact.CommunicationChannels["HTTP"]
 	}
 	return coms
 }
 
-func validC2Configuration(coms contact.Contact, c2Config map[string]string) bool {
+func validC2Configuration(profile map[string]interface{}, coms contact.Contact, c2Config map[string]string) bool {
 	if strings.EqualFold(c2Config["c2Name"], c2Config["c2Name"]) {
 		if _, valid := contact.CommunicationChannels[c2Config["c2Name"]]; valid {
-			return coms.C2RequirementsMet(c2Config)
+			return coms.C2RequirementsMet(profile, c2Config)
 		}
 	}
 	return false

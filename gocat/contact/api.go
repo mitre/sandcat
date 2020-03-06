@@ -85,7 +85,7 @@ func (contact API) RunInstruction(command map[string]interface{}, profile map[st
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
-func (contact API) C2RequirementsMet(criteria map[string]string) bool {
+func (contact API) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) bool {
 	output.VerbosePrint(fmt.Sprintf("Beacon API=%s", apiBeacon))
 	return true
 }
