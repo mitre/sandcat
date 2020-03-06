@@ -3,6 +3,7 @@ package proxy
 import (
     "encoding/json"
     "strings"
+    "os"
     "../contact"
 )
 
@@ -20,6 +21,7 @@ const (
 //P2pReceiver defines required functions for relaying messages between peers and an upstream peer/c2.
 type P2pReceiver interface {
 	StartReceiver(profile map[string]interface{}, upstreamComs contact.Contact) // Must be run as a go routine.
+	UpdateServerAndComs(newServer string, newComs contact.Contact)
 }
 
 // Defines message structure for p2p
@@ -37,12 +39,15 @@ var P2pReceiverChannels = map[string]P2pReceiver{}
 // Contains the C2 Contact implementations strictly for peer-to-peer communications.
 var P2pClientChannels = map[string]contact.Contact{}
 
-// Returns list of online hostnames for p2p comms.
+// Returns list of online hostnames for p2p comms (excluding the agent's local hostname)
 func GetOnlineHosts(hostListStr string) []string {
 	var hostList []string
-	for _, hostname := range strings.Split(hostListStr, ",") {
-		if len(hostname) > 0 {
-			hostList = append(hostList, hostname)
+	thisHostname, err := os.Hostname()
+	if err == nil {
+		for _, hostname := range strings.Split(hostListStr, ",") {
+			if len(hostname) > 0 && thisHostname != hostname {
+				hostList = append(hostList, hostname)
+			}
 		}
 	}
 	return hostList
