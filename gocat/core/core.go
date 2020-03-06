@@ -52,6 +52,7 @@ func activateP2pReceivers(profile map[string]interface{}, coms contact.Contact) 
 		} else {
 			output.VerbosePrint(fmt.Sprintf("[-] P2P Receiver for %s not found. Skipping.", receiverName))
 		}
+		receiversActivated = true
 	}
 }
 
@@ -114,7 +115,6 @@ func runAgent(coms contact.Contact, profile map[string]interface{}, onlineHosts 
 			if useP2pReceivers && !receiversActivated {
 				activateP2pReceivers(profile, coms)
 				output.VerbosePrint("[*] Started up P2P receivers.")
-				receiversActivated = true
 			}
 		} else {
 			failCount++
@@ -211,7 +211,7 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 	output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
 	output.VerbosePrint(fmt.Sprintf("initial delay=%d", delay))
 	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", c2["c2Name"]))
-	output.VerbosePrint(fmt.Sprintf("p2p receivers on=%v", p2pReceiversOn))
+	output.VerbosePrint(fmt.Sprintf("allow p2p receivers=%v", p2pReceiversOn))
 	useP2pReceivers = p2pReceiversOn
 
 	profile := buildProfile(server, group, executors, privilege, c2["c2Name"])
