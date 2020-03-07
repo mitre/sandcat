@@ -14,3 +14,4 @@
 .idea
 shared.h
 sandcat.h
+payloads/sandcat.go-*
