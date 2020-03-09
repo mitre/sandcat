@@ -54,9 +54,27 @@ func activateP2pReceivers(profile map[string]interface{}, coms contact.Contact) 
 	receiversActivated = true
 }
 
-func runAgent(coms contact.Contact, profile map[string]interface{}) {
+// Returns list of online hostnames for p2p comms (excluding the agent's local hostname)
+func parseOnlineHosts(hostListStr string) []string {
+	var hostList []string
+	thisHostname, err := os.Hostname()
+	if err == nil {
+		for _, hostname := range strings.Split(hostListStr, ",") {
+			if len(hostname) > 0 && thisHostname != hostname {
+				hostList = append(hostList, hostname)
+			}
+		}
+	}
+	return hostList
+}
+
+func runAgent(coms contact.Contact, profile map[string]interface{}, availableP2pHosts []string) {
 	watchdog := 0
 	checkin := time.Now()
+	p2pClientChannelNames := proxy.GetP2pClientChannelNames()
+	output.VerbosePrint(fmt.Sprintf("[*] Available p2p client methods: %q", p2pClientChannelNames))
+	output.VerbosePrint(fmt.Sprintf("[*] Available p2p hosts: %q", availableP2pHosts))
+
 	for {
 		beacon := coms.GetInstructions(profile)
 		if len(beacon) != 0 {
@@ -133,7 +151,7 @@ func validC2Configuration(profile map[string]interface{}, coms contact.Contact, 
 }
 
 //Core is the main function as wrapped by sandcat.go
-func Core(server string, group string, delay int, executors []string, c2 map[string]string, p2pReceiversOn bool, verbose bool) {
+func Core(server string, group string, delay int, executors []string, c2 map[string]string, p2pReceiversOn bool, onlineHosts string, verbose bool) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	privilege := privdetect.Privlevel()
 	output.SetVerbose(verbose)
@@ -145,6 +163,7 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 	output.VerbosePrint(fmt.Sprintf("c2 channel=%s", c2["c2Name"]))
 	output.VerbosePrint(fmt.Sprintf("allow p2p receivers=%v", p2pReceiversOn))
 	useP2pReceivers = p2pReceiversOn
+	availableP2pHosts := parseOnlineHosts(onlineHosts)
 
 	profile := buildProfile(server, group, executors, privilege, c2["c2Name"])
 	util.Sleep(float64(delay))
@@ -152,7 +171,7 @@ func Core(server string, group string, delay int, executors []string, c2 map[str
 		coms := chooseCommunicationChannel(profile, c2)
 		if coms != nil {
 			for {
-				runAgent(coms, profile)
+				runAgent(coms, profile, availableP2pHosts)
 			}
 		}
 		util.Sleep(300)

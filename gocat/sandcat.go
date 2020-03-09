@@ -18,6 +18,7 @@ var (
     c2Name = "HTTP"
 	c2Key = ""
 	listenP2P = "false" // need to set as string to allow ldflags -X build-time variable change on server-side.
+	onlineHosts = "" // comma-separated list of online agents to try p2p comms with.
 )
 
 func main() {
@@ -37,5 +38,5 @@ func main() {
 	flag.Parse()
 	
 	c2Config := map[string]string{"c2Name": *c2, "c2Key": c2Key}
-	core.Core(*server, *group, *delay, executors, c2Config, *listenP2P, *verbose)
+	core.Core(*server, *group, *delay, executors, c2Config, *listenP2P, onlineHosts, *verbose)
 }
