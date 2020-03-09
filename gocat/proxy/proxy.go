@@ -19,6 +19,7 @@ const (
 //P2pReceiver defines required functions for relaying messages between peers and an upstream peer/c2.
 type P2pReceiver interface {
 	StartReceiver(profile map[string]interface{}, upstreamComs contact.Contact) // Must be run as a go routine.
+	UpdateServerAndComs(newServer string, newComs contact.Contact)
 }
 
 // Defines message structure for p2p
@@ -37,6 +38,17 @@ var P2pReceiverChannels = map[string]P2pReceiver{}
 var P2pClientChannels = map[string]contact.Contact{}
 
 // Helper Functions
+
+// Returns list of available P2pClientChannels map keys.
+func GetP2pClientChannelNames() []string {
+	clientNames := make([]string, len(P2pClientChannels))
+	i := 0
+	for name := range P2pClientChannels {
+		clientNames[i] = name
+		i++
+	}
+	return clientNames
+}
 
 // Build p2p message and return the bytes of its JSON marshal.
 func BuildP2pMsgBytes(paw string, messageType int, payload []byte, srcAddr string) []byte {
