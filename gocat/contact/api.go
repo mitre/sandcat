@@ -105,19 +105,6 @@ func (contact API) SendExecutionResults(profile map[string]interface{}, result m
 	request(address, data)
 }
 
-// Clean up any payloads that were downloaded in order to run the instructions
-func CleanupPayloads(droppedPayloads []string) {
-    for i := 0; i < len(droppedPayloads); i++ {
-        payloadPath := droppedPayloads[i]
-        output.VerbosePrint(fmt.Sprintf("[*] cleaning up payload: %s", payloadPath))
-        err := os.Remove(payloadPath)
-
-        if err != nil {
-            output.VerbosePrint(fmt.Sprintf("[-] %s not found. Skipping.", payloadPath))
-        }
-    }
-}
-
 func request(address string, data []byte) []byte {
 	req, _ := http.NewRequest("POST", address, bytes.NewBuffer(util.Encode(data)))
 	client := &http.Client{}

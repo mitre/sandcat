@@ -126,3 +126,16 @@ func (l *ListFlags) Set(value string) error {
 	}
 	return nil
 }
+
+// Clean up any payloads that were downloaded in order to run the instructions
+func CleanupPayloads(droppedPayloads []string) {
+    for i := 0; i < len(droppedPayloads); i++ {
+        payloadPath := droppedPayloads[i]
+        output.VerbosePrint(fmt.Sprintf("[*] cleaning up payload: %s", payloadPath))
+        err := os.Remove(payloadPath)
+
+        if err != nil {
+            output.VerbosePrint(fmt.Sprintf("[-] %s not found. Skipping.", payloadPath))
+        }
+    }
+}
