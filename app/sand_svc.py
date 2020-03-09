@@ -113,7 +113,7 @@ class SandService(BaseService):
                 if param == 'c2':
                     ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
                 elif param == 'fetchPeers' and headers.get(param, "").lower() == "true":
-                    ldflags.append('-X main.%s=%s' % ('onlineHosts', ','.join([agent.host for agent in await self.data_svc.locate('agents')])))
+                    ldflags.append('-X main.%s=%s' % ('onlineHosts', ','.join([agent.host for agent in await self.data_svc.locate('agents') if agent.trusted])))
                 else:
                     ldflags.append('-X main.%s=%s' % (param, headers[param]))
         output = 'plugins/%s/payloads/%s-%s' % (plugin, output_name, platform)
