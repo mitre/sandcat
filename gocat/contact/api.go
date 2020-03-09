@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"../executors/execute"
@@ -81,7 +82,8 @@ func (contact API) RunInstruction(command map[string]interface{}, profile map[st
 	result["output"] = output
 	result["status"] = status
 	result["pid"] = pid
- 	contact.SendExecutionResults(profile, result)
+	contact.SendExecutionResults(profile, result)
+	CleanupPayloads(payloads)
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
@@ -101,6 +103,19 @@ func (contact API) SendExecutionResults(profile map[string]interface{}, result m
 	profileCopy["results"] = results
 	data, _ := json.Marshal(profileCopy)
 	request(address, data)
+}
+
+// Clean up any payloads that were downloaded in order to run the instructions
+func CleanupPayloads(droppedPayloads []string) {
+    for i := 0; i < len(droppedPayloads); i++ {
+        payloadPath := droppedPayloads[i]
+        output.VerbosePrint(fmt.Sprintf("[*] cleaning up payload: %s", payloadPath))
+        err := os.Remove(payloadPath)
+
+        if err != nil {
+            output.VerbosePrint(fmt.Sprintf("[-] %s not found. Skipping.", payloadPath))
+        }
+    }
 }
 
 func request(address string, data []byte) []byte {
