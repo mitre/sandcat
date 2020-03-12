@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 
 	"../executors/execute"
@@ -83,7 +82,6 @@ func (contact API) RunInstruction(command map[string]interface{}, profile map[st
 	result["status"] = status
 	result["pid"] = pid
 	contact.SendExecutionResults(profile, result)
-	CleanupPayloads(payloads)
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel

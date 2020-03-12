@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"../contact"
@@ -71,14 +72,31 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 		}
 		if beacon["instructions"] != nil && len(beacon["instructions"].([]interface{})) > 0 {
 			cmds := reflect.ValueOf(beacon["instructions"])
+
+			// all the payloads that are downloaded as a result of running the instructions
+			var allPayloads []string
+			var wg sync.WaitGroup
+			wg.Add(cmds.Len()) // initialize the wait group with the number of commands that will be run
+
 			for i := 0; i < cmds.Len(); i++ {
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				output.VerbosePrint(fmt.Sprintf("[*] Running instruction %s", command["id"]))
 				droppedPayloads := downloadPayloads(command["payload"].(string), coms, profile)
-				go coms.RunInstruction(command, profile, droppedPayloads)
+				allPayloads = append(allPayloads, droppedPayloads...)
+
+				// anonymous go routine that wraps RunInstruction, keeps the API cleaner
+				go func() {
+					coms.RunInstruction(command, profile, droppedPayloads)
+					defer wg.Done()
+				}()
+
 				util.Sleep(command["sleep"].(float64))
 			}
+
+			// wait here until all instructions have completed running
+			wg.Wait()
+			util.CleanupPayloads(allPayloads)
 		} else {
 			if len(beacon) > 0 {
 				util.Sleep(float64(beacon["sleep"].(int)))

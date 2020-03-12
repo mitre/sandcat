@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"../output"
 )
 
 // Encode base64 encodes bytes
