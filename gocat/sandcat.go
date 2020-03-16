@@ -4,8 +4,8 @@ import (
 	"flag"
 	"strconv"
 
-	"./core"
-	"./util"
+	"github.com/mitre/sandcat/gocat/core"
+	"github.com/mitre/sandcat/gocat/util"
 )
 
 /*

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"../execute"
-	"../../output"
+	"github.com/mitre/sandcat/gocat/executors/execute"
+	"github.com/mitre/sandcat/gocat/output"
 )
 
 func checkExecutorInPath(path string) bool {

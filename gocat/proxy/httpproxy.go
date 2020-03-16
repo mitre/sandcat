@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"io/ioutil"
-	"../output"
-	"../contact"
+	"github.com/mitre/sandcat/gocat/output"
+	"github.com/mitre/sandcat/gocat/contact"
 )
 
 //HttpReceiver forwards data received from HTTP requests to the upstream server via HTTP. Implements the P2pReceiver interface.

@@ -2,7 +2,7 @@ package proxy
 
 import (
     "encoding/json"
-    "../contact"
+    "github.com/mitre/sandcat/gocat/contact"
 )
 
 // Define MessageType values for P2pMessage

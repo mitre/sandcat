@@ -1,7 +1,7 @@
 package execute
 
 import (
-	"../../util"
+	"github.com/mitre/sandcat/gocat/util"
 	"fmt"
 	"strings"
 )
