@@ -109,7 +109,7 @@ func removeWhiteSpace(input string) string {
 }
 
 func EvaluateWatchdog(lastcheckin time.Time, watchdog int) {
-	if watchdog > 0 && float64(time.Now().Sub(lastcheckin).Minutes()) > float64(watchdog) {
+	if watchdog > 0 && float64(time.Now().Sub(lastcheckin).Seconds()) > float64(watchdog) {
 		StopProcess(os.Getpid())
 	}
 }
