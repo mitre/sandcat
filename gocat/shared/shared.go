@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	key       = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
-	server    = "http://localhost:8888"
-	group     = "red"
+	key = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
+	server = "http://localhost:8888"
+	c2Name = "HTTP"
+	c2Key = ""
+	group = "red"
 	listenP2P = false
-	c2Name    = "HTTP"
-	c2Key     = ""
 )
 
 //export VoidFunc
