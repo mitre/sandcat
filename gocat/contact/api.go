@@ -47,14 +47,15 @@ func (contact API) GetInstructions(profile map[string]interface{}) map[string]in
 // Will fetch all required payloads. If writeToDisk is true, then return []byte will be nil, and
 // payload will be written to disk (return string will contain filepath). If writeToDisk is false, then []byte will contain the payload bytes,
 // and the returned string will be an empty string
-func (contact API) GetPayloadBytes(payload string, server string, uniqueID string, platform string, writeToDisk bool) (string, []byte) {
+func (contact API) GetPayloadBytes(payload string, linkIdentifier string, profile map[string]interface{}, writeToDisk bool) (string, []byte) {
     var payloadBytes []byte
     location := ""
     output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload bytes: %s", payload))
-    address := fmt.Sprintf("%s/file/download", server)
+    address := fmt.Sprintf("%s/file/download", profile["server"].(string))
     req, _ := http.NewRequest("POST", address, nil)
     req.Header.Set("file", payload)
-    req.Header.Set("platform", platform)
+    req.Header.Set("platform", profile["platform"].(string))
+    req.Header.Set("identifier", linkIdentifier)
     client := &http.Client{}
     resp, err := client.Do(req)
     if err == nil && resp.StatusCode == ok {

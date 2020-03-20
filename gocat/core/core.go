@@ -28,14 +28,14 @@ var useP2pReceivers = false
 var receiversActivated = false
 
 // Will download each individual payload listed, and will return the full file paths of each downloaded payload.
-func downloadPayloads(payloadListStr string, coms contact.Contact, profile map[string]interface{}) []string {
+func downloadPayloads(linkIdentifier string, payloadListStr string, coms contact.Contact, profile map[string]interface{}) []string {
 	var droppedPayloads []string
 	payloads := strings.Split(strings.Replace(payloadListStr, " ", "", -1), ",")
 	for _, payload := range payloads {
 		if len(payload) > 0 {
 			location := filepath.Join(payload)
 			if util.Exists(location) == false {
-				location, _ = coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
+				location, _ = coms.GetPayloadBytes(payload, linkIdentifier, profile, true)
 			}
 			droppedPayloads = append(droppedPayloads, location)
 		}
@@ -75,7 +75,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				output.VerbosePrint(fmt.Sprintf("[*] Running instruction %s", command["id"]))
-				droppedPayloads := downloadPayloads(command["payload"].(string), coms, profile)
+				droppedPayloads := downloadPayloads(command["id"].(string), command["payload"].(string), coms, profile)
 				go coms.RunInstruction(command, profile, droppedPayloads)
 				util.Sleep(command["sleep"].(float64))
 			}

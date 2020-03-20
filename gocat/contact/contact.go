@@ -8,7 +8,7 @@ const (
 //Contact defines required functions for communicating with the server
 type Contact interface {
 	GetInstructions(profile map[string]interface{}) map[string]interface{}
-	GetPayloadBytes(payload string, server string, uniqueID string, platform string, writeToDisk bool) (string, []byte)
+	GetPayloadBytes(payload string, linkIdentifier string, profile map[string]interface{}, writeToDisk bool) (string, []byte)
 	RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string)
 	C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) bool
 	SendExecutionResults(profile map[string]interface{}, result map[string]interface{})
