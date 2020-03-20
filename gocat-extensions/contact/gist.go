@@ -8,6 +8,7 @@ import (
 	"golang.org/x/oauth2"
 	"math/rand"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"../executors/execute"
@@ -182,7 +183,7 @@ func checkValidSleepInterval(profile map[string]interface{}) {
 }
 
 func getBeaconNameIdentifier() string {
-	return fmt.Sprintf("%s", rand.Int())
+	return strconv.Itoa(rand.Int())
 }
 
 func createNewClient() *github.Client {
