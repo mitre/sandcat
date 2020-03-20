@@ -68,7 +68,7 @@ class SandService(BaseService):
     async def _get_c2_config(self, c2_type):
         for c2 in self.contact_svc.contacts:
             if c2_type == c2.name:
-                return c2.get_config()
+                return 'c2Key', c2.retrieve_config()
         return '', ''
 
     async def _install_gocat_extensions(self, extension_names):
@@ -131,17 +131,20 @@ class SandService(BaseService):
         into the gocat subdirectory in order to compile the extension module into sandcat."""
 
         if module:
-            for file, pkg in module.files:
-                try:
-                    # Make sure the package folders are there or are created.
-                    package_path = os.path.join(self.sandcat_dir, 'gocat', pkg)
-                    if not os.path.exists(package_path):
-                        os.makedirs(package_path)
+            try:
+                for file, pkg in module.files:
+                    try:
+                        # Make sure the package folders are there or are created.
+                        package_path = os.path.join(self.sandcat_dir, 'gocat', pkg)
+                        if not os.path.exists(package_path):
+                            os.makedirs(package_path)
 
-                    copyfile(src=os.path.join(self.sandcat_dir, 'gocat-extensions', pkg, file),
-                             dst=os.path.join(self.sandcat_dir, 'gocat', pkg, file))
-                except Exception as e:
-                    self.log.error('Error copying file %s, %s' % (file, e))
+                        copyfile(src=os.path.join(self.sandcat_dir, 'gocat-extensions', pkg, file),
+                                 dst=os.path.join(self.sandcat_dir, 'gocat', pkg, file))
+                    except Exception as e:
+                        self.log.error('Error copying file %s, %s' % (file, e))
+            except Exception as e:
+                print(e)
 
     def _remove_module_files_from_sandcat(self, module):
         """Given an extension module object, will delete the module-required files from the gocat subdirectory
