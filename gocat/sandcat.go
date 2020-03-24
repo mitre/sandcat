@@ -2,10 +2,9 @@ package main
 
 import (
 	"flag"
+	"github.com/mitre/sandcat/gocat/core"
+	"github.com/mitre/sandcat/gocat/util"
 	"strconv"
-
-	"./core"
-	"./util"
 )
 
 /*

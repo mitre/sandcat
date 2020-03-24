@@ -3,7 +3,7 @@
 package shells
 
 import (
-	"../execute"
+	"github.com/mitre/sandcat/gocat/executors/execute"
 	"os/exec"
 )
 

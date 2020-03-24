@@ -13,15 +13,15 @@ import (
 	"strings"
 	"time"
 
-	"../contact"
-	"../proxy"
-	"../executors/execute"
-	"../output"
-	"../privdetect"
-	"../util"
+	"github.com/mitre/sandcat/gocat/contact"
+	"github.com/mitre/sandcat/gocat/proxy"
+	"github.com/mitre/sandcat/gocat/executors/execute"
+	"github.com/mitre/sandcat/gocat/output"
+	"github.com/mitre/sandcat/gocat/privdetect"
+	"github.com/mitre/sandcat/gocat/util"
 
-	_ "../executors/shellcode" // necessary to initialize all submodules
-	_ "../executors/shells"    // necessary to initialize all submodules
+	_ "github.com/mitre/sandcat/gocat/executors/shellcode" // necessary to initialize all submodules
+	_ "github.com/mitre/sandcat/gocat/executors/shells"    // necessary to initialize all submodules
 )
 
 var useP2pReceivers = false

@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"time"
 
-	"../executors/execute"
-	"../output"
-	"../util"
+	"github.com/mitre/sandcat/gocat/executors/execute"
+	"github.com/mitre/sandcat/gocat/output"
+	"github.com/mitre/sandcat/gocat/util"
 )
 
 const (

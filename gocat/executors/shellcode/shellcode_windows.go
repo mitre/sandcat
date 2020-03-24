@@ -4,8 +4,8 @@ import (
 	"syscall"
 	"unsafe"
 
-	"../execute"
-	"../../util"
+	"github.com/mitre/sandcat/gocat/executors/execute"
+	"github.com/mitre/sandcat/gocat/util"
 )
 
 const (

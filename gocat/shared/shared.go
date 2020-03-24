@@ -4,7 +4,7 @@ package main
 
 import "C"
 import (
-	"../core"
+	"github.com/mitre/sandcat/gocat/core"
 )
 
 var (

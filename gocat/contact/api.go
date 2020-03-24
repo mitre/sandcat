@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"../executors/execute"
-	"../output"
-	"../util"
+	"github.com/mitre/sandcat/gocat/executors/execute"
+	"github.com/mitre/sandcat/gocat/output"
+	"github.com/mitre/sandcat/gocat/util"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"strconv"
 	"syscall"
-	"../../output"
+	"github.com/mitre/sandcat/gocat/output"
 )
 
 // Runner runner

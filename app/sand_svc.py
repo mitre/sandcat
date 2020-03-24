@@ -113,13 +113,15 @@ class SandService(BaseService):
                     ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
                 else:
                     ldflags.append('-X main.%s=%s' % (param, headers[param]))
-        output = 'plugins/%s/payloads/%s-%s' % (plugin, output_name, platform)
         ldflags.append(extldflags)
+        output = '../payloads/%s-%s' % (output_name, platform)
 
         # Load extensions and compile.
         installed_extensions = await self._install_gocat_extensions(extension_names)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
-        await self.file_svc.compile_go(platform, output, file_path, buildmode=buildmode, ldflags=' '.join(ldflags), cflags=cflags)
+        build_path, build_file = os.path.split(file_path)
+        await self.file_svc.compile_go(platform, output, build_file, buildmode=buildmode, ldflags=' '.join(ldflags),
+                                       cflags=cflags, build_dir=build_path)
 
         # Remove extension files.
         if installed_extensions:
