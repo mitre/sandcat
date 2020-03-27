@@ -59,7 +59,7 @@ func (contact API) GetPayloadBytes(payload string, server string, uniqueID strin
     resp, err := client.Do(req)
     if err == nil && resp.StatusCode == ok {
         if writeToDisk {
-            location = filepath.Join(payload)
+        	location = filepath.Join(resp.Header["Filename"][0])
             util.WritePayload(location, resp)
         } else {
             // Not writing to disk - return the payload bytes.

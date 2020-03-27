@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/mitre/sandcat/gocat/contact"
-	"github.com/mitre/sandcat/gocat/proxy"
 	"github.com/mitre/sandcat/gocat/executors/execute"
 	"github.com/mitre/sandcat/gocat/output"
 	"github.com/mitre/sandcat/gocat/privdetect"
+	"github.com/mitre/sandcat/gocat/proxy"
 	"github.com/mitre/sandcat/gocat/util"
 
 	_ "github.com/mitre/sandcat/gocat/executors/shellcode" // necessary to initialize all submodules
