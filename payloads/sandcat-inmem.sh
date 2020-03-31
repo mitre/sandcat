@@ -4,7 +4,7 @@ set -e
 
 export SC_PROC_NAME=${SC_PROC_NAME:-'sandcat'}
 export SC_DEFAULTSERVER=${SC_DEFAULTSERVER:-'http://localhost:8888'}
-export SC_DEFAULTGROUP=${SC_DEFAULTGROUP:-'my_group'}
+export SC_DEFAULTGROUP=${SC_DEFAULTGROUP:-'red'}
 
 declare -a binaries=("python3" "python" "perl")
 
