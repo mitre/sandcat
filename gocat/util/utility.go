@@ -71,7 +71,7 @@ func WritePayload(location string, resp *http.Response) {
 	dst, _ := os.Create(location)
 	defer dst.Close()
 	_, _ = io.Copy(dst, resp.Body)
-	os.Chmod(location, 0500)
+	os.Chmod(location, 0700)
 }
 
 //WritePayloadBytes creates payload from []bytes
@@ -79,7 +79,7 @@ func WritePayloadBytes(location string, payload []byte) {
 	dst, _ := os.Create(location)
 	defer dst.Close()
 	_, _ = dst.Write(payload)
-	os.Chmod(location, 0500)
+	os.Chmod(location, 0700)
 }
 
 //CheckPayloadsAvailable determines if any payloads are not on disk
