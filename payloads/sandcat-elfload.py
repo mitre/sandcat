@@ -7,11 +7,11 @@ import requests
 # pull environment variables for server, group, and process name
 proc_name = os.getenv('SC_PROC_NAME', 'sandcat')
 server = os.getenv('SC_DEFAULTSERVER', 'http://localhost:8888')
-group = os.getenv('SC_DEFAULTGROUP', 'my_group')
+group = os.getenv('SC_DEFAULTGROUP', 'red')
 
 print("{} {} {}".format(proc_name, server, group))
 
-headers = dict(file='sandcat.go', platform='linux', server=server, defaultGroup=group)
+headers = dict(file='sandcat.go', platform='linux', server=server, group=group)
 r = requests.get('%s/file/download' % server, headers=headers, stream=True)
 print(r.status_code)
 if r.status_code == 200:

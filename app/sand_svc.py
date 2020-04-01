@@ -55,7 +55,7 @@ class SandService(BaseService):
                                               output_name=name,
                                               buildmode='--buildmode=c-shared',
                                               **compile_options[platform],
-                                              flag_params=('server', 'c2'),
+                                              flag_params=('server', 'group', 'listenP2P', 'c2'),
                                               extension_names=extension_names)
         return '%s-%s' % (name, platform), self.generate_name()
 
@@ -102,7 +102,7 @@ class SandService(BaseService):
                     self._remove_module_files_from_sandcat(module)
 
     async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
-                                 extldflags='', cflags='', flag_params=('server', 'c2'), extension_names=None):
+                                 extldflags='', cflags='', flag_params=('server', 'group', 'listenP2P', 'c2'), extension_names=None):
         """Compile sandcat agent using specified parameters. Will also include any requested extension modules."""
 
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
