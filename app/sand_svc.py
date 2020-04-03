@@ -1,7 +1,7 @@
+import donut
 import os
 import random
 import string
-import donut
 from importlib import import_module
 from shutil import copyfile, which
 
@@ -56,11 +56,12 @@ class SandService(BaseService):
                                               output_name=name,
                                               buildmode='--buildmode=c-shared',
                                               **compile_options[platform],
-                                              flag_params=('server', 'c2'),
+                                              flag_params=('server', 'group', 'listenP2P', 'c2'),
                                               extension_names=extension_names)
         return '%s-%s' % (name, platform), self.generate_name()
 
-    async def dynamically_generate_donut_shellcode(self, headers):
+    @staticmethod
+    async def dynamically_generate_donut_shellcode(headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
         name = headers.get('file')
 
@@ -68,9 +69,11 @@ class SandService(BaseService):
         # Then the agent reads that file with the hardcoded name and executes the shellcode
 
         shellcode = donut.create(file=r"/home/user/dev/DemoCreateProcess.dll",
-                     cls='TestClass',
-                     method='RunProcess',
-                     params='notepad.exe,calc.exe')
+                  cls='TestClass',
+                  method='RunProcess',
+                  params='notepad.exe,calc.exe')
+
+        print("DEBUG: Shellcode length: ")
 
         #Format the shellcode how the shellcode executor expects it
         #hexbytes = shellcode.hex()
@@ -78,7 +81,7 @@ class SandService(BaseService):
         #final = ""
 
         #for i in range(0, len(hexbytes), 2):
-            #final += ('0x' + hexbytes[i:i + 2] + ',')
+         #final += ('0x' + hexbytes[i:i + 2] + ',')
 
         #remove the final comma
         #final = final[:-1]
@@ -88,11 +91,14 @@ class SandService(BaseService):
         #outfile.write(final)
         #outfile.close()
 
-        outfile = open("shellcode.bin", "wb")
-        outfile.write(shellcode)
-        outfile.close()
+        try:
+            with open('/home/user/temp/alex/caldera/plugins/sandcat/payloads/something.donut', 'wb') as f:
+                f.write(shellcode)
+        except Exception as ex:
+            print(ex)
 
-        return "'shellcode.bin', shellcode.bin"
+
+        return "something.donut", "something.donut"
 
     """ PRIVATE """
 
@@ -103,7 +109,7 @@ class SandService(BaseService):
     async def _get_c2_config(self, c2_type):
         for c2 in self.contact_svc.contacts:
             if c2_type == c2.name:
-                return c2.get_config()
+                return 'c2Key', c2.retrieve_config()
         return '', ''
 
     async def _install_gocat_extensions(self, extension_names):
@@ -137,7 +143,7 @@ class SandService(BaseService):
                     self._remove_module_files_from_sandcat(module)
 
     async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
-                                 extldflags='', cflags='', flag_params=('server', 'c2'), extension_names=None):
+                                 extldflags='', cflags='', flag_params=('server', 'group', 'listenP2P', 'c2'), extension_names=None):
         """Compile sandcat agent using specified parameters. Will also include any requested extension modules."""
 
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
@@ -148,13 +154,15 @@ class SandService(BaseService):
                     ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
                 else:
                     ldflags.append('-X main.%s=%s' % (param, headers[param]))
-        output = 'plugins/%s/payloads/%s-%s' % (plugin, output_name, platform)
         ldflags.append(extldflags)
+        output = '../payloads/%s-%s' % (output_name, platform)
 
         # Load extensions and compile.
         installed_extensions = await self._install_gocat_extensions(extension_names)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
-        await self.file_svc.compile_go(platform, output, file_path, buildmode=buildmode, ldflags=' '.join(ldflags), cflags=cflags)
+        build_path, build_file = os.path.split(file_path)
+        await self.file_svc.compile_go(platform, output, build_file, buildmode=buildmode, ldflags=' '.join(ldflags),
+                                       cflags=cflags, build_dir=build_path)
 
         # Remove extension files.
         if installed_extensions:
@@ -166,17 +174,20 @@ class SandService(BaseService):
         into the gocat subdirectory in order to compile the extension module into sandcat."""
 
         if module:
-            for file, pkg in module.files:
-                try:
-                    # Make sure the package folders are there or are created.
-                    package_path = os.path.join(self.sandcat_dir, 'gocat', pkg)
-                    if not os.path.exists(package_path):
-                        os.makedirs(package_path)
+            try:
+                for file, pkg in module.files:
+                    try:
+                        # Make sure the package folders are there or are created.
+                        package_path = os.path.join(self.sandcat_dir, 'gocat', pkg)
+                        if not os.path.exists(package_path):
+                            os.makedirs(package_path)
 
-                    copyfile(src=os.path.join(self.sandcat_dir, 'gocat-extensions', pkg, file),
-                             dst=os.path.join(self.sandcat_dir, 'gocat', pkg, file))
-                except Exception as e:
-                    self.log.error('Error copying file %s, %s' % (file, e))
+                        copyfile(src=os.path.join(self.sandcat_dir, 'gocat-extensions', pkg, file),
+                                 dst=os.path.join(self.sandcat_dir, 'gocat', pkg, file))
+                    except Exception as e:
+                        self.log.error('Error copying file %s, %s' % (file, e))
+            except Exception as e:
+                print(e)
 
     def _remove_module_files_from_sandcat(self, module):
         """Given an extension module object, will delete the module-required files from the gocat subdirectory
