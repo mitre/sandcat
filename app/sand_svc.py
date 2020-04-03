@@ -1,3 +1,4 @@
+import donut
 import os
 import random
 import string
@@ -58,6 +59,41 @@ class SandService(BaseService):
                                               flag_params=('server', 'group', 'listenP2P', 'c2'),
                                               extension_names=extension_names)
         return '%s-%s' % (name, platform), self.generate_name()
+
+    @staticmethod
+    async def dynamically_generate_donut_shellcode(headers):
+        # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
+        name = headers.get('file')
+
+        # Currently just generates sellcode from the demo file and saves it as the payload "shellcode.bin"
+        # Then the agent reads that file with the hardcoded name and executes the shellcode
+
+        shellcode = donut.create(file=r"/home/user/dev/DemoCreateProcess.dll",
+                  cls='TestClass',
+                  method='RunProcess',
+                  params='notepad.exe,calc.exe')
+
+        #Format the shellcode how the shellcode executor expects it
+        #hexbytes = shellcode.hex()
+
+        #final = ""
+
+        #for i in range(0, len(hexbytes), 2):
+         #final += ('0x' + hexbytes[i:i + 2] + ',')
+
+        #remove the final comma
+        #final = final[:-1]
+
+        #final should now contain the shellcode
+        #outfile = open("shellcode.hex", "wb")
+        #outfile.write(final)
+        #outfile.close()
+
+        outfile = open("shellcode.bin", "wb")
+        outfile.write(shellcode)
+        outfile.close()
+
+        return "'shellcode.bin', shellcode.bin"
 
     """ PRIVATE """
 

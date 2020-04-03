@@ -20,6 +20,7 @@ import (
 	"github.com/mitre/sandcat/gocat/proxy"
 	"github.com/mitre/sandcat/gocat/util"
 
+	_ "github.com/mitre/sandcat/gocat/executors/donut" // necessary to initialize all submodules
 	_ "github.com/mitre/sandcat/gocat/executors/shellcode" // necessary to initialize all submodules
 	_ "github.com/mitre/sandcat/gocat/executors/shells"    // necessary to initialize all submodules
 )
