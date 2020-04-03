@@ -13,31 +13,33 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitre/sandcat/gocat/contact"
-	"github.com/mitre/sandcat/gocat/executors/execute"
-	"github.com/mitre/sandcat/gocat/output"
-	"github.com/mitre/sandcat/gocat/privdetect"
-	"github.com/mitre/sandcat/gocat/proxy"
-	"github.com/mitre/sandcat/gocat/util"
+	"../contact"
+	"../proxy"
+	"../executors/execute"
+	"../output"
+	"../privdetect"
+	"../util"
 
-	_ "github.com/mitre/sandcat/gocat/executors/shellcode" // necessary to initialize all submodules
-	_ "github.com/mitre/sandcat/gocat/executors/shells"    // necessary to initialize all submodules
+	_ "../executors/shellcode" // necessary to initialize all submodules
+	_ "../executors/donut" // necessary to initialize all submodules
+	_ "../executors/shells"    // necessary to initialize all submodules
 )
 
 var useP2pReceivers = false
 var receiversActivated = false
 
 // Will download each individual payload listed, and will return the full file paths of each downloaded payload.
-func downloadPayloads(payloads []interface{}, coms contact.Contact, profile map[string]interface{}) []string {
+func downloadPayloads(payloadListStr string, coms contact.Contact, profile map[string]interface{}) []string {
 	var droppedPayloads []string
-	availablePayloads := reflect.ValueOf(payloads)
-	for i := 0; i < availablePayloads.Len(); i++ {
-		payload := availablePayloads.Index(i).Elem().String()
-		location := filepath.Join(payload)
-		if util.Exists(location) == false {
-			location, _ = coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
+	payloads := strings.Split(strings.Replace(payloadListStr, " ", "", -1), ",")
+	for _, payload := range payloads {
+		if len(payload) > 0 {
+			location := filepath.Join(payload)
+			if util.Exists(location) == false {
+				location, _ = coms.GetPayloadBytes(payload, profile["server"].(string), profile["paw"].(string),profile["platform"].(string), true)
+			}
+			droppedPayloads = append(droppedPayloads, location)
 		}
-		droppedPayloads = append(droppedPayloads, location)
 	}
 	return droppedPayloads
 }
@@ -74,7 +76,7 @@ func runAgent(coms contact.Contact, profile map[string]interface{}) {
 				cmd := cmds.Index(i).Elem().String()
 				command := util.Unpack([]byte(cmd))
 				output.VerbosePrint(fmt.Sprintf("[*] Running instruction %s", command["id"]))
-				droppedPayloads := downloadPayloads(command["payloads"].([]interface{}), coms, profile)
+				droppedPayloads := downloadPayloads(command["payload"].(string), coms, profile)
 				go coms.RunInstruction(command, profile, droppedPayloads)
 				util.Sleep(command["sleep"].(float64))
 			}
