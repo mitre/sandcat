@@ -3,10 +3,10 @@
 - id: 2f34977d-9558-4c12-abad-349716777c6b
   name: 54ndc47
   description: A GoLang agent which communicates through the HTTP contact
-  tactic: initial-access
+  tactic: command-and-control
   technique:
-    attack_id: T1199
-    name: Trusted Relationship
+    attack_id: T1071
+    name: Standard Application Layer Protocol
   platforms:
     darwin:
       sh:
