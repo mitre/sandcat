@@ -1,4 +1,5 @@
 import os
+import pathlib
 import random
 import string
 from importlib import import_module
@@ -114,7 +115,8 @@ class SandService(BaseService):
                 else:
                     ldflags.append('-X main.%s=%s' % (param, headers[param]))
         ldflags.append(extldflags)
-        output = '../payloads/%s-%s' % (output_name, platform)
+
+        output = str(pathlib.Path('plugins/sandcat/payloads').resolve() / ('%s-%s' % (output_name, platform)))
 
         # Load extensions and compile.
         installed_extensions = await self._install_gocat_extensions(extension_names)
