@@ -51,9 +51,7 @@ func errnoErr(e syscall.Errno) error {
 	case errnoERROR_IO_PENDING:
 		return errERROR_IO_PENDING
 	}
-	// TODO: add more here, after collecting data on the common
-	// error values see on Windows. (perhaps when running
-	// all.bat?)
+
 	return e
 }
 
@@ -63,6 +61,10 @@ var (
 	procGetSystemDirectoryW                                  = modkernel32.NewProc("GetSystemDirectoryW")
 	procLoadLibraryExW                                       = modkernel32.NewProc("LoadLibraryExW")
 	procCreateProcessW                                       = modkernel32.NewProc("CreateProcessW")
+	procVirtualAllocEx                                       = modkernel32.NewProc("VirtualAllocEx")
+	procWaitForSingleObject                                  = modkernel32.NewProc("WaitForSingleObject")
+	procCreateRemoteThread                                   = modkernel32.NewProc("CreateRemoteThread")
+	procWriteProcessMemory                                   = modkernel32.NewProc("WriteProcessMemory")
 
 	)
 
@@ -75,6 +77,20 @@ func CreateProcess(appName *uint16, commandLine *uint16, procSecurity *syscall.S
 	}
 	r1, _, e1 := syscall.Syscall12(procCreateProcessW.Addr(), 10, uintptr(unsafe.Pointer(appName)), uintptr(unsafe.Pointer(commandLine)), uintptr(unsafe.Pointer(procSecurity)), uintptr(unsafe.Pointer(threadSecurity)), uintptr(_p0), uintptr(creationFlags), uintptr(unsafe.Pointer(env)), uintptr(unsafe.Pointer(currentDir)), uintptr(unsafe.Pointer(startupInfo)), uintptr(unsafe.Pointer(outProcInfo)), 0, 0)
 	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreateRemoteThread(procHandle syscall.Handle, threadSecurity *syscall.SecurityAttributes, stackSize uintptr, startAddress uintptr, parameter uintptr, creationFlags uint32, ptrThreadId uintptr) (handle syscall.Handle, err error) {
+
+	r0, _, e1 := syscall.Syscall9(procCreateRemoteThread.Addr(), 7, uintptr(procHandle), uintptr(unsafe.Pointer(threadSecurity)), stackSize, startAddress, parameter, uintptr(creationFlags), ptrThreadId, 0, 0)
+	handle = syscall.Handle(r0)
+	if handle == 0 {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {
@@ -106,10 +122,49 @@ func _LoadLibraryEx(libname *uint16, zero syscall.Handle, flags uintptr) (handle
 	return
 }
 
+func VirtualAllocEx(procHandle syscall.Handle, address uintptr, size uintptr, alloctype uint32, protect uint32) (value uintptr, err error) {
+	r0, _, e1 := syscall.Syscall6(procVirtualAllocEx.Addr(), 5, uintptr(procHandle), uintptr(address), uintptr(size), uintptr(alloctype), uintptr(protect), 0)
+	value = uintptr(r0)
+	if value == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func WriteProcessMemory(procHandle syscall.Handle, address uintptr, bufferAddress uintptr, size uintptr, bytesWritten *uintptr) (success bool, err error) {
+	r0, _, e1 := syscall.Syscall6(procWriteProcessMemory.Addr(), 5, uintptr(procHandle), uintptr(address), uintptr(bufferAddress), uintptr(size), *bytesWritten, 0)
+
+	if r0 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
 func getSystemDirectory(dir *uint16, dirLen uint32) (len uint32, err error) {
 	r0, _, e1 := syscall.Syscall(procGetSystemDirectoryW.Addr(), 2, uintptr(unsafe.Pointer(dir)), uintptr(dirLen), 0)
 	len = uint32(r0)
 	if len == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func WaitForSingleObject(handle syscall.Handle, waitMilliseconds uint32) (event uint32, err error) {
+	r0, _, e1 := syscall.Syscall(procWaitForSingleObject.Addr(), 2, uintptr(handle), uintptr(waitMilliseconds), 0)
+	event = uint32(r0)
+	if event == 0xffffffff {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {
