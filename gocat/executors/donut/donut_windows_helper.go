@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"syscall"
+
+	"github.com/mitre/sandcat/gocat/output"
 )
 
 const (
@@ -23,16 +25,7 @@ const (
 	SW_HIDE 				= 0
 )
 
-func CreateSuspendedProcessWIORedirect(commandLine string) (syscall.Handle, syscall.Handle, syscall.Handle, syscall.Handle) {
-
-	// Create anonymous pipe for STDIN
-	var stdInRead syscall.Handle
-	var stdInWrite syscall.Handle
-
-	errStdInPipe := syscall.CreatePipe(&stdInRead, &stdInWrite, &syscall.SecurityAttributes{InheritHandle: 1}, 0)
-	if errStdInPipe != nil {
-		log.Fatal(fmt.Sprintf("[!]Error creating the STDIN pipe:\r\n%s", errStdInPipe.Error()))
-	}
+func CreateSuspendedProcessWIORedirect(commandLine string) (syscall.Handle, syscall.Handle, syscall.Handle) {
 
 	// Create anonymous pipe for STDOUT
 	var stdOutRead syscall.Handle
@@ -40,7 +33,7 @@ func CreateSuspendedProcessWIORedirect(commandLine string) (syscall.Handle, sysc
 
 	errStdOutPipe := syscall.CreatePipe(&stdOutRead, &stdOutWrite, &syscall.SecurityAttributes{InheritHandle: 1}, 0)
 	if errStdOutPipe != nil {
-		log.Fatal(fmt.Sprintf("[!]Error creating the STDOUT pipe:\r\n%s", errStdOutPipe.Error()))
+		output.VerbosePrint(fmt.Sprintf("[!]Error creating the STDOUT pipe:\r\n%s", errStdOutPipe.Error()))
 	}
 
 	// Create anonymous pipe for STDERR
@@ -49,7 +42,7 @@ func CreateSuspendedProcessWIORedirect(commandLine string) (syscall.Handle, sysc
 
 	errStdErrPipe := syscall.CreatePipe(&stdErrRead, &stdErrWrite, &syscall.SecurityAttributes{InheritHandle: 1}, 0)
 	if errStdErrPipe != nil {
-		log.Fatal(fmt.Sprintf("[!]Error creating the STDERR pipe:\r\n%s", errStdErrPipe.Error()))
+		output.VerbosePrint(fmt.Sprintf("[!]Error creating the STDERR pipe:\r\n%s", errStdErrPipe.Error()))
 	}
 
 	procInfo := &syscall.ProcessInformation{}
@@ -75,5 +68,49 @@ func CreateSuspendedProcessWIORedirect(commandLine string) (syscall.Handle, sysc
 		log.Fatal(fmt.Sprintf("[!]Error calling CreateProcess:\r\n%s", errCreateProcess.Error()))
 	}
 
-	return procInfo.Process, stdInWrite, stdOutRead, stdErrRead
+	return procInfo.Process, stdOutRead, stdErrRead
+}
+
+func ReadFromPipes( stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.Handle, stderrBytes *[]byte) (err error) {
+
+	output.VerbosePrint("In ReadFromPipes")
+
+	// Read STDOUT
+	if stdout != 0	{
+		var stdOutDone uint32
+		var stdOutOverlapped syscall.Overlapped
+
+		output.VerbosePrint("In stdout")
+
+		//Try to call PeekNamedPipe
+		syscall.FlushFileBuffers(stdout)
+
+		err = syscall.ReadFile(stdout, *stdoutBytes, &stdOutDone, &stdOutOverlapped)
+
+		if err != nil {
+			output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDOUT pipe:\r\n%s", err.Error()))
+		}
+
+		output.VerbosePrint("Finished stdout")
+	}
+
+	// Read STDERR
+	if stderr != 0	{
+		var stdErrDone uint32
+		var stdErrOverlapped syscall.Overlapped
+
+		output.VerbosePrint("In stderr")
+
+		syscall.FlushFileBuffers(stderr)
+
+		err = syscall.ReadFile(stderr, *stderrBytes, &stdErrDone, &stdErrOverlapped)
+
+		if err != nil {
+			output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDOUT pipe:\r\n%s", err.Error()))
+		}
+
+		output.VerbosePrint("Finished stdout")
+	}
+
+	return
 }

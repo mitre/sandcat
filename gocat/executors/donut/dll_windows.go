@@ -65,6 +65,8 @@ var (
 	procWaitForSingleObject                                  = modkernel32.NewProc("WaitForSingleObject")
 	procCreateRemoteThread                                   = modkernel32.NewProc("CreateRemoteThread")
 	procWriteProcessMemory                                   = modkernel32.NewProc("WriteProcessMemory")
+	procTerminateProcess                                     = modkernel32.NewProc("TerminateProcess")
+	procReadFile                                             = modkernel32.NewProc("ReadFile")
 
 	)
 
@@ -76,6 +78,18 @@ func CreateProcess(appName *uint16, commandLine *uint16, procSecurity *syscall.S
 		_p0 = 0
 	}
 	r1, _, e1 := syscall.Syscall12(procCreateProcessW.Addr(), 10, uintptr(unsafe.Pointer(appName)), uintptr(unsafe.Pointer(commandLine)), uintptr(unsafe.Pointer(procSecurity)), uintptr(unsafe.Pointer(threadSecurity)), uintptr(_p0), uintptr(creationFlags), uintptr(unsafe.Pointer(env)), uintptr(unsafe.Pointer(currentDir)), uintptr(unsafe.Pointer(startupInfo)), uintptr(unsafe.Pointer(outProcInfo)), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func TerminateProcess(handle syscall.Handle, exitcode uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procTerminateProcess.Addr(), 2, uintptr(handle), uintptr(exitcode), 0)
 	if r1 == 0 {
 		if e1 != 0 {
 			err = errnoErr(e1)
@@ -165,6 +179,22 @@ func WaitForSingleObject(handle syscall.Handle, waitMilliseconds uint32) (event 
 	r0, _, e1 := syscall.Syscall(procWaitForSingleObject.Addr(), 2, uintptr(handle), uintptr(waitMilliseconds), 0)
 	event = uint32(r0)
 	if event == 0xffffffff {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func ReadFile(handle syscall.Handle, buf []byte, done *uint32, overlapped *syscall.Overlapped) (err error) {
+	var _p0 *byte
+	if len(buf) > 0 {
+		_p0 = &buf[0]
+	}
+	r1, _, e1 := syscall.Syscall6(procReadFile.Addr(), 5, uintptr(handle), uintptr(unsafe.Pointer(_p0)), uintptr(len(buf)), uintptr(unsafe.Pointer(done)), uintptr(unsafe.Pointer(overlapped)), 0)
+	if r1 == 0 {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {
