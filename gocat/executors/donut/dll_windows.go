@@ -67,6 +67,7 @@ var (
 	procWriteProcessMemory                                   = modkernel32.NewProc("WriteProcessMemory")
 	procTerminateProcess                                     = modkernel32.NewProc("TerminateProcess")
 	procReadFile                                             = modkernel32.NewProc("ReadFile")
+	procResumeThread                                         = modkernel32.NewProc("ResumeThread")
 
 	)
 
@@ -195,6 +196,19 @@ func ReadFile(handle syscall.Handle, buf []byte, done *uint32, overlapped *sysca
 	}
 	r1, _, e1 := syscall.Syscall6(procReadFile.Addr(), 5, uintptr(handle), uintptr(unsafe.Pointer(_p0)), uintptr(len(buf)), uintptr(unsafe.Pointer(done)), uintptr(unsafe.Pointer(overlapped)), 0)
 	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func ResumeThread(thread syscall.Handle) (ret uint32, err error) {
+	r0, _, e1 := syscall.Syscall(procResumeThread.Addr(), 1, uintptr(thread), 0, 0)
+	ret = uint32(r0)
+	if ret == 0xffffffff {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {
