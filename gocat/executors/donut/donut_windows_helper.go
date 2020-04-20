@@ -20,7 +20,7 @@ const (
 	SW_HIDE 				= 0
 )
 
-func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, syscall.Handle, syscall.Handle) {
+func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, uint32, syscall.Handle, syscall.Handle) {
 
 	// Create anonymous pipe for STDOUT
 	var stdOutRead syscall.Handle
@@ -75,7 +75,7 @@ func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, s
 		output.VerbosePrint(fmt.Sprintf("[!]Error closing the STDERR write handle:\r\n%s", errCloseHandle.Error()))
 	}
 
-	return procInfo.Process, stdOutRead, stdErrRead
+	return procInfo.Process, procInfo.ProcessId, stdOutRead, stdErrRead
 }
 
 func ReadFromPipes( stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.Handle, stderrBytes *[]byte) (err error) {

@@ -27,7 +27,7 @@ func init() {
 func (d *Donut) Run(command string, timeout int) ([]byte, string, string) {
 	bytes, _ := ioutil.ReadFile("something.donut")
 
-	handle, stdout, stderr := CreateSuspendedProcessWithIORedirect("rundll32.exe")
+	handle, pid, stdout, stderr := CreateSuspendedProcessWithIORedirect("rundll32.exe")
 
 	//Setup variables
 	stdoutBytes := make([]byte, 4096)
@@ -35,7 +35,7 @@ func (d *Donut) Run(command string, timeout int) ([]byte, string, string) {
 	var eventCode uint32
 
 	// Run the shellcode and wait for it to complete
-	task, pid, err := Runner(bytes, handle, stdout, &stdoutBytes, stderr, &stderrBytes, &eventCode)
+	task, err := Runner(bytes, handle, stdout, &stdoutBytes, stderr, &stderrBytes, &eventCode)
 
 	if task {
 
@@ -50,11 +50,11 @@ func (d *Donut) Run(command string, timeout int) ([]byte, string, string) {
 		total += "STDERR:\n"
 		total += string(stderrBytes)
 
-		return []byte(total), execute.SUCCESS_STATUS, pid
+		return []byte(total), execute.SUCCESS_STATUS, fmt.Sprint(pid)
 	}
 
 	//Covers the cases where an error was received before the remote thread was created
-	return []byte(fmt.Sprintf("Shellcode execution failed. Error message: %s", fmt.Sprint(err))), execute.ERROR_STATUS, pid
+	return []byte(fmt.Sprintf("Shellcode execution failed. Error message: %s", fmt.Sprint(err))), execute.ERROR_STATUS, fmt.Sprint(pid)
 }
 
 func (d *Donut) String() string {
