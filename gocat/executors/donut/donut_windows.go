@@ -38,8 +38,6 @@ func Runner(donut []byte, handle syscall.Handle, stdout syscall.Handle, stdoutBy
 		return false, err
 	}
 
-	go ReadFromPipes(stdout, stdoutBytes, stderr, stderrBytes)
-
 	//Close the thread handle
 	err = syscall.CloseHandle(threadHandle)
 	if util.CheckErrorMessage(err) {

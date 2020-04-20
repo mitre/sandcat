@@ -66,8 +66,6 @@ var (
 	procCreateRemoteThread                                   = modkernel32.NewProc("CreateRemoteThread")
 	procWriteProcessMemory                                   = modkernel32.NewProc("WriteProcessMemory")
 	procTerminateProcess                                     = modkernel32.NewProc("TerminateProcess")
-	procReadFile                                             = modkernel32.NewProc("ReadFile")
-	procResumeThread                                         = modkernel32.NewProc("ResumeThread")
 
 	)
 

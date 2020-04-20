@@ -122,7 +122,7 @@ func ReadFromPipes( stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.H
 				if err.Error() != "The pipe has been ended."{
 					break
 				}
-				
+
 				output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDERR pipe:\r\n%s", err.Error()))
 			}
 
