@@ -5,12 +5,14 @@ package donut
 import (
 	"syscall"
 	"unsafe"
-	
+
 	"github.com/mitre/sandcat/gocat/util"
 )
 
 // Runner runner
 func Runner(donut []byte, handle syscall.Handle, stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.Handle, stderrBytes *[]byte, eventCode *uint32) (bool, error) {
+
+	go ReadFromPipes(stdout, stdoutBytes, stderr, stderrBytes)
 
 	address, err := VirtualAllocEx(handle, 0, uintptr(len(donut)), MEM_COMMIT|MEM_RESERVE, syscall.PAGE_EXECUTE_READ)
 	if util.CheckErrorMessage(err) {
@@ -36,10 +38,7 @@ func Runner(donut []byte, handle syscall.Handle, stdout syscall.Handle, stdoutBy
 		return false, err
 	}
 
-	err = ReadFromPipes(stdout, stdoutBytes, stderr, stderrBytes)
-	if util.CheckErrorMessage(err) {
-		return false, err
-	}
+	go ReadFromPipes(stdout, stdoutBytes, stderr, stderrBytes)
 
 	//Close the thread handle
 	err = syscall.CloseHandle(threadHandle)
@@ -55,6 +54,18 @@ func Runner(donut []byte, handle syscall.Handle, stdout syscall.Handle, stdoutBy
 
 	//close Process Handle
 	err = syscall.CloseHandle(handle)
+	if util.CheckErrorMessage(err) {
+		return false, err
+	}
+
+	//close stdout Handle
+	err = syscall.CloseHandle(stdout)
+	if util.CheckErrorMessage(err) {
+		return false, err
+	}
+
+	//close stderr Handle
+	err = syscall.CloseHandle(stderr)
 	if util.CheckErrorMessage(err) {
 		return false, err
 	}

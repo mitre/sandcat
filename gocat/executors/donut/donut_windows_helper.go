@@ -80,15 +80,31 @@ func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, u
 
 func ReadFromPipes( stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.Handle, stderrBytes *[]byte) (err error) {
 
+	tempBytes := make([]byte, 1)
+
 	// Read STDOUT
 	if stdout != 0	{
 		var stdOutDone uint32
 		var stdOutOverlapped syscall.Overlapped
+		for {
 
-		err = syscall.ReadFile(stdout, *stdoutBytes, &stdOutDone, &stdOutOverlapped)
+			err = syscall.ReadFile(stdout, tempBytes, &stdOutDone, &stdOutOverlapped)
 
-		if err != nil {
-			output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDOUT pipe:\r\n%s", err.Error()))
+			if err != nil{
+
+				if err.Error() != "The pipe has been ended."{
+					break
+				}
+
+				output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDOUT pipe:\r\n%s", err.Error()))
+			}
+
+			if int(stdOutDone) == 0 {
+				break
+			}
+			for _, b := range tempBytes {
+				*stdoutBytes = append(*stdoutBytes, b)
+			}
 		}
 	}
 
@@ -97,10 +113,25 @@ func ReadFromPipes( stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.H
 		var stdErrDone uint32
 		var stdErrOverlapped syscall.Overlapped
 
-		err = syscall.ReadFile(stderr, *stderrBytes, &stdErrDone, &stdErrOverlapped)
+		for {
 
-		if err != nil {
-			output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDERR pipe:\r\n%s", err.Error()))
+			err = syscall.ReadFile(stderr, tempBytes, &stdErrDone, &stdErrOverlapped)
+
+			if err != nil{
+
+				if err.Error() != "The pipe has been ended."{
+					break
+				}
+				
+				output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDERR pipe:\r\n%s", err.Error()))
+			}
+
+			if int(stdErrDone) == 0 {
+				break
+			}
+			for _, b := range tempBytes {
+				*stderrBytes = append(*stderrBytes, b)
+			}
 		}
 
 		//Close the stdout and stderr read handles
