@@ -6,18 +6,20 @@ import (
 	"fmt"
 	"log"
 	"syscall"
+	"time"
+	"unsafe"
 
 	"github.com/mitre/sandcat/gocat/output"
 )
 
 const (
-	MEM_COMMIT             	= 0x1000
-	MEM_RESERVE            	= 0x2000
+	MEM_COMMIT  = 0x1000
+	MEM_RESERVE = 0x2000
 
-	CREATE_SUSPENDED       	= 0x4
-	CREATE_NO_WINDOW       	= 0x08000000
+	CREATE_SUSPENDED = 0x4
+	CREATE_NO_WINDOW = 0x08000000
 
-	SW_HIDE 				= 0
+	SW_HIDE = 0
 )
 
 func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, uint32, syscall.Handle, syscall.Handle) {
@@ -28,7 +30,7 @@ func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, u
 
 	errStdOutPipe := syscall.CreatePipe(&stdOutRead, &stdOutWrite, &syscall.SecurityAttributes{InheritHandle: 1}, 0)
 	errStdOutHandle := syscall.SetHandleInformation(stdOutRead, syscall.HANDLE_FLAG_INHERIT, 0)
-	if errStdOutPipe != nil && errStdOutHandle != nil{
+	if errStdOutPipe != nil && errStdOutHandle != nil {
 		output.VerbosePrint(fmt.Sprintf("[!]Error creating the STDOUT pipe:\r\n%s", errStdOutPipe.Error()))
 	}
 
@@ -55,7 +57,7 @@ func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, u
 		nil,
 		nil,
 		true,
-		CREATE_SUSPENDED | CREATE_NO_WINDOW,
+		CREATE_SUSPENDED|CREATE_NO_WINDOW,
 		nil,
 		nil,
 		startupInfo,
@@ -78,26 +80,50 @@ func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, u
 	return procInfo.Process, procInfo.ProcessId, stdOutRead, stdErrRead
 }
 
-func ReadFromPipes( stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.Handle, stderrBytes *[]byte) (err error) {
+func WaitReadBytes(handle syscall.Handle, tempBytes *[]byte, done *uint32) (err error) {
+
+	var overlapped syscall.Overlapped
+
+	output.VerbosePrint(fmt.Sprintf("DEBUG: in WaitReadBytes"))
+
+	var counter int
+	var finished bool
+
+	output.VerbosePrint(fmt.Sprintf("DEBUG: starting ReadFile"))
+
+	go syncReadFile(handle, (uintptr)(unsafe.Pointer(&(*tempBytes)[0])), uintptr(len(*tempBytes)), done, &overlapped, &finished, &err)
+
+	for finished == false && counter < 5000 {
+
+		output.VerbosePrint(fmt.Sprintf("[!]Status:%s\tCounter%s\r\n", finished, counter))
+
+		time.Sleep(50 * time.Millisecond)
+
+		counter += 50 // incremember by 50 milliseconds
+	}
+
+	output.VerbosePrint(fmt.Sprintf("DEBUG: timed out"))
+
+	return err
+
+}
+
+func ReadFromPipes(stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.Handle, stderrBytes *[]byte) (err error) {
 
 	tempBytes := make([]byte, 1)
 
+	output.VerbosePrint(fmt.Sprintf("DEBUG: in ReadFromPipes"))
 	// Read STDOUT
-	if stdout != 0	{
-		var stdOutDone uint32
-		var stdOutOverlapped syscall.Overlapped
+	if stdout != 0 {
+
 		for {
+			var stdOutDone uint32
 
-			err = syscall.ReadFile(stdout, tempBytes, &stdOutDone, &stdOutOverlapped)
+			output.VerbosePrint(fmt.Sprintf("DEBUG: reading STDOUT"))
 
-			if err != nil{
+			err = WaitReadBytes(stdout, &tempBytes, &stdOutDone)
 
-				if err.Error() != "The pipe has been ended."{
-					break
-				}
-
-				output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDOUT pipe:\r\n%s", err.Error()))
-			}
+			output.VerbosePrint(fmt.Sprintf("DEBUG: read STDOUT"))
 
 			if int(stdOutDone) == 0 {
 				break
@@ -105,26 +131,32 @@ func ReadFromPipes( stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.H
 			for _, b := range tempBytes {
 				*stdoutBytes = append(*stdoutBytes, b)
 			}
-		}
-	}
 
-	// Read STDERR
-	if stderr != 0	{
-		var stdErrDone uint32
-		var stdErrOverlapped syscall.Overlapped
+			if err != nil {
 
-		for {
-
-			err = syscall.ReadFile(stderr, tempBytes, &stdErrDone, &stdErrOverlapped)
-
-			if err != nil{
-
-				if err.Error() != "The pipe has been ended."{
+				if err.Error() != "The pipe has been ended." {
 					break
 				}
 
-				output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDERR pipe:\r\n%s", err.Error()))
+				output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDOUT pipe:\r\n%s", err.Error()))
 			}
+
+		}
+	}
+
+	output.VerbosePrint(fmt.Sprintf("DEBUG: done wih STDOUT"))
+
+	// Read STDERR
+	if stderr != 0 {
+
+		for {
+			var stdErrDone uint32
+
+			output.VerbosePrint(fmt.Sprintf("DEBUG: reading STDERR"))
+
+			err = WaitReadBytes(stderr, &tempBytes, &stdErrDone)
+
+			output.VerbosePrint(fmt.Sprintf("DEBUG: read STDERR"))
 
 			if int(stdErrDone) == 0 {
 				break
@@ -132,18 +164,22 @@ func ReadFromPipes( stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.H
 			for _, b := range tempBytes {
 				*stderrBytes = append(*stderrBytes, b)
 			}
-		}
 
-		//Close the stdout and stderr read handles
-		errCloseHandle := syscall.CloseHandle(stdout)
-		if errCloseHandle != nil {
-			output.VerbosePrint(fmt.Sprintf("[!]Error closing the STDOUT read handle:\r\n%s", errCloseHandle.Error()))
-		}
-		errCloseHandle = syscall.CloseHandle(stderr)
-		if errCloseHandle != nil {
-			output.VerbosePrint(fmt.Sprintf("[!]Error closing the STDERR read handle:\r\n%s", errCloseHandle.Error()))
+			if err != nil {
+
+				if err.Error() != "The pipe has been ended." {
+					break
+				}
+
+				output.VerbosePrint(fmt.Sprintf("[!]Error reading the STDERR pipe:\r\n%s", err.Error()))
+			}
+
 		}
 	}
 
-	return
+	output.VerbosePrint(fmt.Sprintf("DEBUG: done wih STDERR"))
+
+	output.VerbosePrint(fmt.Sprintf("DEBUG: Done with ReadFromPipes"))
+
+	return err
 }

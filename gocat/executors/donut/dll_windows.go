@@ -29,7 +29,6 @@ func GetSystemDirectory() (string, error) {
 	}
 }
 
-
 // Modified from https://github.com/golang/sys/blob/master/windows/zsyscall_windows.go
 
 var _ unsafe.Pointer
@@ -58,16 +57,17 @@ func errnoErr(e syscall.Errno) error {
 var (
 	modkernel32 = NewLazySystemDLL("kernel32.dll")
 
-	procGetSystemDirectoryW                                  = modkernel32.NewProc("GetSystemDirectoryW")
-	procLoadLibraryExW                                       = modkernel32.NewProc("LoadLibraryExW")
-	procCreateProcessW                                       = modkernel32.NewProc("CreateProcessW")
-	procVirtualAllocEx                                       = modkernel32.NewProc("VirtualAllocEx")
-	procWaitForSingleObject                                  = modkernel32.NewProc("WaitForSingleObject")
-	procCreateRemoteThread                                   = modkernel32.NewProc("CreateRemoteThread")
-	procWriteProcessMemory                                   = modkernel32.NewProc("WriteProcessMemory")
-	procTerminateProcess                                     = modkernel32.NewProc("TerminateProcess")
-
-	)
+	procGetSystemDirectoryW = modkernel32.NewProc("GetSystemDirectoryW")
+	procLoadLibraryExW      = modkernel32.NewProc("LoadLibraryExW")
+	procCreateProcessW      = modkernel32.NewProc("CreateProcessW")
+	procVirtualAllocEx      = modkernel32.NewProc("VirtualAllocEx")
+	procWaitForSingleObject = modkernel32.NewProc("WaitForSingleObject")
+	procCreateRemoteThread  = modkernel32.NewProc("CreateRemoteThread")
+	procWriteProcessMemory  = modkernel32.NewProc("WriteProcessMemory")
+	procTerminateProcess    = modkernel32.NewProc("TerminateProcess")
+	procReadFile            = modkernel32.NewProc("ReadFile")
+	procResumeThread        = modkernel32.NewProc("ResumeThread")
+)
 
 func CreateProcess(appName *uint16, commandLine *uint16, procSecurity *syscall.SecurityAttributes, threadSecurity *syscall.SecurityAttributes, inheritHandles bool, creationFlags uint32, env *uint16, currentDir *uint16, startupInfo *syscall.StartupInfo, outProcInfo *syscall.ProcessInformation) (err error) {
 	var _p0 uint32
@@ -187,9 +187,28 @@ func WaitForSingleObject(handle syscall.Handle, waitMilliseconds uint32) (event 
 	return
 }
 
+func ReadFile(handle syscall.Handle, buf uintptr, bufLen uintptr, done *uint32, overlapped *syscall.Overlapped) (err error) {
+
+	r1, _, e1 := syscall.Syscall6(procReadFile.Addr(), 5, uintptr(handle), buf, bufLen, uintptr(unsafe.Pointer(done)), uintptr(unsafe.Pointer(overlapped)), 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+//ReadFile that may run as a goroutine
+func syncReadFile(handle syscall.Handle, buf uintptr, bufLen uintptr, done *uint32, overlapped *syscall.Overlapped, finished *bool, err *error) {
+
+	*err = ReadFile(handle, buf, bufLen, done, overlapped)
+
+	*finished = true
+}
+
 //Modified from https://github.com/golang/sys/blob/master/windows/dll_windows.go
-
-
 
 // We need to use LoadLibrary and GetProcAddress from the Go runtime, because
 // the these symbols are loaded by the system linker and are required to
@@ -564,4 +583,3 @@ func loadLibraryEx(name string, system bool) (*DLL, error) {
 type errString string
 
 func (s errString) Error() string { return string(s) }
-

