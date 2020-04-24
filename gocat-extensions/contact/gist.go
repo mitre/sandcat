@@ -62,13 +62,14 @@ func (g GIST) GetPayloadBytes(profile map[string]interface{}, payload string) []
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
-func (g GIST) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) bool {
-	if len(criteria["c2Key"]) > 0 {
-		token = criteria["c2Key"]
-		profile["paw"] = getBeaconNameIdentifier()
-		return true
-	}
-	return false
+func (g GIST) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) (bool, map[string]string) {
+    config := make(map[string]string)
+    if len(criteria["c2Key"]) > 0 {
+        token = criteria["c2Key"]
+        config["paw"] = getBeaconNameIdentifier()
+        return true, config
+    }
+    return false, nil
 }
 
 //SendExecutionResults send results to the server
