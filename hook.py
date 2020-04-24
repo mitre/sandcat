@@ -15,3 +15,4 @@ async def enable(services):
     cat_gui_api = SandGuiApi(services=services)
     app.router.add_static('/sandcat', 'plugins/sandcat/static', append_version=True)
     app.router.add_route('GET', '/plugin/sandcat/gui', cat_gui_api.splash)
+    await sand_svc.load_sandcat_extension_modules()
