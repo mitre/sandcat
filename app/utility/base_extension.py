@@ -13,7 +13,6 @@ class Extension(ABC):
         self.files = files
         self.dependencies = []
 
-
     def check_go_dependencies(self):
         for d in self.dependencies:
             dep_result = subprocess.run('go list "{}"'.format(d), shell=True, stdout=subprocess.PIPE)

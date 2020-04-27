@@ -77,8 +77,6 @@ class SandService(BaseService):
                     else:
                         self.log.error('Failed to fulfill dependencies for module %s' % module)
 
-
-
     """ PRIVATE """
 
     @staticmethod
