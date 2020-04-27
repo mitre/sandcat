@@ -64,8 +64,9 @@ class SandService(BaseService):
         return '%s-%s' % (name, platform), self.generate_name()
 
     async def load_sandcat_extension_modules(self):
-        """Recursively searches the app/extensions folder for valid extension modules."""
-
+        """
+        Recursively searches the app/extensions folder for valid extension modules.
+        """
         for root, dirs, files in os.walk(os.path.join(self.sandcat_dir, 'app', 'extensions')):
             files = [f for f in files if not f[0] == '.' and not f[0] == "_"]
             dirs[:] = [d for d in dirs if not d[0] == '.' and not d[0] == "_"]
@@ -91,8 +92,9 @@ class SandService(BaseService):
 
     async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
                                  extldflags='', cflags='', flag_params=default_flag_params, extension_names=None):
-        """Compile sandcat agent using specified parameters. Will also include any requested extension modules."""
-
+        """
+        Compile sandcat agent using specified parameters. Will also include any requested extension modules.
+        """
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
         for param in flag_params:
@@ -116,26 +118,30 @@ class SandService(BaseService):
         await self._uninstall_gocat_extensions(installed_extensions)
 
     async def _install_gocat_extensions(self, extension_names):
-        """Given a list of extension names, will copy the required files for each extension from the gocat-extensions
-        subdirectory into the gocat subdirectory."""
+        """
+        Given a list of extension names, copies the required files for each extension from the gocat-extensions
+        subdirectory into the gocat subdirectory.
+        """
         if which('go') is not None and extension_names:
             self.log.debug('Installing gocat extension modules: %s' % ', '.join(extension_names))
             return [name for name in extension_names if await self._attempt_module_copy(name=name)]
         return []
 
     async def _uninstall_gocat_extensions(self, extension_names):
-        """Given a list of extension names, will remove the required files for each extension from the gocat
-        subdirectory."""
-
+        """
+        Given a list of extension names, removes the required files for each extension from the gocat
+        subdirectory.
+        """
         if which('go') is not None and extension_names:
             self.log.debug('Cleaning up files for gocat extension modules %s' % ', '.join(extension_names))
             for extension_name in extension_names:
                 self.sandcat_extensions[extension_name].remove_module_files(base_dir=self.sandcat_dir)
 
     async def _load_extension_module(self, root, file):
-        """Give the file path and file name for the extension module file, will return the extension
-        module object. Helper method for _fetch_extension_module."""
-
+        """
+        Given the file path and file name for the extension module file, returns the extension
+        module object.
+        """
         module = os.path.join(root, file.split('.')[0]).replace(os.path.sep, '.')
         try:
             # Module's "load" method will return the extension module object.
@@ -144,8 +150,9 @@ class SandService(BaseService):
             self.log.error('Error loading extension=%s, %s' % (module, e))
 
     async def _attempt_module_copy(self, name):
-        """Attempts to copy the module files. Returns True upon success, False otherwise."""
-
+        """
+        Attempts to copy the module files. Returns True upon success, False otherwise.
+        """
         module = self.sandcat_extensions.get(name)
         if module:
             try:
