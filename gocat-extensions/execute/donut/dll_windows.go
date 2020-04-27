@@ -33,8 +33,7 @@ func GetSystemDirectory() (string, error) {
 
 var _ unsafe.Pointer
 
-// Do the interface allocations only once for common
-// Errno values.
+// Do the interface allocations only once for common Errno values.
 const (
 	errnoERROR_IO_PENDING = 997
 )
@@ -66,7 +65,6 @@ var (
 	procWriteProcessMemory  = modkernel32.NewProc("WriteProcessMemory")
 	procTerminateProcess    = modkernel32.NewProc("TerminateProcess")
 	procReadFile            = modkernel32.NewProc("ReadFile")
-	procResumeThread        = modkernel32.NewProc("ResumeThread")
 )
 
 func CreateProcess(appName *uint16, commandLine *uint16, procSecurity *syscall.SecurityAttributes, threadSecurity *syscall.SecurityAttributes, inheritHandles bool, creationFlags uint32, env *uint16, currentDir *uint16, startupInfo *syscall.StartupInfo, outProcInfo *syscall.ProcessInformation) (err error) {
