@@ -3,9 +3,11 @@ import pathlib
 import random
 import string
 from importlib import import_module
-from shutil import copyfile, which
+from shutil import which
 
 from app.utility.base_service import BaseService
+
+default_flag_params = ('server', 'group', 'listenP2P', 'c2')
 
 
 class SandService(BaseService):
@@ -17,6 +19,7 @@ class SandService(BaseService):
         self.app_svc = services.get('app_svc')
         self.log = self.create_logger('sand_svc')
         self.sandcat_dir = os.path.relpath(os.path.join('plugins', 'sandcat'))
+        self.sandcat_extensions = dict()
 
     async def dynamically_compile_executable(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
@@ -56,9 +59,24 @@ class SandService(BaseService):
                                               output_name=name,
                                               buildmode='--buildmode=c-shared',
                                               **compile_options[platform],
-                                              flag_params=('server', 'group', 'listenP2P', 'c2'),
+                                              flag_params=default_flag_params,
                                               extension_names=extension_names)
         return '%s-%s' % (name, platform), self.generate_name()
+
+    async def load_sandcat_extension_modules(self):
+        """
+        Recursively searches the app/extensions folder for valid extension modules.
+        """
+        for root, dirs, files in os.walk(os.path.join(self.sandcat_dir, 'app', 'extensions')):
+            files = [f for f in files if not f[0] == '.' and not f[0] == "_"]
+            dirs[:] = [d for d in dirs if not d[0] == '.' and not d[0] == "_"]
+            for file in files:
+                module = await self._load_extension_module(root, file)
+                if module:
+                    if module.check_go_dependencies() or module.install_dependencies():
+                        self.sandcat_extensions[file.split('.')[0]] = module
+                    else:
+                        self.log.error('Failed to fulfill dependencies for module %s' % module)
 
     """ PRIVATE """
 
@@ -72,40 +90,11 @@ class SandService(BaseService):
                 return 'c2Key', c2.retrieve_config()
         return '', ''
 
-    async def _install_gocat_extensions(self, extension_names):
-        """Given a list of extension names, will copy the required files for each extension from the gocat-extensions
-        subdirectory into the gocat subdirectory."""
-
-        installed_extensions = []
-        if which('go') is not None and extension_names:
-            self.log.debug('Installing gocat extension modules: %s' % ', '.join(extension_names))
-            for extension_name in extension_names:
-                module = self._fetch_extension_module(extension_name)
-                if module:
-                    if module.check_go_dependencies():
-                        self.log.debug('Fetched extension module %s' % extension_name)
-                        self._copy_module_files_to_sandcat(module)
-                        installed_extensions.append(extension_name)
-                    else:
-                        self.log.error('Dependencies not satisfied for extension %s' % extension_name)
-                else:
-                    self.log.error("Failed to fetch extension %s" % extension_name)
-        return installed_extensions
-
-    async def _uninstall_gocat_extensions(self, extension_names):
-        """Given a list of extension names, will remove the required files for each extension from the gocat
-        subdirectory."""
-
-        if which('go') is not None and extension_names:
-            for extension_name in extension_names:
-                module = self._fetch_extension_module(extension_name)
-                if module:
-                    self._remove_module_files_from_sandcat(module)
-
     async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
-                                 extldflags='', cflags='', flag_params=('server', 'group', 'listenP2P', 'c2'), extension_names=None):
-        """Compile sandcat agent using specified parameters. Will also include any requested extension modules."""
-
+                                 extldflags='', cflags='', flag_params=default_flag_params, extension_names=None):
+        """
+        Compile sandcat agent using specified parameters. Will also include any requested extension modules.
+        """
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
         for param in flag_params:
@@ -126,63 +115,50 @@ class SandService(BaseService):
                                        cflags=cflags, build_dir=build_path)
 
         # Remove extension files.
-        if installed_extensions:
-            self.log.debug('Cleaning up files for gocat extension modules %s' % ', '.join(installed_extensions))
-            await self._uninstall_gocat_extensions(extension_names)
+        await self._uninstall_gocat_extensions(installed_extensions)
 
-    def _copy_module_files_to_sandcat(self, module):
-        """Given an extension module object, will copy the module-required files from the gocat-extension subdirectory
-        into the gocat subdirectory in order to compile the extension module into sandcat."""
+    async def _install_gocat_extensions(self, extension_names):
+        """
+        Given a list of extension names, copies the required files for each extension from the gocat-extensions
+        subdirectory into the gocat subdirectory.
+        """
+        if which('go') is not None and extension_names:
+            self.log.debug('Installing gocat extension modules: %s' % ', '.join(extension_names))
+            return [name for name in extension_names if await self._attempt_module_copy(name=name)]
+        return []
 
-        if module:
-            try:
-                for file, pkg in module.files:
-                    try:
-                        # Make sure the package folders are there or are created.
-                        package_path = os.path.join(self.sandcat_dir, 'gocat', pkg)
-                        if not os.path.exists(package_path):
-                            os.makedirs(package_path)
+    async def _uninstall_gocat_extensions(self, extension_names):
+        """
+        Given a list of extension names, removes the required files for each extension from the gocat
+        subdirectory.
+        """
+        if which('go') is not None and extension_names:
+            self.log.debug('Cleaning up files for gocat extension modules %s' % ', '.join(extension_names))
+            for extension_name in extension_names:
+                self.sandcat_extensions[extension_name].remove_module_files(base_dir=self.sandcat_dir)
 
-                        copyfile(src=os.path.join(self.sandcat_dir, 'gocat-extensions', pkg, file),
-                                 dst=os.path.join(self.sandcat_dir, 'gocat', pkg, file))
-                    except Exception as e:
-                        self.log.error('Error copying file %s, %s' % (file, e))
-            except Exception as e:
-                print(e)
-
-    def _remove_module_files_from_sandcat(self, module):
-        """Given an extension module object, will delete the module-required files from the gocat subdirectory
-        in order to provide a clean file structure for the next sandcat compilation."""
-
-        if module:
-            for file, pkg in module.files:
-                try:
-                    file_path = os.path.join(self.sandcat_dir, 'gocat', pkg, file)
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                except Exception as e:
-                    self.log.error('Error copying file %s, %s' % (file, e))
-
-    def _fetch_extension_module(self, extension_name):
-        """Given an extension name, returns the extension module object for the extension, or None if not found."""
-
-        extension = None
-        for root, dirs, files in os.walk(os.path.join(self.sandcat_dir, 'app', 'extensions')):
-            files = [f for f in files if not f[0] == '.' and not f[0] == "_"]
-            dirs[:] = [d for d in dirs if not d[0] == '.' and not d[0] == "_"]
-            for file in files:
-                if file.lower() == extension_name.lower() + ".py":
-                    extension = self._load_extension_module(root, file)
-                    break
-        return extension
-
-    def _load_extension_module(self, root, file):
-        """Give the file path and file name for the extension module file, will return the extension
-        module object. Helper method for _fetch_extension_module."""
-
+    async def _load_extension_module(self, root, file):
+        """
+        Given the file path and file name for the extension module file, returns the extension
+        module object.
+        """
         module = os.path.join(root, file.split('.')[0]).replace(os.path.sep, '.')
         try:
             # Module's "load" method will return the extension module object.
             return getattr(import_module(module), 'load')()
         except Exception as e:
             self.log.error('Error loading extension=%s, %s' % (module, e))
+
+    async def _attempt_module_copy(self, name):
+        """
+        Attempts to copy the module files. Returns True upon success, False otherwise.
+        """
+        module = self.sandcat_extensions.get(name)
+        if module:
+            try:
+                return module.copy_module_files(base_dir=self.sandcat_dir)
+            except Exception as e:
+                self.log.error('Error copying files for module %s: %s' % (module, e))
+        else:
+            self.log.error('Module %s not found' % name)
+        return False
