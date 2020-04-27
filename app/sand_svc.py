@@ -72,10 +72,12 @@ class SandService(BaseService):
             for file in files:
                 module = await self._load_extension_module(root, file)
                 if module:
-                    if module.check_go_dependencies():
+                    if module.check_go_dependencies() or module.install_dependencies():
                         self.sandcat_extensions[file.split('.')[0]] = module
                     else:
-                        module.install_dependencies()
+                        self.log.error('Failed to fulfill dependencies for module %s' % module)
+
+
 
     """ PRIVATE """
 
@@ -149,10 +151,9 @@ class SandService(BaseService):
         module = self.sandcat_extensions.get(name)
         if module:
             try:
-                module.copy_module_files(base_dir=self.sandcat_dir)
-                return True
+                return module.copy_module_files(base_dir=self.sandcat_dir)
             except Exception as e:
-                self.log.error('Copy failed: %s' % e)
+                self.log.error('Error copying files for module %s: %s' % (module, e))
         else:
             self.log.error('Module %s not found' % name)
         return False
