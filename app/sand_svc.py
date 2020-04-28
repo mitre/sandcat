@@ -8,6 +8,11 @@ from shutil import which
 from app.utility.base_service import BaseService
 
 default_flag_params = ('server', 'group', 'listenP2P', 'c2')
+gocat_variants = {
+    'basic': set(),
+    'red': {'gist', 'shared', 'shells', 'shellcode'}
+}
+default_gocat_variant = 'basic'
 
 
 class SandService(BaseService):
@@ -24,7 +29,7 @@ class SandService(BaseService):
     async def dynamically_compile_executable(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
         name, platform = headers.get('file'), headers.get('platform')
-        extension_names = [ext_name for ext_name in headers.get('gocat-extensions', "").split(',') if ext_name]
+        extension_names = await self._obtain_extensions_from_headers(headers)
         if which('go') is not None:
             await self._compile_new_agent(platform=platform,
                                           headers=headers,
@@ -36,7 +41,7 @@ class SandService(BaseService):
     async def dynamically_compile_library(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
         name, platform = headers.get('file'), headers.get('platform')
-        extension_names = [ext_name for ext_name in headers.get('gocat-extensions', "").split(',') if ext_name]
+        extension_names = self._obtain_extensions_from_headers(headers)
         compile_options = dict(
             windows=dict(
                 CC='x86_64-w64-mingw32-gcc',
@@ -94,6 +99,8 @@ class SandService(BaseService):
                                  extldflags='', cflags='', flag_params=default_flag_params, extension_names=None):
         """
         Compile sandcat agent using specified parameters. Will also include any requested extension modules.
+        If a gocat variant is specified along with additional extensions, the extensions will be added to the
+        base extensions for the variant.
         """
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
@@ -162,3 +169,14 @@ class SandService(BaseService):
         else:
             self.log.error('Module %s not found' % name)
         return False
+
+    async def _obtain_extensions_from_headers(self, headers):
+        """
+        Given the headers dict, extracts the requested extensions and gocat variant and returns a combined set of
+        required extensions.
+        """
+        requested_extensions = [ext_name for ext_name in headers.get('gocat-extensions', "").split(',') if ext_name]
+        agent_variant = headers.get('gocat-variant', default_gocat_variant)
+        variant_extensions = gocat_variants.get(agent_variant, set())
+        self.log.debug('Using gocat variant: %s' % agent_variant)
+        return variant_extensions.union(set(requested_extensions))
