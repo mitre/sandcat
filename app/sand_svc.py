@@ -8,10 +8,10 @@ from shutil import which
 from app.utility.base_service import BaseService
 
 default_flag_params = ('server', 'group', 'listenP2P', 'c2')
-gocat_variants = {
-    'basic': set(),
-    'red': {'gist', 'shared', 'shells', 'shellcode'}
-}
+gocat_variants = dict(
+    basic=set(),
+    red=set(['gist', 'shared', 'shells', 'shellcode'])
+)
 default_gocat_variant = 'basic'
 
 
@@ -175,7 +175,7 @@ class SandService(BaseService):
         Given the headers dict, extracts the requested extensions and gocat variant and returns a combined set of
         required extensions.
         """
-        requested_extensions = [ext_name for ext_name in headers.get('gocat-extensions', "").split(',') if ext_name]
+        requested_extensions = [ext_name for ext_name in headers.get('gocat-extensions', '').split(',') if ext_name]
         agent_variant = headers.get('gocat-variant', default_gocat_variant)
         variant_extensions = gocat_variants.get(agent_variant, set())
         self.log.debug('Using gocat variant: %s' % agent_variant)
