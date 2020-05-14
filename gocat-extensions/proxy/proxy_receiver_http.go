@@ -29,6 +29,7 @@ type HttpReceiver struct {
 	waitgroup *sync.WaitGroup
 	receiverContext context.Context
 	receiverCancelFunc context.CancelFunc
+	urlList []string // list of HTTP urls that external machines can use to reach this receiver.
 }
 
 func init() {
@@ -57,6 +58,10 @@ func (h *HttpReceiver) InitializeReceiver(server string, upstreamComs contact.Co
 		h.httpServer = &http.Server{
 			Addr: bindPortStr,
 			Handler: nil,
+		}
+		h.urlList, err = h.getReachableUrls()
+		if err != nil {
+			return err
 		}
 		h.waitgroup = waitgroup
 		h.receiverContext, h.receiverCancelFunc = context.WithTimeout(context.Background(), 5*time.Second)
@@ -93,6 +98,10 @@ func (h *HttpReceiver) UpdateUpstreamComs(newComs contact.Contact) {
 	default:
 		output.VerbosePrint("[-] Cannot switch to non-HTTP comms.")
 	}
+}
+
+func (h *HttpReceiver) GetReceiverAddresses() []string {
+	return h.urlList
 }
 
 // Helper method for StartReceiver. Starts HTTP proxy to forward messages from peers to the C2 server.
@@ -160,4 +169,46 @@ func (h *HttpReceiver) forwardResponseDownstream(resp *http.Response, writer htt
 	}
 	_, err = writer.Write(bites)
 	return err
+}
+
+// Port must be set for the HTTP receiver before calling this method.
+func (h *HttpReceiver) getReachableUrls() ([]string, error) {
+	var urlList []string
+	ipAddrs, err := h.getLocalIPv4Addresses()
+	if err != nil {
+		return nil, err
+	}
+	for _, addr := range ipAddrs {
+		url := "http://" + addr + ":" + strconv.Itoa(h.port)
+		urlList = append(urlList, url)
+	}
+	return urlList, nil
+}
+
+// Return list of local IPv4 addresses for this machine (exclude loopback and unspecified addresses)
+func (h *HttpReceiver) getLocalIPv4Addresses() ([]string, error) {
+	var localIpList []string
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	for _, iface := range interfaces {
+		addresses, err := iface.Addrs()
+		if err != nil {
+			return nil, err
+		}
+		for _, addr := range addresses {
+			var ipAddr net.IP
+			switch v:= addr.(type) {
+			case *net.IPNet:
+				ipAddr = v.IP
+			case *net.IPAddr:
+				ipAddr = v.IP
+			}
+			if ipAddr != nil && !ipAddr.IsLoopback() && !ipAddr.IsUnspecified() && (ipAddr.To4() != nil) {
+				localIpList = append(localIpList, ipAddr.String())
+			}
+		}
+	}
+	return localIpList, nil
 }
