@@ -134,14 +134,19 @@ class SandService(BaseService):
         await self._uninstall_gocat_extensions(installed_extensions)
 
     async def _get_available_proxy_peer_info(self):
-        """Returns JSON-marshalled list of length-2 lists of the form [proxy protocol, receiver address] for
+        """Returns JSON-marshalled dict that maps proxy protocol (string) to a de-duped list of receiver addresses (string) for
         trusted agents who are running proxy receivers."""
-        receiver_list = []
+        receiver_dict = dict()
         for agent in await self.data_svc.locate('agents'):
             if agent.trusted:
-                print(agent.paw)
-                receiver_list += agent.proxy_receivers
-        return json.dumps(receiver_list)
+                for protocol, addressList in agent.proxy_receivers.items():
+                    if protocol not in receiver_dict:
+                        receiver_dict[protocol] = set()
+                    for address in addressList:
+                        receiver_dict[protocol].add(address)
+        for protocol, addressList in receiver_dict:
+            receiver_dict[protocol] = list(receiver_dict[protocol])
+        return json.dumps(receiver_dict)
 
     async def _get_encoded_proxy_peer_info(self):
         """XORs JSON-dumped available proxy receiver information with the given key string
