@@ -113,8 +113,6 @@ class SandService(BaseService):
                 elif param == 'includePeers' and headers.get(param, "").lower() == "true":
                     encoded_info, xor_key = await self._get_encoded_proxy_peer_info()
                     if encoded_info and xor_key:
-                        print(encoded_info)
-                        print(xor_key) # debugging
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('encodedReceivers', encoded_info))
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('receiverKey', xor_key))
                 else:
@@ -144,7 +142,7 @@ class SandService(BaseService):
                         receiver_dict[protocol] = set()
                     for address in addressList:
                         receiver_dict[protocol].add(address)
-        for protocol, addressList in receiver_dict:
+        for protocol in receiver_dict:
             receiver_dict[protocol] = list(receiver_dict[protocol])
         return json.dumps(receiver_dict)
 
@@ -152,7 +150,6 @@ class SandService(BaseService):
         """XORs JSON-dumped available proxy receiver information with the given key string
         and returns the base64-encoded output along with the XOR key string."""
         receiver_info_json = await self._get_available_proxy_peer_info()
-        print(receiver_info_json) # debugging
         key = self._generate_key()
         if receiver_info_json:
             result = []
