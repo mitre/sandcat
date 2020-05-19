@@ -1,13 +1,16 @@
+import base64
+import json
 import os
 import pathlib
 import random
 import string
+from collections import defaultdict
 from importlib import import_module
 from shutil import which
 
 from app.utility.base_service import BaseService
 
-default_flag_params = ('server', 'group', 'listenP2P', 'c2')
+default_flag_params = ('server', 'group', 'listenP2P', 'c2', 'includeProxyPeers')
 gocat_variants = dict(
     basic=set(),
     red=set(['gist', 'shared', 'shells', 'shellcode'])
@@ -108,6 +111,11 @@ class SandService(BaseService):
             if param in headers:
                 if param == 'c2':
                     ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
+                elif param == 'includeProxyPeers' and headers.get(param, False):
+                    encoded_info, xor_key = await self._get_encoded_proxy_peer_info()
+                    if encoded_info and xor_key:
+                        ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('encodedReceivers', encoded_info))
+                        ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('receiverKey', xor_key))
                 else:
                     ldflags.append('-X main.%s=%s' % (param, headers[param]))
         ldflags.append(extldflags)
@@ -123,6 +131,30 @@ class SandService(BaseService):
 
         # Remove extension files.
         await self._uninstall_gocat_extensions(installed_extensions)
+
+    async def _get_available_proxy_peer_info(self):
+        """Returns JSON-marshalled dict that maps proxy protocol (string) to a de-duped list of receiver addresses
+        (string) for trusted agents who are running proxy receivers."""
+        deduped_receivers = defaultdict(list)
+        for agent in await self.data_svc.locate('agents', match=dict(trusted=True)):
+            for protocol, addressList in agent.proxy_receivers.items():
+                deduped_receivers[protocol] += addressList
+        for protocol in deduped_receivers:
+            deduped_receivers[protocol] = list(set(deduped_receivers[protocol]))
+        return json.dumps(deduped_receivers)
+
+    async def _get_encoded_proxy_peer_info(self):
+        """XORs JSON-dumped available proxy receiver information with the given key string
+        and returns the base64-encoded output along with the XOR key string."""
+        receiver_info_json = await self._get_available_proxy_peer_info()
+        if receiver_info_json:
+            result = []
+            key = self._generate_key()
+            key_length = len(key)
+            for index in range(0, len(receiver_info_json)):
+                result.append(ord(receiver_info_json[index]) ^ ord(key[index % key_length]))
+            return base64.b64encode(bytes(result)).decode('ascii'), key
+        return '', ''
 
     async def _install_gocat_extensions(self, extension_names):
         """
