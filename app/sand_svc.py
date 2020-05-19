@@ -138,7 +138,7 @@ class SandService(BaseService):
         deduped_receivers = defaultdict(list)
         for agent in await self.data_svc.locate('agents', match=dict(trusted=True)):
             for protocol, addressList in agent.proxy_receivers.items():
-                deduped_receivers[protocol] += [address for address in addressList]
+                deduped_receivers[protocol] += addressList
         for protocol in deduped_receivers:
             deduped_receivers[protocol] = list(set(deduped_receivers[protocol]))
         return json.dumps(deduped_receivers)
