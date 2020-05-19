@@ -154,7 +154,7 @@ class SandService(BaseService):
             for index in range(0, len(receiver_info_json)):
                 result.append(ord(receiver_info_json[index]) ^ ord(key[index % key_length]))
             return base64.b64encode(bytes(result)).decode('ascii'), key
-        return '',''
+        return '', ''
 
     async def _install_gocat_extensions(self, extension_names):
         """
