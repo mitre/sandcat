@@ -112,6 +112,7 @@ class SandService(BaseService):
                 if param == 'c2':
                     ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
                 elif param == 'includeProxyPeers':
+                    self.log.debug('Available peer-to-peer proxy receivers requested.')
                     encoded_info, xor_key = await self._get_encoded_proxy_peer_info(headers[param])
                     if encoded_info and xor_key:
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('encodedReceivers', encoded_info))
@@ -148,6 +149,7 @@ class SandService(BaseService):
                     deduped_receivers[protocol] += addressList
         for protocol in deduped_receivers:
             deduped_receivers[protocol] = list(set(deduped_receivers[protocol]))
+        self.log.debug('Found peer-to-peer proxy receivers for protocols: %s' % (', '.join(deduped_receivers.keys())))
         return json.dumps(deduped_receivers)
 
     async def _get_encoded_proxy_peer_info(self, filter_string):
@@ -165,8 +167,6 @@ class SandService(BaseService):
                 filter_string = filter_string[1:]
                 exclude = True
             specified_protocols = set(filter_string.split(','))
-        print(specified_protocols)
-        print(exclude)
         receiver_info_json = await self._get_available_proxy_peer_info(specified_protocols, exclude)
         if receiver_info_json:
             result = []
