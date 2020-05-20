@@ -111,8 +111,8 @@ class SandService(BaseService):
             if param in headers:
                 if param == 'c2':
                     ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
-                elif param == 'includeProxyPeers' and headers.get(param, False):
-                    encoded_info, xor_key = await self._get_encoded_proxy_peer_info()
+                elif param == 'includeProxyPeers':
+                    encoded_info, xor_key = await self._get_encoded_proxy_peer_info(headers[param])
                     if encoded_info and xor_key:
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('encodedReceivers', encoded_info))
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('receiverKey', xor_key))
@@ -132,21 +132,42 @@ class SandService(BaseService):
         # Remove extension files.
         await self._uninstall_gocat_extensions(installed_extensions)
 
-    async def _get_available_proxy_peer_info(self):
+    async def _get_available_proxy_peer_info(self, specified_protocols, exclude=False):
         """Returns JSON-marshalled dict that maps proxy protocol (string) to a de-duped list of receiver addresses
-        (string) for trusted agents who are running proxy receivers."""
+        (string) for trusted agents who are running proxy receivers. specified_protocols must be an iterable
+        of proxy protocol strings to include/exclude. Setting it to empty with 'exclude' set to False will
+        include all available proxy protocols. Setting exclude to True will exclude any protocol included in
+        specified_protocols
+        """
         deduped_receivers = defaultdict(list)
         for agent in await self.data_svc.locate('agents', match=dict(trusted=True)):
             for protocol, addressList in agent.proxy_receivers.items():
-                deduped_receivers[protocol] += addressList
+                if not specified_protocols \
+                        or (not exclude and protocol in specified_protocols) \
+                        or (exclude and protocol not in specified_protocols):
+                    deduped_receivers[protocol] += addressList
         for protocol in deduped_receivers:
             deduped_receivers[protocol] = list(set(deduped_receivers[protocol]))
         return json.dumps(deduped_receivers)
 
-    async def _get_encoded_proxy_peer_info(self):
+    async def _get_encoded_proxy_peer_info(self, filter_string):
         """XORs JSON-dumped available proxy receiver information with the given key string
-        and returns the base64-encoded output along with the XOR key string."""
-        receiver_info_json = await self._get_available_proxy_peer_info()
+        and returns the base64-encoded output along with the XOR key string.
+        filter_string should be one of these formats:
+            'all' : include all available proxy protocols
+            'comma,separated,list,to,include' : only include these protocols
+            '!comma,separated,list,to,exclude' : exclude these protocols
+        """
+        exclude = False
+        specified_protocols = set()
+        if filter_string and filter_string.lower() != 'all':
+            if filter_string.startswith('!'):
+                filter_string = filter_string[1:]
+                exclude = True
+            specified_protocols = set(filter_string.split(','))
+        print(specified_protocols)
+        print(exclude)
+        receiver_info_json = await self._get_available_proxy_peer_info(specified_protocols, exclude)
         if receiver_info_json:
             result = []
             key = self._generate_key()
