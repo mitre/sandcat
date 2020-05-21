@@ -262,7 +262,7 @@ func (s *SmbPipeReceiver) forwardSendExecResults(message P2pMessage) {
 
 /*
  * SmbPipeAPI implementation (implements contact.Contact interface)
- */s
+ */
 
 func (s *SmbPipeAPI) GetBeaconBytes(profile map[string]interface{}) []byte {
 	requestingPaw := getPawFromProfile(profile)
