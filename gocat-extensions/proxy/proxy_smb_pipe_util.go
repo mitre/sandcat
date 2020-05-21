@@ -17,6 +17,28 @@ import (
 	"gopkg.in/natefinch/npipe.v2"
 )
 
+// Pipe-related constants.
+const (
+	pipeCharacters = "abcdefghijklmnopqrstuvwxyz1234567890"
+	numPipeCharacters = int64(len(pipeCharacters))
+	clientPipeNameMinLen = 10
+	clientPipeNameMaxLen = 15
+	maxChunkSize = 5*4096 // chunk size for writing to pipes.
+	pipeDialTimeoutSec = 10 // number of seconds to wait before timing out of pipe dial attempt.
+)
+
+// Auxiliary struct that defines P2P message payload structure for an ability payload request
+type payloadRequestInfo struct {
+	PayloadName string
+	Profile map[string]interface{}
+}
+
+// Auxiliary struct that defines P2P message payload structure for an ability payload response
+type payloadResponseInfo struct {
+	PayloadName string
+	PayloadData []byte
+}
+
 /*
  * SMB Read/Write helper functions
  */

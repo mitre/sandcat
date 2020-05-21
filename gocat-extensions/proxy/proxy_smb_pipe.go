@@ -11,17 +11,19 @@
  * provide full communication between the agent and the upstream C2 (get payloads, get instructions, etc).
  * The SMB pipe API client assumes that it is talking to an SMB Pipe p2p receiver that knows how to process the
  * client messages accordingly. When using the SMB Pipe P2P client, the agent will generate a random pipe path
- * to listen on - this pipe will receive response messages when the agent sends requests upstream for itself.
- * But if an agent has downstream agents to forward messages for, those requests will also flow through the
- * SMB pipe API client. Thus, the agent will open up new random pipe paths for each downstream agent that it is
- * servicing, and the SmbPipeAPI struct will keep track of which pipe path is for which downstream agent so that
+ * to listen on (a mailbox pipe) - this pipe will receive response messages when the agent sends requests upstream
+ * for itself.
+ * But if an agent has downstream agents to forward messages for, those requests will also flow through the same
+ * SMB pipe API client. Thus, the agent will open up new random mailbox pipes for each downstream agent that it is
+ * servicing, and the SmbPipeAPI struct will keep track of which mailbox pipe is for which downstream agent so that
  * it can forward the responses appropriately.
  *
  * Each agent listening for SMB pipe P2P messages will activate an SMB pipe receiver that listens on a particular
  * pipe path. This pipe path is randomly generated using the hostname as the seed, so that a client agent
- * can calculate the pipe path for its upstream agent.  As the SMB pipe receiver gets messages from downstream
+ * can calculate the pipe path for its upstream agent if it only knows the hostname.
+ * As the SMB pipe receiver gets messages from downstream
  * agents, it will forward the message upstream and return the response.  Each upstream P2P message via SMB pipes
- * must contain the requesting agent's pipe path for response messages, so the P2P receiver knows where to send
+ * must contain the requesting agent's mailbox pipe path for response messages, so the P2P receiver knows where to send
  * the responses.
  */
 
@@ -38,12 +40,6 @@ import (
 	"sync"
 	"github.com/mitre/gocat/output"
 	"github.com/mitre/gocat/contact"
-
-	_ "github.com/mitre/gocat/execute/donut" // necessary to initialize all submodules
-	_ "github.com/mitre/gocat/execute/shells" // necessary to initialize all submodules
-	_ "github.com/mitre/gocat/execute/shellcode" // necessary to initialize all submodules
-
-	//"gopkg.in/natefinch/npipe.v2"
 )
 
 var (
@@ -55,16 +51,6 @@ var (
 
 	// For writes to the upstream pipe.
 	upstreamPipeLock sync.Mutex
-)
-
-// Pipe-related constants.
-const (
-	pipeCharacters = "abcdefghijklmnopqrstuvwxyz1234567890"
-	numPipeCharacters = int64(len(pipeCharacters))
-	clientPipeNameMinLen = 10
-	clientPipeNameMaxLen = 15
-	maxChunkSize = 5*4096 // chunk size for writing to pipes.
-	pipeDialTimeoutSec = 10 // number of seconds to wait before timing out of pipe dial attempt.
 )
 
 // SmbPipeAPI communicates through SMB named pipes. Implements the Contact interface.
@@ -90,20 +76,7 @@ type SmbPipeReceiver struct {
 	receiverCancelFunc context.CancelFunc
 }
 
-// Auxiliary struct that defines P2P message payload structure for an ability payload request
-type payloadRequestInfo struct {
-	PayloadName string
-	Profile map[string]interface{}
-}
-
-// Auxiliary struct that defines P2P message payload structure for an ability payload response
-type payloadResponseInfo struct {
-	PayloadName string
-	PayloadData []byte
-}
-
 func init() {
-	//P2pClientChannels["SmbPipe"] = &SmbPipeAPI{
 	contact.CommunicationChannels["SmbPipe"] = &SmbPipeAPI{
 		make(map[string]string),
 		make(map[string]net.Listener),
@@ -112,7 +85,9 @@ func init() {
 	P2pReceiverChannels["SmbPipe"] = &SmbPipeReceiver{}
 }
 
-// SmbPipeReceiver Implementation (implements P2pReceiver interface).
+/*
+ * SmbPipeReceiver Implementation (implements P2pReceiver interface).
+ */
 
 func (s *SmbPipeReceiver) InitializeReceiver(server string, upstreamComs contact.Contact, waitgroup *sync.WaitGroup) error {
 	hostname, err := os.Hostname()
@@ -132,7 +107,6 @@ func (s *SmbPipeReceiver) InitializeReceiver(server string, upstreamComs contact
 	s.receiverContext, s.receiverCancelFunc = context.WithTimeout(context.Background(), 5*time.Second)
 	return nil
 }
-
 
 // Listen on agent's main pipe for client connection. This method must be run as a go routine.
 func (s *SmbPipeReceiver) RunReceiver() {
@@ -287,10 +261,8 @@ func (s *SmbPipeReceiver) forwardSendExecResults(message P2pMessage) {
 }
 
 /*
- * SmbPipeAPI implementation
- */
-
-// Contact API functions
+ * SmbPipeAPI implementation (implements contact.Contact interface)
+ */s
 
 func (s *SmbPipeAPI) GetBeaconBytes(profile map[string]interface{}) []byte {
 	requestingPaw := getPawFromProfile(profile)
