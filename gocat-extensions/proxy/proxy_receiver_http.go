@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"io/ioutil"
@@ -17,12 +18,15 @@ import (
 )
 
 var httpProxyName = "HTTP"
-var defaultPort = 61889
+var maxPortRetries = 5
+var minReceiverPort = 50000
+var maxReceiverPort = 63000
 
 //HttpReceiver forwards data received from HTTP requests to the upstream server via HTTP. Implements the P2pReceiver interface.
 type HttpReceiver struct {
 	upstreamServer string
 	port int
+	bindPortStr string
 	receiverName string
 	upstreamComs contact.Contact
 	httpServer *http.Server
@@ -40,15 +44,7 @@ func (h *HttpReceiver) InitializeReceiver(server string, upstreamComs contact.Co
 	// Make sure the agent uses HTTP with the C2.
 	switch upstreamComs.(type) {
 	case contact.API:
-		h.port = defaultPort
-		bindPortStr := ":" + strconv.Itoa(h.port)
-
-		// Check if port is already in use.
-		ln, err := net.Listen("tcp", bindPortStr)
-		if err != nil {
-			return err
-		}
-		err = ln.Close()
+		err := h.initializeReceiverPort()
 		if err != nil {
 			return err
 		}
@@ -56,7 +52,7 @@ func (h *HttpReceiver) InitializeReceiver(server string, upstreamComs contact.Co
 		h.receiverName = httpProxyName
 		h.upstreamComs = upstreamComs
 		h.httpServer = &http.Server{
-			Addr: bindPortStr,
+			Addr: h.bindPortStr,
 			Handler: nil,
 		}
 		h.urlList, err = h.getReachableUrls()
@@ -106,7 +102,6 @@ func (h *HttpReceiver) GetReceiverAddresses() []string {
 
 // Helper method for StartReceiver. Starts HTTP proxy to forward messages from peers to the C2 server.
 func (h *HttpReceiver) startHttpProxy() {
-	listenPort := ":" + strconv.Itoa(h.port)
 	proxyHandler := func(writer http.ResponseWriter, reader *http.Request) {
 		// Get data from the message that client peer sent.
 		body, err := ioutil.ReadAll(reader.Body)
@@ -129,7 +124,7 @@ func (h *HttpReceiver) startHttpProxy() {
 		}
 	}
 	http.HandleFunc("/", proxyHandler)
-	if err := http.ListenAndServe(listenPort, nil); err != nil {
+	if err := http.ListenAndServe(h.bindPortStr, nil); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] HTTP proxy error: %s", err.Error()))
 	}
 }
@@ -211,4 +206,30 @@ func (h *HttpReceiver) getLocalIPv4Addresses() ([]string, error) {
 		}
 	}
 	return localIpList, nil
+}
+
+// Helper method for initializing the receiver port.
+func (h *HttpReceiver) initializeReceiverPort() error {
+	// Try 5 random ports before giving up.
+	retryCount := 0
+	for (retryCount < maxPortRetries) {
+		currPort := generateRandomPort(minReceiverPort, maxReceiverPort)
+		currBindPortStr := ":" + strconv.Itoa(currPort)
+
+		// Check if port is already in use.
+		if ln, err := net.Listen("tcp", currBindPortStr); err != nil {
+			output.VerbosePrint(fmt.Sprintf("[-] Error trying to use random port %d: %s", currPort, err.Error()))
+		} else {
+			h.port = currPort
+			h.bindPortStr = currBindPortStr
+			return ln.Close()
+		}
+	}
+	return errors.New(fmt.Sprintf("Failed to find available port %d consecutive times.", maxPortRetries))
+}
+
+// Generate random port for the receiver in the range [minPort, maxPort]
+func generateRandomPort(minPort int, maxPort int) int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(maxPort - minPort) + minPort
 }
