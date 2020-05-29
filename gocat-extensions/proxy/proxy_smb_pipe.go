@@ -306,8 +306,16 @@ func (s *SmbPipeAPI) GetBeaconBytes(profile map[string]interface{}) []byte {
 
 // Will obtain the payload bytes in memory to be written to disk later by caller.
 func (s *SmbPipeAPI) GetPayloadBytes(profile map[string]interface{}, payload string) ([]byte, string) {
-    server := profile["server"].(string)
-    paw := profile["paw"].(string)
+	if _, ok := profile["server"]; !ok {
+		output.VerbosePrint("[!] Error - server not included in profile for payload request.")
+		return nil, ""
+	}
+	if _, ok := profile["paw"]; !ok {
+		output.VerbosePrint("[!] Error - paw not included in profile for payload request.")
+		return nil, ""
+	}
+	server := profile["server"].(string)
+	paw := profile["paw"].(string)
 
     // Set up mailbox pipe and listener if needed.
 	mailBoxPipePath, mailBoxListener, err := s.fetchClientMailBoxInfo(paw, true)
