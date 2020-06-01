@@ -88,12 +88,7 @@ func (h *HttpReceiver) UpdateUpstreamServer(newServer string) {
 }
 
 func (h *HttpReceiver) UpdateUpstreamComs(newComs contact.Contact) {
-	switch newComs.(type) {
-	case contact.API:
-		h.upstreamComs = newComs
-	default:
-		output.VerbosePrint("[-] Cannot switch to non-HTTP comms.")
-	}
+	h.upstreamComs = newComs
 }
 
 func (h *HttpReceiver) GetReceiverAddresses() []string {
