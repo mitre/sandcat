@@ -3,6 +3,8 @@ package proxy
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -17,10 +19,14 @@ import (
 	"github.com/mitre/gocat/contact"
 )
 
-var httpProxyName = "HTTP"
-var maxPortRetries = 5
-var minReceiverPort = 50000
-var maxReceiverPort = 63000
+var (
+	beaconEndpoint = "/beacon"
+	payloadEndpoint = "/file/download"
+	httpProxyName = "HTTP"
+	maxPortRetries = 5
+	minReceiverPort = 50000
+	maxReceiverPort = 63000
+)
 
 //HttpReceiver forwards data received from HTTP requests to the upstream server via HTTP. Implements the P2pReceiver interface.
 type HttpReceiver struct {
@@ -41,30 +47,24 @@ func init() {
 }
 
 func (h *HttpReceiver) InitializeReceiver(server string, upstreamComs contact.Contact, waitgroup *sync.WaitGroup) error {
-	// Make sure the agent uses HTTP with the C2.
-	switch upstreamComs.(type) {
-	case contact.API:
-		err := h.initializeReceiverPort()
-		if err != nil {
-			return err
-		}
-		h.upstreamServer = server
-		h.receiverName = httpProxyName
-		h.upstreamComs = upstreamComs
-		h.httpServer = &http.Server{
-			Addr: h.bindPortStr,
-			Handler: nil,
-		}
-		h.urlList, err = h.getReachableUrls()
-		if err != nil {
-			return err
-		}
-		h.waitgroup = waitgroup
-		h.receiverContext, h.receiverCancelFunc = context.WithTimeout(context.Background(), 5*time.Second)
-		return nil
-	default:
-		return errors.New("Cannot initialize HTTP proxy receiver if agent is not using HTTP communication with the C2.")
+	err := h.initializeReceiverPort()
+	if err != nil {
+		return err
 	}
+	h.upstreamServer = server
+	h.receiverName = httpProxyName
+	h.upstreamComs = upstreamComs
+	h.httpServer = &http.Server{
+		Addr: h.bindPortStr,
+		Handler: nil,
+	}
+	h.urlList, err = h.getReachableUrls()
+	if err != nil {
+		return err
+	}
+	h.waitgroup = waitgroup
+	h.receiverContext, h.receiverCancelFunc = context.WithTimeout(context.Background(), 5*time.Second)
+	return nil
 }
 
 func (h *HttpReceiver) RunReceiver() {
@@ -88,12 +88,7 @@ func (h *HttpReceiver) UpdateUpstreamServer(newServer string) {
 }
 
 func (h *HttpReceiver) UpdateUpstreamComs(newComs contact.Contact) {
-	switch newComs.(type) {
-	case contact.API:
-		h.upstreamComs = newComs
-	default:
-		output.VerbosePrint("[-] Cannot switch to non-HTTP comms.")
-	}
+	h.upstreamComs = newComs
 }
 
 func (h *HttpReceiver) GetReceiverAddresses() []string {
@@ -102,67 +97,120 @@ func (h *HttpReceiver) GetReceiverAddresses() []string {
 
 // Helper method for StartReceiver. Starts HTTP proxy to forward messages from peers to the C2 server.
 func (h *HttpReceiver) startHttpProxy() {
-	proxyHandler := func(writer http.ResponseWriter, reader *http.Request) {
-		// Get data from the message that client peer sent.
-		body, err := ioutil.ReadAll(reader.Body)
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		reader.Body = ioutil.NopCloser(bytes.NewReader(body))
-
-		// Forward the request to the C2 server, and send back the response.
-		resp, err := h.forwardRequestUpstream(body, writer, reader)
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusBadGateway)
-			output.VerbosePrint(fmt.Sprintf("[-] Error forwarding HTTP request: %s", err.Error()))
-			return
-		}
-		if err = h.forwardResponseDownstream(resp, writer); err!= nil {
-			http.Error(writer, err.Error(), http.StatusBadGateway)
-			output.VerbosePrint(fmt.Sprintf("[-] Error forwarding HTTP response: %s", err.Error()))
-		}
-	}
-	http.HandleFunc("/", proxyHandler)
+	http.HandleFunc(beaconEndpoint, h.handleBeaconEndpoint)
+	http.HandleFunc(payloadEndpoint, h.handlePayloadEndpoint)
 	if err := http.ListenAndServe(h.bindPortStr, nil); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] HTTP proxy error: %s", err.Error()))
 	}
 }
 
-// Helper method for startHttpProxy that will forward the HTTP request upstream. Returns the response.
-func (h *HttpReceiver) forwardRequestUpstream(body []byte, writer http.ResponseWriter, reader *http.Request) (*http.Response, error) {
-	// Determine where to forward the request.
-	url := h.upstreamServer + reader.RequestURI
-
-	// Forward the request to the C2 server, and send back the response.
-	httpClient := http.Client{}
-	proxyReq, err := http.NewRequest(reader.Method, url, bytes.NewReader(body))
+// Handle beacon/execution results sent to /beacon
+func (h *HttpReceiver) handleBeaconEndpoint(writer http.ResponseWriter, reader *http.Request) {
+	// Get data from the message that client peer sent.
+	body, err := ioutil.ReadAll(reader.Body)
 	if err != nil {
-		return nil, err
+		output.VerbosePrint(fmt.Sprintf("[!] Error: could not read data from beacon request: %s", err.Error()))
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	reader.Body = ioutil.NopCloser(bytes.NewReader(body))
+
+	// Extract profile from the data.
+	profileData, err := base64.StdEncoding.DecodeString(string(body))
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error: malformed profile base64 received: %s", err.Error()))
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	profile := make(map[string]interface{})
+	if err = json.Unmarshal(profileData, &profile); err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error: malformed profile data received on beacon endpoint: %s", err.Error()))
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	// Copy headers received from client.
-	proxyReq.Header = make(http.Header)
-	for header, val := range reader.Header {
-		proxyReq.Header[header] = val
-	}
-	return httpClient.Do(proxyReq)
-}
+	// Make sure we forward the request to the right place.
+	profile["server"] = h.upstreamServer
 
-func (h *HttpReceiver) forwardResponseDownstream(resp *http.Response, writer http.ResponseWriter) error {
-	// Send back headers received from upstream.
-	for header, val := range resp.Header {
-		writer.Header().Set(header, val[0])
-		for i := 1; i < len(val); i++ {
-			writer.Header().Add(header, val[i])
+	// Check if profile contains execution results
+	if results, ok := profile["results"]; ok {
+		output.VerbosePrint("[*] HTTP proxy: handling execution results from client.")
+		resultList := results.([]interface{})
+		if len(resultList) > 0 {
+			h.upstreamComs.SendExecutionResults(profile, resultList[0].(map[string]interface{}))
+		} else {
+			output.VerbosePrint("[!] Error: client sent empty result list.")
+			http.Error(writer, "Empty result list received from client", http.StatusInternalServerError)
+		}
+	} else {
+		output.VerbosePrint("[*] HTTP proxy: handling beacon request from client.")
+		beaconResponse := h.upstreamComs.GetBeaconBytes(profile)
+		encodedResponse := []byte(base64.StdEncoding.EncodeToString(beaconResponse))
+		if err = sendResponseToClient(encodedResponse, nil, writer); err != nil {
+			output.VerbosePrint(fmt.Sprintf("[!] Error sending response to client: %s", err.Error()))
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
 		}
 	}
-	defer resp.Body.Close()
-	bites, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
+}
+
+// Handle payload requests sent to /file/download
+func (h *HttpReceiver) handlePayloadEndpoint(writer http.ResponseWriter, reader *http.Request) {
+	output.VerbosePrint("[*] HTTP proxy: handling payload request from client.")
+
+	// Get filename, paw, and platform from headers
+	filenameReqHeader, ok := reader.Header["File"]
+	if !ok {
+		output.VerbosePrint("[!] Error: Client did not include filename in payload request.")
+		http.Error(writer, "Filename required in payload request", http.StatusInternalServerError)
+		return
 	}
-	_, err = writer.Write(bites)
+	filename := filenameReqHeader[0]
+	platformHeader, ok := reader.Header["Platform"]
+	if !ok {
+		output.VerbosePrint("[!] Error: Client did not include platform in payload request.")
+		http.Error(writer, "Platform required in payload request", http.StatusInternalServerError)
+		return
+	}
+	platform := platformHeader[0]
+	pawHeader, ok := reader.Header["Paw"]
+	if !ok {
+		output.VerbosePrint("[!] Error: Client did not include paw in payload request.")
+		http.Error(writer, "Paw required in payload request", http.StatusInternalServerError)
+		return
+	}
+	clientPaw := pawHeader[0]
+
+	// Build profile to send request upstream.
+	profile := make(map[string]interface{})
+	profile["server"] = h.upstreamServer
+	profile["platform"] = platform
+	profile["paw"] = clientPaw
+	payloadBytes, realFilename := h.upstreamComs.GetPayloadBytes(profile, filename)
+
+	// Prepare response for client
+	responseHeaders := make(map[string][]string)
+	contentDispHeader := make([]string, 1)
+	contentDispHeader[0] = fmt.Sprintf("attachment; filename=%s", realFilename)
+	responseHeaders["CONTENT-DISPOSITION"] = contentDispHeader
+	filenameRespHeader := make([]string, 1)
+	filenameRespHeader[0] = realFilename
+	responseHeaders["FILENAME"] = filenameRespHeader
+	if err := sendResponseToClient(payloadBytes, responseHeaders, writer); err != nil {
+		output.VerbosePrint(fmt.Sprintf("[-] Error sending payload response to client: %s", err.Error()))
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func sendResponseToClient(data []byte, headers map[string][]string, writer http.ResponseWriter) error {
+	if headers != nil {
+		for header, val := range headers {
+			writer.Header().Set(header, val[0])
+			for i := 1; i < len(val); i++ {
+				writer.Header().Add(header, val[i])
+			}
+		}
+	}
+	_, err := writer.Write(data)
 	return err
 }
 
