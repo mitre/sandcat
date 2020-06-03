@@ -51,6 +51,8 @@ var (
 
 	// For writes to the upstream pipe.
 	upstreamPipeLock sync.Mutex
+
+	protocolName = "SmbPipe"
 )
 
 // SmbPipeAPI communicates through SMB named pipes. Implements the Contact interface.
@@ -65,6 +67,8 @@ type SmbPipeAPI struct {
 
 //PipeReceiver forwards data received from SMB pipes to the upstream server. Implements the P2pReceiver interface
 type SmbPipeReceiver struct {
+	agentPaw string // paw of agent running this receiver
+	receiverName string
 	mainPipeName string
 	localMainPipePath string // full pipe path from a local perrspective. \\.\pipe\<pipename>
 	externalMainPipePath string // full pipe path from an external perspective. \\hostname\pipe\<pipename>
@@ -77,12 +81,12 @@ type SmbPipeReceiver struct {
 }
 
 func init() {
-	contact.CommunicationChannels["SmbPipe"] = &SmbPipeAPI{
+	contact.CommunicationChannels[protocolName] = &SmbPipeAPI{
 		make(map[string]string),
 		make(map[string]net.Listener),
-		"SmbPipe",
+		protocolName,
 	}
-	P2pReceiverChannels["SmbPipe"] = &SmbPipeReceiver{}
+	P2pReceiverChannels[protocolName] = &SmbPipeReceiver{}
 }
 
 /*
@@ -103,6 +107,7 @@ func (s *SmbPipeReceiver) InitializeReceiver(server string, upstreamComs contact
 	}
 	s.upstreamServer = server
 	s.upstreamComs = upstreamComs
+	s.receiverName = protocolName
 	s.waitgroup = waitgroup
 	s.receiverContext, s.receiverCancelFunc = context.WithTimeout(context.Background(), 5*time.Second)
 	return nil
@@ -121,6 +126,11 @@ func (s *SmbPipeReceiver) UpdateUpstreamServer(newServer string) {
 
 func (s *SmbPipeReceiver) UpdateUpstreamComs(newComs contact.Contact) {
 	s.upstreamComs = newComs
+}
+
+// Update paw of agent running this receiver.
+func (s *SmbPipeReceiver) UpdateAgentPaw(newPaw string) {
+	s.agentPaw = newPaw
 }
 
 func (s *SmbPipeReceiver) Terminate() {
@@ -176,7 +186,13 @@ func (s *SmbPipeReceiver) forwardGetBeaconBytes(message P2pMessage) {
     	output.VerbosePrint(fmt.Sprintf("[!] Error extracting client profile from p2p message: %s", err.Error()))
     	return
     }
-    clientProfile["server"] = s.upstreamServer // make sure we send the instructions to the right place.
+    // Make sure we forward the request to the right place. Also save the previous server value,
+	// since that tells us what receiver address the client is using.
+	receiverAddress := clientProfile["server"].(string)
+    clientProfile["server"] = s.upstreamServer
+
+    // Update peer proxy chain information to indicate that the beacon is going through this agent.
+	updatePeerChain(clientProfile, s.agentPaw, receiverAddress, s.receiverName)
     output.VerbosePrint(fmt.Sprintf("[*] Forwarding instructions request to on behalf of paw %s", message.SourcePaw))
     response := s.upstreamComs.GetBeaconBytes(clientProfile)
 

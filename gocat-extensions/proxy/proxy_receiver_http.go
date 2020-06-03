@@ -30,6 +30,7 @@ var (
 
 //HttpReceiver forwards data received from HTTP requests to the upstream server via HTTP. Implements the P2pReceiver interface.
 type HttpReceiver struct {
+	agentPaw string // paw of agent running this receiver.
 	upstreamServer string
 	port int
 	bindPortStr string
@@ -91,6 +92,11 @@ func (h *HttpReceiver) UpdateUpstreamComs(newComs contact.Contact) {
 	h.upstreamComs = newComs
 }
 
+// Update paw of agent running this receiver.
+func (h *HttpReceiver) UpdateAgentPaw(newPaw string) {
+	h.agentPaw = newPaw
+}
+
 func (h *HttpReceiver) GetReceiverAddresses() []string {
 	return h.urlList
 }
@@ -129,8 +135,11 @@ func (h *HttpReceiver) handleBeaconEndpoint(writer http.ResponseWriter, reader *
 		return
 	}
 
-	// Make sure we forward the request to the right place.
+	// Make sure we forward the request to the right place. Also save the previous server value,
+	// since that tells us what receiver address the client is using.
+	receiverAddress := profile["server"].(string)
 	profile["server"] = h.upstreamServer
+
 
 	// Check if profile contains execution results
 	if results, ok := profile["results"]; ok {
@@ -144,6 +153,9 @@ func (h *HttpReceiver) handleBeaconEndpoint(writer http.ResponseWriter, reader *
 		}
 	} else {
 		output.VerbosePrint("[*] HTTP proxy: handling beacon request from client.")
+
+		// Update peer proxy chain information to indicate that the beacon is going through this agent.
+		updatePeerChain(profile, h.agentPaw, receiverAddress, h.receiverName)
 		beaconResponse := h.upstreamComs.GetBeaconBytes(profile)
 		encodedResponse := []byte(base64.StdEncoding.EncodeToString(beaconResponse))
 		if err = sendResponseToClient(encodedResponse, nil, writer); err != nil {
