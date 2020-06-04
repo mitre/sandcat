@@ -20,7 +20,8 @@ class Extension(ABC):
         Returns True if the golang dependencies are met for this module, False if not.
         """
         for d in self.dependencies:
-            dep_result = subprocess.run('go list "{}"'.format(d), shell=True, stdout=subprocess.PIPE)
+            dep_result = subprocess.run('go list "{}"'.format(d), shell=True,
+                                        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             if (dep_result.stdout.decode()).strip() != d:
                 return False
         return True
