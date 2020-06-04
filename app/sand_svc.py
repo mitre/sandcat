@@ -83,8 +83,7 @@ class SandService(BaseService):
                 if module:
                     if module.check_go_dependencies() or module.install_dependencies():
                         self.sandcat_extensions[file.split('.')[0]] = module
-                    else:
-                        self.log.error('Failed to fulfill dependencies for module %s' % module)
+                        self.log.debug('Loaded gocat extension module %s' % module)
 
     """ PRIVATE """
 
