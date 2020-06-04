@@ -81,7 +81,9 @@ class SandService(BaseService):
             for file in files:
                 module = await self._load_extension_module(root, file)
                 if module and (module.check_go_dependencies() or module.install_dependencies()):
-                    self.sandcat_extensions[file.split('.')[0]] = module
+                    module_name = file.split('.')[0]
+                    self.sandcat_extensions[module_name] = module
+                    self.log.debug('Loaded gocat extension module: %s' % module_name)
 
     """ PRIVATE """
 
