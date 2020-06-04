@@ -80,10 +80,8 @@ class SandService(BaseService):
             dirs[:] = [d for d in dirs if not d[0] == '.' and not d[0] == "_"]
             for file in files:
                 module = await self._load_extension_module(root, file)
-                if module:
-                    if module.check_go_dependencies() or module.install_dependencies():
-                        self.sandcat_extensions[file.split('.')[0]] = module
-                        self.log.debug('Loaded gocat extension module %s' % module)
+                if module and (module.check_go_dependencies() or module.install_dependencies()):
+                    self.sandcat_extensions[file.split('.')[0]] = module
 
     """ PRIVATE """
 
