@@ -65,6 +65,7 @@ type SmbPipeAPI struct {
 
 //PipeReceiver forwards data received from SMB pipes to the upstream server. Implements the P2pReceiver interface
 type SmbPipeReceiver struct {
+	agentPaw string
 	mainPipeName string
 	localMainPipePath string // full pipe path from a local perrspective. \\.\pipe\<pipename>
 	externalMainPipePath string // full pipe path from an external perspective. \\hostname\pipe\<pipename>
@@ -121,6 +122,10 @@ func (s *SmbPipeReceiver) UpdateUpstreamServer(newServer string) {
 
 func (s *SmbPipeReceiver) UpdateUpstreamComs(newComs contact.Contact) {
 	s.upstreamComs = newComs
+}
+
+func (s *SmbPipeReceiver) UpdateAgentPaw(newPaw string) {
+	s.agentPaw = newPaw
 }
 
 func (s *SmbPipeReceiver) Terminate() {
