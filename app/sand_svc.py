@@ -37,6 +37,7 @@ class SandService(BaseService):
             await self._compile_new_agent(platform=platform,
                                           headers=headers,
                                           compile_target_name=name,
+                                          cflags='CGO_ENABLED=0',
                                           output_name=name,
                                           extension_names=extension_names,
                                           compile_target_dir='gocat')
@@ -71,7 +72,7 @@ class SandService(BaseService):
                                               flag_params=default_flag_params,
                                               extension_names=extension_names,
                                               compile_target_dir='gocat/shared')
-        return '%s-%s' % (name, platform), self.generate_name()
+        return await self.app_svc.retrieve_compiled_file(name, platform)
 
     async def load_sandcat_extension_modules(self):
         """
