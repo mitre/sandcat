@@ -37,14 +37,16 @@ class SandService(BaseService):
             await self._compile_new_agent(platform=platform,
                                           headers=headers,
                                           compile_target_name=name,
+                                          cflags='CGO_ENABLED=0',
                                           output_name=name,
-                                          extension_names=extension_names)
+                                          extension_names=extension_names,
+                                          compile_target_dir='gocat')
         return await self.app_svc.retrieve_compiled_file(name, platform)
 
     async def dynamically_compile_library(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
         name, platform = headers.get('file'), headers.get('platform')
-        extension_names = self._obtain_extensions_from_headers(headers)
+        extension_names = await self._obtain_extensions_from_headers(headers)
         compile_options = dict(
             windows=dict(
                 CC='x86_64-w64-mingw32-gcc',
@@ -68,8 +70,9 @@ class SandService(BaseService):
                                               buildmode='--buildmode=c-shared',
                                               **compile_options[platform],
                                               flag_params=default_flag_params,
-                                              extension_names=extension_names)
-        return '%s-%s' % (name, platform), self.generate_name()
+                                              extension_names=extension_names,
+                                              compile_target_dir='gocat/shared')
+        return await self.app_svc.retrieve_compiled_file(name, platform)
 
     async def load_sandcat_extension_modules(self):
         """
@@ -98,13 +101,13 @@ class SandService(BaseService):
         return '', ''
 
     async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
-                                 extldflags='', cflags='', flag_params=default_flag_params, extension_names=None):
+                                 extldflags='', cflags='', flag_params=default_flag_params, extension_names=None,
+                                 compile_target_dir=''):
         """
         Compile sandcat agent using specified parameters. Will also include any requested extension modules.
         If a gocat variant is specified along with additional extensions, the extensions will be added to the
         base extensions for the variant.
         """
-        plugin, file_path = await self.file_svc.find_file_path(compile_target_name)
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
         for param in flag_params:
             if param in headers:
@@ -122,8 +125,9 @@ class SandService(BaseService):
 
         output = str(pathlib.Path('plugins/sandcat/payloads').resolve() / ('%s-%s' % (output_name, platform)))
 
-        # Load extensions and compile.
+        # Load extensions and compile. Extensions need to be loaded before searching for target file.
         installed_extensions = await self._install_gocat_extensions(extension_names)
+        plugin, file_path = await self.file_svc.find_file_path(compile_target_name, location=compile_target_dir)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
         build_path, build_file = os.path.split(file_path)
         await self.file_svc.compile_go(platform, output, build_file, buildmode=buildmode, ldflags=' '.join(ldflags),
