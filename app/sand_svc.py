@@ -107,7 +107,6 @@ class SandService(BaseService):
         If a gocat variant is specified along with additional extensions, the extensions will be added to the
         base extensions for the variant.
         """
-        plugin, file_path = await self.file_svc.find_file_path(compile_target_name, location=compile_target_dir)
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
         for param in flag_params:
             if param in headers:
@@ -125,8 +124,9 @@ class SandService(BaseService):
 
         output = str(pathlib.Path('plugins/sandcat/payloads').resolve() / ('%s-%s' % (output_name, platform)))
 
-        # Load extensions and compile.
+        # Load extensions and compile. Extensions need to be loaded before searching for target file.
         installed_extensions = await self._install_gocat_extensions(extension_names)
+        plugin, file_path = await self.file_svc.find_file_path(compile_target_name, location=compile_target_dir)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
         build_path, build_file = os.path.split(file_path)
         await self.file_svc.compile_go(platform, output, build_file, buildmode=buildmode, ldflags=' '.join(ldflags),
