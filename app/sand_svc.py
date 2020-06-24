@@ -10,7 +10,6 @@ from shutil import which
 
 from app.utility.base_service import BaseService
 
-default_flag_params = ('server', 'group', 'listenP2P', 'c2', 'includeProxyPeers')
 gocat_variants = dict(
     basic=set(),
     red=set(['gist', 'shared', 'shells', 'shellcode'])
@@ -19,6 +18,8 @@ default_gocat_variant = 'basic'
 
 
 class SandService(BaseService):
+    """Determines which parameters can be requested in HTTP headers to override binary variables."""
+    ldflag_override_variables = ('server', 'group', 'listenP2P', 'c2')
 
     def __init__(self, services):
         self.file_svc = services.get('file_svc')
@@ -32,21 +33,18 @@ class SandService(BaseService):
     async def dynamically_compile_executable(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
         name, platform = headers.get('file'), headers.get('platform')
-        extension_names = await self._obtain_extensions_from_headers(headers)
         if which('go') is not None:
             await self._compile_new_agent(platform=platform,
                                           headers=headers,
                                           compile_target_name=name,
                                           cflags='CGO_ENABLED=0',
                                           output_name=name,
-                                          extension_names=extension_names,
                                           compile_target_dir='gocat')
         return await self.app_svc.retrieve_compiled_file(name, platform)
 
     async def dynamically_compile_library(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
         name, platform = headers.get('file'), headers.get('platform')
-        extension_names = await self._obtain_extensions_from_headers(headers)
         compile_options = dict(
             windows=dict(
                 CC='x86_64-w64-mingw32-gcc',
@@ -69,8 +67,6 @@ class SandService(BaseService):
                                               output_name=name,
                                               buildmode='--buildmode=c-shared',
                                               **compile_options[platform],
-                                              flag_params=default_flag_params,
-                                              extension_names=extension_names,
                                               compile_target_dir='gocat/shared')
         return await self.app_svc.retrieve_compiled_file(name, platform)
 
@@ -101,32 +97,23 @@ class SandService(BaseService):
         return '', ''
 
     async def _compile_new_agent(self, platform, headers, compile_target_name, output_name, buildmode='',
-                                 extldflags='', cflags='', flag_params=default_flag_params, extension_names=None,
-                                 compile_target_dir=''):
+                                 extldflags='', cflags='', compile_target_dir=''):
         """
         Compile sandcat agent using specified parameters. Will also include any requested extension modules.
         If a gocat variant is specified along with additional extensions, the extensions will be added to the
         base extensions for the variant.
         """
-        ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
-        for param in flag_params:
-            if param in headers:
-                if param == 'c2':
-                    ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
-                elif param == 'includeProxyPeers':
-                    self.log.debug('Available peer-to-peer proxy receivers requested.')
-                    encoded_info, xor_key = await self._get_encoded_proxy_peer_info(headers[param])
-                    if encoded_info and xor_key:
-                        ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('encodedReceivers', encoded_info))
-                        ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('receiverKey', xor_key))
-                else:
-                    ldflags.append('-X main.%s=%s' % (param, headers[param]))
-        ldflags.append(extldflags)
+        # Get extensions to include in agent.
+        extension_names = await self._obtain_extensions_for_agent(headers)
 
+        # Get compilation flags based on additional header requests.
+        ldflags = await self._get_compilation_flags(headers, extldflags=extldflags)
         output = str(pathlib.Path('plugins/sandcat/payloads').resolve() / ('%s-%s' % (output_name, platform)))
 
         # Load extensions and compile. Extensions need to be loaded before searching for target file.
         installed_extensions = await self._install_gocat_extensions(extension_names)
+        if installed_extensions:
+            self.log.debug('Installed gocat extension modules: %s' % ', '.join(installed_extensions))
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name, location=compile_target_dir)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
         build_path, build_file = os.path.split(file_path)
@@ -135,6 +122,42 @@ class SandService(BaseService):
 
         # Remove extension files.
         await self._uninstall_gocat_extensions(installed_extensions)
+
+    async def _get_compilation_flags(self, headers, extldflags=''):
+        """Determine golang compilation flags based on headers."""
+        ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
+        to_override = await self._get_ldflag_override_variables(headers)
+        for param, value in to_override.items():
+            ldflags.append('-X %s=%s' % (param, value))
+        ldflags.append(extldflags)
+        return ldflags
+
+    async def _get_ldflag_override_variables(self, headers):
+        """Determine which variables to override via ldflags. Returns a dict that maps the variable name (including
+        package) to its new value."""
+        to_override = dict()
+        encoded_info = None
+        xor_key = None
+
+        # Check headers
+        for param in self.ldflag_override_variables:
+            if param in headers:
+                if param == 'c2':
+                    to_override['main.c2Name'] = headers[param]
+                    variable_name, value = await self._get_c2_config(headers[param])
+                    if variable_name:
+                        to_override['main.' + variable_name] = value
+                else:
+                    to_override['main.' + param] = headers[param]
+        if 'includeProxyPeers' in headers:
+            self.log.debug('Available peer-to-peer proxy receivers requested.')
+            encoded_info, xor_key = await self._get_encoded_proxy_peer_info(headers['includeProxyPeers'])
+
+        if encoded_info and xor_key:
+            to_override['github.com/mitre/gocat/proxy.encodedReceivers'] = encoded_info
+            to_override['github.com/mitre/gocat/proxy.receiverKey'] = xor_key
+
+        return to_override
 
     async def _get_available_proxy_peer_info(self, specified_protocols, exclude=False):
         """Returns JSON-marshalled dict that maps proxy protocol (string) to a de-duped list of receiver addresses
@@ -186,7 +209,6 @@ class SandService(BaseService):
         subdirectory into the gocat subdirectory.
         """
         if which('go') is not None and extension_names:
-            self.log.debug('Installing gocat extension modules: %s' % ', '.join(extension_names))
             return [name for name in extension_names if await self._attempt_module_copy(name=name)]
         return []
 
@@ -226,10 +248,9 @@ class SandService(BaseService):
             self.log.error('Module %s not found' % name)
         return False
 
-    async def _obtain_extensions_from_headers(self, headers):
+    async def _obtain_extensions_for_agent(self, headers):
         """
-        Given the headers dict, extracts the requested extensions and gocat variant and returns a combined set of
-        required extensions.
+        Given the headers dict, returns a list of required extensions.
         """
         requested_extensions = [ext_name for ext_name in headers.get('gocat-extensions', '').split(',') if ext_name]
         agent_variant = headers.get('gocat-variant', default_gocat_variant)
