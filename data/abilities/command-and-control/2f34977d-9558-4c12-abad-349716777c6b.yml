@@ -5,8 +5,8 @@
   description: A GoLang agent which communicates through the HTTP contact
   tactic: command-and-control
   technique:
-    attack_id: T1071
-    name: Standard Application Layer Protocol
+    attack_id: T1105
+    name: Ingress Tool Transfer
   platforms:
     darwin:
       sh:
