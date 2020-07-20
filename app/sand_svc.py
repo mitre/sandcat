@@ -47,6 +47,7 @@ class SandService(BaseService):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
         name, platform = headers.get('file'), headers.get('platform')
         extension_names = await self._obtain_extensions_from_headers(headers)
+        extension_names.add('shared')  # Make sure we include shared extension since we're compiling shared.go.
         compile_options = dict(
             windows=dict(
                 CC='x86_64-w64-mingw32-gcc',
