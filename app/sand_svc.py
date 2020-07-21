@@ -64,7 +64,7 @@ class SandService(BaseService):
                     if which(compile_options[platform]['CC']) is not None:
                         compile_options[platform]['cflags'] += ' CC=%s' % compile_options[platform]['CC']
                     else:
-                        raise Exception('Missing dependancy for cross compilation: %s' % compile_options[platform]['CC'])
+                        raise Exception('Missing dependency for cross compilation: %s' % compile_options[platform]['CC'])
                     # key is deleted from compile_options to use dict as kwargs for called function.
                     del compile_options[platform]['CC']
                 await self._compile_new_agent(platform=platform,
