@@ -28,20 +28,20 @@ func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, u
 	var stdOutRead syscall.Handle
 	var stdOutWrite syscall.Handle
 
-	errStdOutPipe := syscall.CreatePipe(&stdOutRead, &stdOutWrite, &syscall.SecurityAttributes{InheritHandle: 1}, 0)
-	errStdOutHandle := syscall.SetHandleInformation(stdOutRead, syscall.HANDLE_FLAG_INHERIT, 0)
-	if errStdOutPipe != nil && errStdOutHandle != nil {
-		output.VerbosePrint(fmt.Sprintf("[!]Error creating the STDOUT pipe:\r\n%s", errStdOutPipe.Error()))
+	stdOutPipe := syscall.CreatePipe(&stdOutRead, &stdOutWrite, &syscall.SecurityAttributes{InheritHandle: 1}, 0)
+	stdOutHandle := syscall.SetHandleInformation(stdOutRead, syscall.HANDLE_FLAG_INHERIT, 0)
+	if stdOutPipe != nil && stdOutHandle != nil {
+		output.VerbosePrint(fmt.Sprintf("[!]Error creating the STDOUT pipe:\r\n%s", stdOutPipe.Error()))
 	}
 
 	// Create anonymous pipe for STDERR
 	var stdErrRead syscall.Handle
 	var stdErrWrite syscall.Handle
 
-	errStdErrPipe := syscall.CreatePipe(&stdErrRead, &stdErrWrite, &syscall.SecurityAttributes{InheritHandle: 1}, 0)
-	errStdErrHandle := syscall.SetHandleInformation(stdErrRead, syscall.HANDLE_FLAG_INHERIT, 0)
-	if errStdErrPipe != nil && errStdErrHandle != nil {
-		output.VerbosePrint(fmt.Sprintf("[!]Error creating the STDERR pipe:\r\n%s", errStdErrPipe.Error()))
+	stdErrPipe := syscall.CreatePipe(&stdErrRead, &stdErrWrite, &syscall.SecurityAttributes{InheritHandle: 1}, 0)
+	stdErrHandle := syscall.SetHandleInformation(stdErrRead, syscall.HANDLE_FLAG_INHERIT, 0)
+	if stdErrPipe != nil && stdErrHandle != nil {
+		output.VerbosePrint(fmt.Sprintf("[!]Error creating the STDERR pipe:\r\n%s", stdErrPipe.Error()))
 	}
 
 	procInfo := &syscall.ProcessInformation{}
@@ -52,7 +52,7 @@ func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, u
 		ShowWindow: SW_HIDE,
 	}
 
-	errCreateProcess := CreateProcess(nil,
+	createProcess := CreateProcess(nil,
 		syscall.StringToUTF16Ptr(commandLine),
 		nil,
 		nil,
@@ -63,18 +63,18 @@ func CreateSuspendedProcessWithIORedirect(commandLine string) (syscall.Handle, u
 		startupInfo,
 		procInfo)
 
-	if errCreateProcess != nil && errCreateProcess.Error() != "The operation completed successfully." {
-		log.Fatal(fmt.Sprintf("[!]Error calling CreateProcess:\r\n%s", errCreateProcess.Error()))
+	if createProcess != nil && createProcess.Error() != "The operation completed successfully." {
+		log.Fatal(fmt.Sprintf("[!]Error calling CreateProcess:\r\n%s", createProcess.Error()))
 	}
 
 	//Close the stdout and stderr write handles
-	errCloseHandle := syscall.CloseHandle(stdOutWrite)
-	if errCloseHandle != nil {
-		output.VerbosePrint(fmt.Sprintf("[!]Error closing the STDOUT write handle:\r\n%s", errCloseHandle.Error()))
+	closeHandle := syscall.CloseHandle(stdOutWrite)
+	if closeHandle != nil {
+		output.VerbosePrint(fmt.Sprintf("[!]Error closing the STDOUT write handle:\r\n%s", closeHandle.Error()))
 	}
-	errCloseHandle = syscall.CloseHandle(stdErrWrite)
-	if errCloseHandle != nil {
-		output.VerbosePrint(fmt.Sprintf("[!]Error closing the STDERR write handle:\r\n%s", errCloseHandle.Error()))
+	closeHandle = syscall.CloseHandle(stdErrWrite)
+	if closeHandle != nil {
+		output.VerbosePrint(fmt.Sprintf("[!]Error closing the STDERR write handle:\r\n%s", closeHandle.Error()))
 	}
 
 	return procInfo.Process, procInfo.ProcessId, stdOutRead, stdErrRead
