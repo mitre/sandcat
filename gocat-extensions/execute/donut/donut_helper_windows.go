@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+	"bytes"
 
 	"github.com/mitre/gocat/output"
 )
@@ -117,9 +118,12 @@ func ReadFromPipes(stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.Ha
 			if int(stdOutDone) == 0 {
 				break
 			}
+
+			tempBytes = bytes.Trim(tempBytes, "\x00")
 			for _, b := range tempBytes {
 				*stdoutBytes = append(*stdoutBytes, b)
 			}
+			tempBytes = make([]byte, 8192)
 
 			if err != nil {
 
@@ -143,9 +147,12 @@ func ReadFromPipes(stdout syscall.Handle, stdoutBytes *[]byte, stderr syscall.Ha
 			if int(stdErrDone) == 0 {
 				break
 			}
+
+			tempBytes = bytes.Trim(tempBytes, "\x00")
 			for _, b := range tempBytes {
 				*stderrBytes = append(*stderrBytes, b)
 			}
+			tempBytes = make([]byte, 8192)
 
 			if err != nil {
 
