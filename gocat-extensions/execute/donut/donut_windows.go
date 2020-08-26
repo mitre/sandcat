@@ -28,12 +28,12 @@ func Runner(donut []byte, handle syscall.Handle, stdout syscall.Handle, stdoutBy
 		return false, err
 	}
 
-	*eventCode, err = WaitForSingleObject(threadHandle, 0xFFFFFFFF)
+	err = ReadFromPipes(stdout, stdoutBytes, stderr, stderrBytes)
 	if checkErrorMessage(err) {
 		return false, err
 	}
 
-	err = ReadFromPipes(stdout, stdoutBytes, stderr, stderrBytes)
+	*eventCode, err = WaitForSingleObject(threadHandle, 0xFFFFFFFF)
 	if checkErrorMessage(err) {
 		return false, err
 	}
