@@ -46,9 +46,6 @@ func Runner(donut []byte, handle syscall.Handle, stdout syscall.Handle, stdoutBy
 
 	//Terminate the sacrificial process
 	err = TerminateProcess(handle, 0)
-	if checkErrorMessage(err) {
-		return false, err
-	}
 
 	//close Process Handle
 	err = syscall.CloseHandle(handle)
