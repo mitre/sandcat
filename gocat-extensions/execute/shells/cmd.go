@@ -25,7 +25,7 @@ func init() {
 	}
 }
 
-func (c *Cmd) Run(command string, timeout int) ([]byte, string, string) {
+func (c *Cmd) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string) {
 	return runShellExecutor(*exec.Command(c.path, append(c.execArgs, command)...), timeout)
 }
 
