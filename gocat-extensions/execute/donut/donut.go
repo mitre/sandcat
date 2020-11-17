@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"runtime"
 	"reflect"
-    "net/http"
+	"net/http"
 
 	"github.com/mitre/gocat/execute"
 	"github.com/mitre/gocat/output"
@@ -85,21 +85,21 @@ func (d *Donut) CheckIfAvailable() bool {
 }
 
 func (d *Donut) GetDonutBytes(info execute.InstructionInfo) ([]byte, string) {
-    var payloadBytes []byte
-    payload := ""
-    server := info.Profile["server"]
-    platform := info.Profile["platform"]
-    linkId := info.Instruction["id"]
+	var payloadBytes []byte
+	payload := ""
+	server := info.Profile["server"]
+	platform := info.Profile["platform"]
+	linkId := info.Instruction["id"]
 
-    payloads := reflect.ValueOf(info.Instruction["payloads"])
-    for i := 0; i < payloads.Len(); i++ {
-        p := payloads.Index(i).Elem().String()
-        if strings.HasSuffix(p, ".donut") {
-            payload = p
-        }
-    }
+	payloads := reflect.ValueOf(info.Instruction["payloads"])
+	for i := 0; i < payloads.Len(); i++ {
+		p := payloads.Index(i).Elem().String()
+		if strings.HasSuffix(p, ".donut") {
+			payload = p
+		}
+	}
 
-    if server != nil && platform != nil && payload != "" {
+	if server != nil && platform != nil && payload != "" {
 		address := fmt.Sprintf("%s/file/download", server.(string))
 		req, err := http.NewRequest("POST", address, nil)
 		if err != nil {
@@ -119,31 +119,31 @@ func (d *Donut) GetDonutBytes(info execute.InstructionInfo) ([]byte, string) {
 				}
 			}
 		}
-    }
+	}
 
 	return payloadBytes, payload
 }
 
 // Contact functions
 func (d *Donut) GetBeaconBytes(profile map[string]interface{}) []byte {
-    return d.contact.GetBeaconBytes(profile)
+	return d.contact.GetBeaconBytes(profile)
 }
 
 func (d *Donut) GetPayloadBytes(profile map[string]interface{}, payload string) ([]byte, string) {
-    if strings.HasSuffix(payload, ".donut") {
-        output.VerbosePrint(fmt.Sprint("[i] Donut: GetPayloadBytes override, payload fetch fail expected"))
-        return make([]byte, 0, 0), ""
-    } else {
-        return d.contact.GetPayloadBytes(profile, payload)
-    }
+	if strings.HasSuffix(payload, ".donut") {
+		output.VerbosePrint(fmt.Sprint("[i] Donut: GetPayloadBytes override, payload fetch fail expected"))
+		return make([]byte, 0, 0), ""
+	} else {
+		return d.contact.GetPayloadBytes(profile, payload)
+	}
 }
 
 func (d *Donut) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) (bool, map[string]string) {
-    return d.contact.C2RequirementsMet(profile, criteria)
+	return d.contact.C2RequirementsMet(profile, criteria)
 }
 
 func (d *Donut) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
-    d.contact.SendExecutionResults(profile, result)
+	d.contact.SendExecutionResults(profile, result)
 }
 
 func (d *Donut) GetName() string {
