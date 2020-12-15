@@ -27,7 +27,7 @@ func init() {
 	}
 }
 
-func (s *Shellcode) Run(command string, timeout int) ([]byte, string, string) {
+func (s *Shellcode) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string) {
 	bytes, _ := stringToByteArrayString(command)
 	task, pid := Runner(bytes)
 	if task {
