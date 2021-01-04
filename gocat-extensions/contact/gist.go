@@ -72,7 +72,9 @@ func (g GIST) C2RequirementsMet(profile map[string]interface{}, criteria map[str
     config := make(map[string]string)
     if len(criteria["c2Key"]) > 0 {
         token = criteria["c2Key"]
-        config["paw"] = getBeaconNameIdentifier()
+        if _, ok := profile["paw"]; !ok {
+        	config["paw"] = getBeaconNameIdentifier()
+        }
         return true, config
     }
     return false, nil
