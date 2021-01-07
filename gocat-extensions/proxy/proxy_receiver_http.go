@@ -17,6 +17,7 @@ import (
 
 	"github.com/mitre/gocat/output"
 	"github.com/mitre/gocat/contact"
+	"github.com/grandcat/zeroconf"
 )
 
 var (
@@ -41,6 +42,7 @@ type HttpReceiver struct {
 	receiverContext context.Context
 	receiverCancelFunc context.CancelFunc
 	urlList []string // list of HTTP urls that external machines can use to reach this receiver.
+	dnsServer *zeroconf.Server
 }
 
 func init() {
@@ -71,6 +73,7 @@ func (h *HttpReceiver) InitializeReceiver(server string, upstreamComs contact.Co
 func (h *HttpReceiver) RunReceiver() {
 	output.VerbosePrint(fmt.Sprintf("[*] Starting HTTP proxy receiver on local port %d", h.port))
 	output.VerbosePrint(fmt.Sprintf("[*] HTTP proxy receiver has upstream contact at %s", h.upstreamServer))
+	h.broadcastReceiverChannel(h.port)
 	h.startHttpProxy()
 }
 
@@ -78,6 +81,7 @@ func (h *HttpReceiver) Terminate() {
 	defer func() {
 		h.waitgroup.Done()
 		h.receiverCancelFunc()
+ 		h.dnsServer.Shutdown()
 	}()
 	if err := h.httpServer.Shutdown(h.receiverContext); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Error when shutting down HTTP receiver server: %s", err.Error()))
@@ -292,4 +296,15 @@ func (h *HttpReceiver) initializeReceiverPort() error {
 func generateRandomPort(minPort int, maxPort int) int {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(maxPort - minPort) + minPort
+}
+
+func (h *HttpReceiver) broadcastReceiverChannel(port int) {
+    for h.agentPaw == "" {time.Sleep(1)}
+    info := []string{"HTTP"}
+    server, err := zeroconf.Register(h.agentPaw, "_service._comms", "local.", port, info, nil)
+    if err != nil {
+        output.VerbosePrint(fmt.Sprintf("unable to start mdns server, error: %s" , err))
+    }
+    h.dnsServer = server
+    output.VerbosePrint(fmt.Sprintf("advertising agent on mdns (_service._comms)"))
 }
