@@ -6,10 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"math/rand"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -100,13 +98,8 @@ func (g GIST) GetName() string {
 	return g.name
 }
 
-func (g GIST) UploadFile(profile map[string]interface{}, path string) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	filename := filepath.Base(path)
-	encodedFilename := base64.StdEncoding.EncodeToString([]byte(filename))
+func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
+	encodedFilename := base64.StdEncoding.EncodeToString([]byte(uploadName))
 	paw := profile["paw"].(string)
 
 	// Upload file in chunks
@@ -114,13 +107,15 @@ func (g GIST) UploadFile(profile map[string]interface{}, path string) error {
 	dataSize := len(data)
 	numChunks := int(math.Ceil(float64(dataSize) / float64(maxDataChunkSize)))
 	start := 0
+	gistName := getGistNameForUpload(paw)
 	for i := 0; i < numChunks; i++ {
 		end := start + maxDataChunkSize
 		if end > dataSize {
 			end = dataSize
 		}
 		chunk := data[start:end]
-		if err := g.uploadFileChunk(uploadId, paw, encodedFilename, chunk, i+1, numChunks); err != nil {
+		gistDescription := getGistDescriptionForUpload(uploadId, encodedFilename, i+1, numChunks)
+		if err := uploadFileChunk(gistName, gistDescription, chunk); err != nil {
 			return err
 		}
 		start += maxDataChunkSize
@@ -128,9 +123,15 @@ func (g GIST) UploadFile(profile map[string]interface{}, path string) error {
 	return nil
 }
 
-func (g GIST) uploadFileChunk(uploadId string, paw string, encodedFilename string, data []byte, chunkNum int, totalChunks int) error {
-	gistName := getGistDescriptor("upload", paw)
-	gistDescription := fmt.Sprintf("upload:%s:%s:%d:%d", uploadId, encodedFilename, chunkNum, totalChunks)
+func getGistNameForUpload(paw string) string {
+	return getGistDescriptor("upload", paw)
+}
+
+func getGistDescriptionForUpload(uploadId string, encodedFilename string, chunkNum int, totalChunks int) string {
+	return fmt.Sprintf("upload:%s:%s:%d:%d", uploadId, encodedFilename, chunkNum, totalChunks)
+}
+
+func uploadFileChunk(gistName string, gistDescription string, data []byte) error {
 	if result := createGist(gistName, gistDescription, data); result != created {
 		return errors.New(fmt.Sprintf("Failed to create file upload GIST. Response code: %d", result))
 	}

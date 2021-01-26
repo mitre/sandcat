@@ -146,6 +146,10 @@ func (d *Donut) SendExecutionResults(profile map[string]interface{}, result map[
 	d.contact.SendExecutionResults(profile, result)
 }
 
+func (d *Donut) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
+	return d.contact.UploadFileBytes(profile, uploadName, data)
+}
+
 func (d *Donut) GetName() string {
 	return d.contactName
 }
