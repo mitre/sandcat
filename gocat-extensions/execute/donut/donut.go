@@ -28,7 +28,7 @@ func init() {
 	}
 	if runner.CheckIfAvailable() {
 		execute.Executors[runner.archName] = runner
-		contact.CommunicationChannels["HTTP"] = runner
+		contact.LoadedContacts["HTTP"] = runner
 	}
 }
 

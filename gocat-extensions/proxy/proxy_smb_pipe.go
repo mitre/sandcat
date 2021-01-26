@@ -81,7 +81,7 @@ type SmbPipeReceiver struct {
 }
 
 func init() {
-	contact.CommunicationChannels[protocolName] = &SmbPipeAPI{
+	contact.LoadedContacts[protocolName] = &SmbPipeAPI{
 		make(map[string]string),
 		make(map[string]net.Listener),
 		protocolName,

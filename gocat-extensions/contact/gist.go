@@ -34,7 +34,7 @@ type GIST struct {
 }
 
 func init() {
-	CommunicationChannels["GIST"] = GIST{ name: "GIST" }
+	LoadedContacts["GIST"] = GIST{ name: "GIST" }
 }
 
 //GetInstructions sends a beacon and returns instructions
