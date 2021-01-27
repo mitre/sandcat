@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"io"
 	"io/ioutil"
 	"sync"
 	"strconv"
@@ -23,10 +24,12 @@ import (
 var (
 	beaconEndpoint = "/beacon"
 	payloadEndpoint = "/file/download"
+	uploadEndpoint = "/file/upload"
 	httpProxyName = "HTTP"
 	maxPortRetries = 5
 	minReceiverPort = 50000
 	maxReceiverPort = 63000
+	maxMemory = int64(20*1024*1024)
 )
 
 //HttpReceiver forwards data received from HTTP requests to the upstream server via HTTP. Implements the P2pReceiver interface.
@@ -109,6 +112,7 @@ func (h *HttpReceiver) GetReceiverAddresses() []string {
 func (h *HttpReceiver) startHttpProxy() {
 	http.HandleFunc(beaconEndpoint, h.handleBeaconEndpoint)
 	http.HandleFunc(payloadEndpoint, h.handlePayloadEndpoint)
+	http.HandleFunc(uploadEndpoint, h.handleUploadEndpoint)
 	if err := http.ListenAndServe(h.bindPortStr, nil); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] HTTP proxy error: %s", err.Error()))
 	}
@@ -215,6 +219,70 @@ func (h *HttpReceiver) handlePayloadEndpoint(writer http.ResponseWriter, reader 
 		output.VerbosePrint(fmt.Sprintf("[-] Error sending payload response to client: %s", err.Error()))
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (h *HttpReceiver)  handleUploadEndpoint (writer http.ResponseWriter, reader *http.Request) {
+	output.VerbosePrint("[*] HTTP proxy: handling upload request from client.")
+
+	// Get client paw and hostname from headers
+	pawHeader, ok := reader.Header["X-Paw"]
+	if !ok {
+		output.VerbosePrint("[!] Error: Client did not include paw in upload request.")
+		http.Error(writer, "Paw required in upload request", http.StatusInternalServerError)
+		return
+	}
+	clientPaw := pawHeader[0]
+
+	hostHeader, ok := reader.Header["X-Host"]
+	if !ok {
+		output.VerbosePrint("[!] Error: Client did not include hostname in upload request.")
+		http.Error(writer, "Hostname required in upload request", http.StatusInternalServerError)
+		return
+	}
+	clientHost := hostHeader[0]
+
+	// Parse multipart form to get upload name and data
+	uploadName, data, err := getUploadNameAndData(reader)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error processing upload request for client paw %s: %s", clientPaw, err.Error()))
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Build profile to send request upstream.
+	profile := make(map[string]interface{})
+	profile["server"] = h.upstreamServer
+	profile["paw"] = clientPaw
+	profile["host"] = clientHost
+
+	output.VerbosePrint(fmt.Sprintf("[*] Forwarding file upload request for client paw %s. File: %s. Size: %d", clientPaw, uploadName, len(data)))
+	if err = h.upstreamComs.UploadFileBytes(profile, uploadName, data); err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error uploading file %s for client paw %s: %s", uploadName, clientPaw, err.Error()))
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func getUploadNameAndData(reader *http.Request) (string, []byte, error) {
+	if err := reader.ParseMultipartForm(maxMemory); err != nil {
+		return "", nil, err
+	}
+	uploadFile, fileHeader, err := reader.FormFile("file")
+	defer uploadFile.Close()
+	if err != nil {
+		return "", nil, err
+	}
+	uploadName := fileHeader.Filename
+	if len(uploadName) == 0 {
+		return "", nil, errors.New("No file name or empty file name specified in upload request")
+	}
+	buf := make([]byte, fileHeader.Size)
+	if bytesRead, err := io.ReadFull(uploadFile, buf); err != nil {
+		return "", nil, err
+	} else if int64(bytesRead) < fileHeader.Size {
+		return "", nil, errors.New(fmt.Sprintf("Could not read entire file from upload. %d bytes read, %d required", bytesRead, fileHeader.Size))
+	}
+	return uploadName, buf, nil
 }
 
 func sendResponseToClient(data []byte, headers map[string][]string, writer http.ResponseWriter) error {
