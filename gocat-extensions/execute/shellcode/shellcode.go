@@ -44,6 +44,10 @@ func (s *Shellcode) CheckIfAvailable() bool {
 	return IsAvailable()
 }
 
+func (s *Shellcode) DownloadPayloadToMemory(payloadName string) bool {
+	return false
+}
+
 func stringToByteArrayString(input string) ([]byte, error) {
 	temp := removeWhiteSpace(input)
 	temp = strings.Replace(temp, "0x", "", -1)

@@ -42,4 +42,8 @@ func (p *PowershellCore) String() string {
 
 func (p *PowershellCore) CheckIfAvailable() bool {
 	return checkExecutorInPath(p.path)
-} 
+}
+
+func (p *PowershellCore) DownloadPayloadToMemory(payloadName string) bool {
+	return false
+}

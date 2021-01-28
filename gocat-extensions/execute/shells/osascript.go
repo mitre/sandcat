@@ -35,4 +35,8 @@ func (o *Osascript) String() string {
 
 func (o *Osascript) CheckIfAvailable() bool {
 	return checkExecutorInPath(o.path)
-} 
+}
+
+func (o *Osascript) DownloadPayloadToMemory(payloadName string) bool {
+	return false
+}
