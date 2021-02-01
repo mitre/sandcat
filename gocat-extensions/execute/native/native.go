@@ -3,11 +3,11 @@
 package native
 
 import (
-    "strings"
-    "time"
-    "os"
-    "strconv"
-    "fmt"
+	"strings"
+	"time"
+	"os"
+	"strconv"
+	"fmt"
 
 	"github.com/mitre/gocat/execute"
 )
@@ -34,30 +34,30 @@ func (n *Native) String() string {
 }
 
 func (n *Native) CheckIfAvailable() bool {
-    return true
+	return true
 }
 
 func (n *Native) runNativeExecutor(command string, timeout int) ([]byte, string, string) {
-    pid := strconv.Itoa(os.Getpid())
-    var cmd func(chan []byte, chan string)
-    chOutput := make(chan []byte)
-    chStatus := make(chan string)
+	pid := strconv.Itoa(os.Getpid())
+	var cmd func(chan []byte, chan string)
+	chOutput := make(chan []byte)
+	chStatus := make(chan string)
 
-    switch {
-    case strings.EqualFold(command, "ip_addr"):
-        cmd = getIPAddresses
-    default:
-        errorOutput := []byte("Invalid command: " + command)
-        return errorOutput, execute.ERROR_STATUS, pid
-    }
+	switch {
+	case strings.EqualFold(command, "ip_addr"):
+		cmd = getIPAddresses
+	default:
+		errorOutput := []byte("Invalid command: " + command)
+		return errorOutput, execute.ERROR_STATUS, pid
+	}
 
-    go cmd(chOutput, chStatus)
+	go cmd(chOutput, chStatus)
 
-    select {
-    case cmdOutput := <-chOutput:
-        status := <-chStatus
-    	return cmdOutput, status, pid
-    case <-time.After(time.Duration(timeout) * time.Second):
-    	return []byte("Timeout reached running: " + command), execute.TIMEOUT_STATUS, pid
-    }
+	select {
+	case cmdOutput := <-chOutput:
+		status := <-chStatus
+		return cmdOutput, status, pid
+	case <-time.After(time.Duration(timeout) * time.Second):
+		return []byte("Timeout reached running: " + command), execute.TIMEOUT_STATUS, pid
+	}
 }
