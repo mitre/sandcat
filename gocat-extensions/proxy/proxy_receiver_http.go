@@ -139,6 +139,13 @@ func (h *HttpReceiver) handleBeaconEndpoint(writer http.ResponseWriter, reader *
 		return
 	}
 
+	//make sure our paw is not in the peer chain (loop scenario)
+	if isInPeerChain(profile, h.agentPaw) {
+	    output.VerbosePrint(fmt.Sprintf("[!] Error: agent paw already in proxy chain, loop detected"))
+	    http.Error(writer, "peer loop detected", http.StatusInternalServerError)
+	    return
+	}
+
 	// Make sure we forward the request to the right place. Also save the previous server value,
 	// since that tells us what receiver address the client is using.
 	receiverAddress := profile["server"].(string)
