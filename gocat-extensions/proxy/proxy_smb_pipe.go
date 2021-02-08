@@ -31,6 +31,7 @@ package proxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"encoding/json"
@@ -172,6 +173,8 @@ func (s *SmbPipeReceiver) startReceiverHelper() {
 				go s.forwardPayloadBytesDownload(message)
 			case SEND_EXECUTION_RESULTS:
 				go s.forwardSendExecResults(message)
+			case SEND_FILE_UPLOAD_BYTES:
+				go s.forwardSendUploadBytes(message)
 			default:
 				output.VerbosePrint(fmt.Sprintf("[!] ERROR: invalid instruction type for receiver-bound p2p message: %d", message.MessageType))
 		}
@@ -274,6 +277,59 @@ func (s *SmbPipeReceiver) forwardSendExecResults(message P2pMessage) {
     // Send execution results upstream. No response will be sent to client.
     output.VerbosePrint(fmt.Sprintf("[*] Forwarding execution results on behalf of paw %s", message.SourcePaw))
     s.upstreamComs.SendExecutionResults(clientProfile, result.(map[string]interface{}))
+}
+
+func (s *SmbPipeReceiver) forwardSendUploadBytes(message P2pMessage) {
+	if len(message.SourceAddress) == 0 {
+        output.VerbosePrint(fmt.Sprintf("[-] ERROR. P2p message from client did not specify a return address."))
+        return
+    }
+
+	// Message payload contains client profile and file upload name/data.
+	var requestInfo uploadRequestInfo
+    if err := json.Unmarshal(message.Payload, &requestInfo); err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error extracting file upload request info from p2p message: %s", err.Error()))
+		s.sendUploadResultsToClient(message.SourceAddress, "", false)
+    	return
+    }
+    if len(requestInfo.UploadName) == 0 {
+    	output.VerbosePrint("[!] Error - client did not send upload name in upload request.")
+    	s.sendUploadResultsToClient(message.SourceAddress, "", false)
+    	return
+    }
+    if requestInfo.UploadData == nil {
+    	output.VerbosePrint("[!] Error. Client did not include file data for upload.")
+    	s.sendUploadResultsToClient(message.SourceAddress, requestInfo.UploadName, false)
+        return
+    }
+    requestInfo.Profile["server"] = s.upstreamServer // Make sure request gets sent to the right place.
+    output.VerbosePrint(fmt.Sprintf("[*] Forwarding upload request for file %s on behalf of paw %s", requestInfo.UploadName, message.SourcePaw))
+    successfulUpload := true
+    if err := s.upstreamComs.UploadFileBytes(requestInfo.Profile, requestInfo.UploadName, requestInfo.UploadData); err != nil {
+    	output.VerbosePrint(fmt.Sprintf("[!] Error uploading file bytes for client: %s", err.Error()))
+    	successfulUpload = false
+    }
+
+    // Send response to client
+    s.sendUploadResultsToClient(message.SourceAddress, requestInfo.UploadName, successfulUpload)
+}
+
+func (s *SmbPipeReceiver) sendUploadResultsToClient(address string, uploadName string, successful bool) {
+	respInfo := uploadResponseInfo{
+    	UploadName: uploadName,
+    	Result: successful,
+    }
+    respData, err := json.Marshal(respInfo)
+    if err != nil {
+    	output.VerbosePrint(fmt.Sprintf("[!] Error marshaling upload response info: %s", err.Error()))
+    	return
+    }
+	pipeMsgData, err := buildP2pMsgBytes("", RESPONSE_FILE_UPLOAD, respData, "")
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error building upload response message: %s", err.Error()))
+		return
+	}
+	sendDataToPipe(address, pipeMsgData)
 }
 
 /*
@@ -431,6 +487,56 @@ func (s *SmbPipeAPI) SendExecutionResults(profile map[string]interface{}, result
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error sending execution results to server: %s", err.Error()))
 	}
+}
+
+func (s *SmbPipeAPI) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
+	requestingPaw := getPawFromProfile(profile)
+
+	// Set up mailbox pipe and listener if needed.
+	mailBoxPipePath, mailBoxListener, err := s.fetchClientMailBoxInfo(requestingPaw, true)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] ERROR setting up mailbox listener: %s", err.Error()))
+	}
+
+	// Build SMB pipe message for sending file upload data.
+	// payload will contain JSON marshal of the profile, filename, and file data.
+	requestInfo := uploadRequestInfo{
+		UploadName: uploadName,
+		UploadData: data,
+		Profile: profile,
+	}
+	msgPayload, err := json.Marshal(requestInfo)
+	if err != nil {
+		return err
+	}
+	output.VerbosePrint(fmt.Sprintf("[*] P2p Client: uploading file %s to %s", uploadName, profile["server"].(string)))
+	upstreamPipeLock.Lock()
+	err = sendRequestToServer(profile["server"].(string), requestingPaw, SEND_FILE_UPLOAD_BYTES, msgPayload, mailBoxPipePath)
+	if err != nil {
+		upstreamPipeLock.Unlock()
+		return err
+	}
+
+	// Process response.
+	respMessage, err := getResponseMessage(mailBoxListener)
+	upstreamPipeLock.Unlock()
+	if err != nil {
+		return err
+	} else if msgIsEmpty(respMessage) {
+		return errors.New("[!] Error: server sent back empty message for upload request.")
+	} else if respMessage.MessageType != RESPONSE_FILE_UPLOAD {
+		return errors.New(fmt.Sprintf("[!] Error: server sent invalid response type for upload request: %d", respMessage.MessageType))
+	}
+
+	// Message payload indicates true or false for upload success.
+	var responseInfo uploadResponseInfo
+	if err = json.Unmarshal(respMessage.Payload, &responseInfo); err != nil {
+		return err
+	}
+    if !responseInfo.Result {
+    	return errors.New(fmt.Sprintf("Failed upload for file %s", responseInfo.UploadName))
+    }
+	return nil
 }
 
 func (s *SmbPipeAPI) GetName() string {

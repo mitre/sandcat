@@ -39,6 +39,19 @@ type payloadResponseInfo struct {
 	PayloadData []byte
 }
 
+// Auxiliary struct that defines P2P message payload structure for an ability upload request
+type uploadRequestInfo struct {
+	UploadName string
+	UploadData []byte
+	Profile map[string]interface{}
+}
+
+// Auxiliary struct that defines P2P message payload structure for an ability upload response
+type uploadResponseInfo struct {
+	UploadName string
+	Result bool
+}
+
 /*
  * SMB Read/Write helper functions
  */
