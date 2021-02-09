@@ -9,8 +9,8 @@ class Shells(Extension):
 
     def __init__(self):
         super().__init__([
-            ('cmd.go', 'execute/shells'),
             ('osascript.go', 'execute/shells'),
             ('powershell_core.go', 'execute/shells'),
+            ('python.go', 'execute/shells'),
         ])
         self.dependencies = []
