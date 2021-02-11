@@ -4,9 +4,9 @@ package shells
 
 import (
 	"os/exec"
-//	"runtime"
-//	"fmt"
-
+	"runtime"
+	"fmt"
+	"github.com/mitre/gocat/output"
 	"github.com/mitre/gocat/execute"
 )
 
@@ -17,42 +17,35 @@ type Python struct {
 }
 
 func init() {
-//	var path string
+	if !(setPath("python3")) {
+		setPath("python")
+	}
+}
 
-/*	var err string
+func setPath(name string) bool {
+// Checks if python3 or python is available on the system and
+//sets the shell executor with the appropriate path
+	var path string
 
 	if runtime.GOOS == "windows" {
-		path, err := exec.Command("powershell","where.exe","python.exe").Output()
-		if path == "INFO: Could not find files for the given pattern(s)." {
-		  //fmt.Println("Python is not installed\n")
-//		} else if path {
-            //path contains Python3*
-		} else {
-		    //fmt.Println("%s\n",path)
-		}
-// may not need
-	} else if runtime.GOOS == "linux" {
-	    //which python3
-	    path, err := exec.LookPath("python3").Output()
-	    if path == ""  {
-	        //fmt.Println("Python3 is not installed\n")
-		} else {
-		    //fmt.Println("%s\n",path)
-		}
+		path = name + ".exe"
 	} else {
-		path = "python3"
+		path = name
 	}
-*/
 
-	shell := &Python{
+	shell := &Python {
 		shortName: "python3",
-		path: "python3",
+		path: path,
 		execArgs: []string{"-c"},
 	}
 	if shell.CheckIfAvailable() {
 		execute.Executors[shell.shortName] = shell
-	}
+		return true
+	} 
+	output.VerbosePrint(fmt.Sprintf("%s is not installed", name))
+	return false
 }
+
 
 func (p *Python) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string) {
 	return runShellExecutor(*exec.Command(p.path, append(p.execArgs, command)...), timeout)
