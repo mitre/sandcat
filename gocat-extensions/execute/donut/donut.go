@@ -82,8 +82,8 @@ func (d* Donut) DownloadPayloadToMemory(payloadName string) bool {
 
 // Since donut abilities only require one payload, grab the first in-memory payload available.
 func getDonutBytes(inMemoryPayloads map[string][]byte) (string, []byte) {
-	for k, v := range inMemoryPayloads {
-		return k, v
+	for payloadName, payloadBytes := range inMemoryPayloads {
+		return payloadName, payloadBytes
 	}
 	return "", nil
 }
