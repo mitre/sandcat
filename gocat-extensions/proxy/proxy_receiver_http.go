@@ -35,11 +35,11 @@ var (
 //HttpReceiver forwards data received from HTTP requests to the upstream server via HTTP. Implements the P2pReceiver interface.
 type HttpReceiver struct {
 	agentPaw string // paw of agent running this receiver.
-	upstreamServer string
+	agentServer *string // refers to agent's current server value
 	port int
 	bindPortStr string
 	receiverName string
-	upstreamComs contact.Contact
+	upstreamComs *contact.Contact
 	httpServer *http.Server
 	waitgroup *sync.WaitGroup
 	receiverContext context.Context
@@ -52,14 +52,14 @@ func init() {
 	P2pReceiverChannels[httpProxyName] = &HttpReceiver{}
 }
 
-func (h *HttpReceiver) InitializeReceiver(server string, upstreamComs contact.Contact, waitgroup *sync.WaitGroup) error {
+func (h *HttpReceiver) InitializeReceiver(agentServer *string, upstreamComs *contact.Contact, waitgroup *sync.WaitGroup) error {
 	err := h.initializeReceiverPort()
 	if err != nil {
 		return err
 	}
-	h.upstreamServer = server
 	h.receiverName = httpProxyName
-	h.upstreamComs = upstreamComs
+	h.agentServer = agentServer
+	h.upstreamComs = upstreamComs // contact will keep track of upstream dest addr.
 	h.httpServer = &http.Server{
 		Addr: h.bindPortStr,
 		Handler: nil,
@@ -75,7 +75,7 @@ func (h *HttpReceiver) InitializeReceiver(server string, upstreamComs contact.Co
 
 func (h *HttpReceiver) RunReceiver() {
 	output.VerbosePrint(fmt.Sprintf("[*] Starting HTTP proxy receiver on local port %d", h.port))
-	output.VerbosePrint(fmt.Sprintf("[*] HTTP proxy receiver has upstream contact at %s", h.upstreamServer))
+	output.VerbosePrint(fmt.Sprintf("[*] HTTP proxy receiver is using upstream contact %s", (*h.upstreamComs).GetName()))
 	h.broadcastReceiverChannel(h.port)
 	h.startHttpProxy()
 }
@@ -89,14 +89,6 @@ func (h *HttpReceiver) Terminate() {
 	if err := h.httpServer.Shutdown(h.receiverContext); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Error when shutting down HTTP receiver server: %s", err.Error()))
 	}
-}
-
-func (h *HttpReceiver) UpdateUpstreamServer(newServer string) {
-	h.upstreamServer = newServer
-}
-
-func (h *HttpReceiver) UpdateUpstreamComs(newComs contact.Contact) {
-	h.upstreamComs = newComs
 }
 
 // Update paw of agent running this receiver.
@@ -150,18 +142,23 @@ func (h *HttpReceiver) handleBeaconEndpoint(writer http.ResponseWriter, reader *
 	    return
 	}
 
-	// Make sure we forward the request to the right place. Also save the previous server value,
-	// since that tells us what receiver address the client is using.
-	receiverAddress := profile["server"].(string)
-	profile["server"] = h.upstreamServer
+	// Update server value in profile with our agent's server value.
+	profile["server"] = *h.agentServer
 
+	// Get local address that received the request
+	receiverAddress, err := h.getLocalAddressForRequest(reader)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error getting local address: %s", err.Error()))
+	    http.Error(writer, "Could not get local address from request", http.StatusInternalServerError)
+	    return
+	}
 
 	// Check if profile contains execution results
 	if results, ok := profile["results"]; ok {
 		output.VerbosePrint("[*] HTTP proxy: handling execution results from client.")
 		resultList := results.([]interface{})
 		if len(resultList) > 0 {
-			h.upstreamComs.SendExecutionResults(profile, resultList[0].(map[string]interface{}))
+			(*h.upstreamComs).SendExecutionResults(profile, resultList[0].(map[string]interface{}))
 		} else {
 			output.VerbosePrint("[!] Error: client sent empty result list.")
 			http.Error(writer, "Empty result list received from client", http.StatusInternalServerError)
@@ -171,7 +168,7 @@ func (h *HttpReceiver) handleBeaconEndpoint(writer http.ResponseWriter, reader *
 
 		// Update peer proxy chain information to indicate that the beacon is going through this agent.
 		updatePeerChain(profile, h.agentPaw, receiverAddress, h.receiverName)
-		beaconResponse := h.upstreamComs.GetBeaconBytes(profile)
+		beaconResponse := (*h.upstreamComs).GetBeaconBytes(profile)
 		encodedResponse := []byte(base64.StdEncoding.EncodeToString(beaconResponse))
 		if err = sendResponseToClient(encodedResponse, nil, writer); err != nil {
 			output.VerbosePrint(fmt.Sprintf("[!] Error sending response to client: %s", err.Error()))
@@ -209,10 +206,10 @@ func (h *HttpReceiver) handlePayloadEndpoint(writer http.ResponseWriter, reader 
 
 	// Build profile to send request upstream.
 	profile := make(map[string]interface{})
-	profile["server"] = h.upstreamServer
+	profile["server"] = *h.agentServer
 	profile["platform"] = platform
 	profile["paw"] = clientPaw
-	payloadBytes, realFilename := h.upstreamComs.GetPayloadBytes(profile, filename)
+	payloadBytes, realFilename := (*h.upstreamComs).GetPayloadBytes(profile, filename)
 
 	// Prepare response for client
 	responseHeaders := make(map[string][]string)
@@ -258,12 +255,12 @@ func (h *HttpReceiver)  handleUploadEndpoint (writer http.ResponseWriter, reader
 
 	// Build profile to send request upstream.
 	profile := make(map[string]interface{})
-	profile["server"] = h.upstreamServer
+	profile["server"] = *h.agentServer
 	profile["paw"] = clientPaw
 	profile["host"] = clientHost
 
 	output.VerbosePrint(fmt.Sprintf("[*] Forwarding file upload request for client paw %s. File: %s. Size: %d", clientPaw, uploadName, len(data)))
-	if err = h.upstreamComs.UploadFileBytes(profile, uploadName, data); err != nil {
+	if err = (*h.upstreamComs).UploadFileBytes(profile, uploadName, data); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error uploading file %s for client paw %s: %s", uploadName, clientPaw, err.Error()))
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
@@ -354,4 +351,12 @@ func (h *HttpReceiver) broadcastReceiverChannel(port int) {
     }
     h.dnsServer = server
     output.VerbosePrint(fmt.Sprintf("advertising agent on mdns (_service._comms)"))
+}
+
+func (h *HttpReceiver) getLocalAddressForRequest(request *http.Request) (string, error) {
+	addr, ok := request.Context().Value(http.LocalAddrContextKey).(net.Addr)
+	if !ok {
+		return "", errors.New("Could not access local address for HTTP request")
+	}
+	return "http://" + addr.String(), nil
 }
