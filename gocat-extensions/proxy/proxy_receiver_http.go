@@ -308,7 +308,7 @@ func sendResponseToClient(data []byte, headers map[string][]string, writer http.
 // Port must be set for the HTTP receiver before calling this method.
 func (h *HttpReceiver) getReachableUrls() ([]string, error) {
 	var urlList []string
-	ipAddrs, err := h.getLocalIPv4Addresses()
+	ipAddrs, err := getLocalIPv4Addresses()
 	if err != nil {
 		return nil, err
 	}
@@ -317,34 +317,6 @@ func (h *HttpReceiver) getReachableUrls() ([]string, error) {
 		urlList = append(urlList, url)
 	}
 	return urlList, nil
-}
-
-// Return list of local IPv4 addresses for this machine (exclude loopback and unspecified addresses)
-func (h *HttpReceiver) getLocalIPv4Addresses() ([]string, error) {
-	var localIpList []string
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return nil, err
-	}
-	for _, iface := range interfaces {
-		addresses, err := iface.Addrs()
-		if err != nil {
-			return nil, err
-		}
-		for _, addr := range addresses {
-			var ipAddr net.IP
-			switch v:= addr.(type) {
-			case *net.IPNet:
-				ipAddr = v.IP
-			case *net.IPAddr:
-				ipAddr = v.IP
-			}
-			if ipAddr != nil && !ipAddr.IsLoopback() && !ipAddr.IsUnspecified() && (ipAddr.To4() != nil) {
-				localIpList = append(localIpList, ipAddr.String())
-			}
-		}
-	}
-	return localIpList, nil
 }
 
 // Helper method for initializing the receiver port.
