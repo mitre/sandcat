@@ -308,7 +308,7 @@ func sendResponseToClient(data []byte, headers map[string][]string, writer http.
 // Port must be set for the HTTP receiver before calling this method.
 func (h *HttpReceiver) getReachableUrls() ([]string, error) {
 	var urlList []string
-	ipAddrs, err := getLocalIPv4Addresses()
+	ipAddrs, err := GetLocalIPv4Addresses()
 	if err != nil {
 		return nil, err
 	}
