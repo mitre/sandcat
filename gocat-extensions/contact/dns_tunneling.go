@@ -263,12 +263,10 @@ func generateQname(messageID string, messageType string, chunkIndex int, numChun
 		return "", errors.New("Data chunk too large.")
 	}
 	dataHex := hex.EncodeToString(data)
-	//return fmt.Sprintf("%s.%s.%d.%d.%s.%s", messageID, messageType, chunkIndex, numChunks, dataHex, BASE_DOMAIN), nil
 	return fmt.Sprintf("%s.%s.%d.%d.%s.%s.", messageID, messageType, chunkIndex, numChunks, dataHex, BASE_DOMAIN), nil
 }
 
 func (d* DnsTunneling) fetchTxtRecords(server string, qname string) ([]string, error) {
-	//return d.resolver.LookupTXT(d.resolverContext, qname)
 	msg := new(dns.Msg)
 	msg.Id = dns.Id()
 	msg.RecursionDesired = true
@@ -316,7 +314,6 @@ func ipv4ToUint32(ipAddr net.IP) (uint32, error) {
 	return binary.BigEndian.Uint32(ipv4), nil
 }
 
-// generate random bytes
 func generateRandomData(length int) []byte {
 	buffer := make([]byte, length)
 	rand.Read(buffer)
