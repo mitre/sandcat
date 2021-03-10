@@ -64,7 +64,7 @@ type SmbPipeAPI struct {
 	// Maps agent paws to Listener objects for the corresponding local pipe paths.
 	returnMailBoxListeners map[string]net.Listener
 	name string
-	upstreamDestAddr *string // pointer to agent's upstream dest addr
+	upstreamDestAddr string // agent's upstream dest addr
 }
 
 //PipeReceiver forwards data received from SMB pipes to the upstream destination. Implements the P2pReceiver interface
@@ -87,7 +87,7 @@ func init() {
 		make(map[string]string),
 		make(map[string]net.Listener),
 		protocolName,
-		nil,
+		"",
 	}
 	P2pReceiverChannels[protocolName] = &SmbPipeReceiver{}
 }
@@ -344,7 +344,7 @@ func (s *SmbPipeAPI) GetBeaconBytes(profile map[string]interface{}) []byte {
 		return nil
 	}
 	upstreamPipeLock.Lock()
-	err = sendRequestToUpstreamPipe(*s.upstreamDestAddr, requestingPaw, GET_INSTRUCTIONS, payload, mailBoxPipePath)
+	err = sendRequestToUpstreamPipe(s.upstreamDestAddr, requestingPaw, GET_INSTRUCTIONS, payload, mailBoxPipePath)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error sending beacon request to upstream dest: %s", err.Error()))
 		upstreamPipeLock.Unlock()
@@ -396,7 +396,7 @@ func (s *SmbPipeAPI) GetPayloadBytes(profile map[string]interface{}, payload str
 	}
 	output.VerbosePrint(fmt.Sprintf("[*] P2p Client Downloading new payload: %s", payload))
 	upstreamPipeLock.Lock()
-	err = sendRequestToUpstreamPipe(*s.upstreamDestAddr, paw, GET_PAYLOAD_BYTES, msgPayload, mailBoxPipePath)
+	err = sendRequestToUpstreamPipe(s.upstreamDestAddr, paw, GET_PAYLOAD_BYTES, msgPayload, mailBoxPipePath)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error sending payload request to upstream dest: %s", err.Error()))
 		upstreamPipeLock.Unlock()
@@ -432,23 +432,23 @@ func (s *SmbPipeAPI) GetPayloadBytes(profile map[string]interface{}, payload str
 // Check if current upstream destination is a full pipe path. If not, return config with new pipe path using
 // current upstream destination value and default generated pipe name.
 func (s *SmbPipeAPI) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) (bool, map[string]string) {
-	if s.upstreamDestAddr == nil {
+	if len(s.upstreamDestAddr) == 0 {
 		output.VerbosePrint("[!] Upstream destination address not yet set for SMB Pipe contact.")
 		return false, nil
 	}
-	match, err := regexp.MatchString(`^\\\\[^\\]+\\pipe\\[^\\]+$`, *s.upstreamDestAddr)
+	match, err := regexp.MatchString(`^\\\\[^\\]+\\pipe\\[^\\]+$`, s.upstreamDestAddr)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Regular expression error: %s", err.Error()))
 		return false, nil
 	} else if !match {
 		config := make(map[string]string)
-		config["upstreamDest"] = "\\\\" + *s.upstreamDestAddr + "\\pipe\\" + getMainPipeName(*s.upstreamDestAddr)
+		config["upstreamDest"] = "\\\\" + s.upstreamDestAddr + "\\pipe\\" + getMainPipeName(s.upstreamDestAddr)
 		return true, config
 	}
     return true, nil
 }
 
-func (s *SmbPipeAPI) SetUpstreamDestAddr(upstreamDestAddr *string) {
+func (s *SmbPipeAPI) SetUpstreamDestAddr(upstreamDestAddr string) {
 	s.upstreamDestAddr = upstreamDestAddr
 }
 
@@ -474,9 +474,9 @@ func (s *SmbPipeAPI) SendExecutionResults(profile map[string]interface{}, result
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot send results. Error with profile marshal: %s", err.Error()))
 	}
-	output.VerbosePrint(fmt.Sprintf("[*] P2p Client: sending execution results to %s", *s.upstreamDestAddr))
+	output.VerbosePrint(fmt.Sprintf("[*] P2p Client: sending execution results to %s", s.upstreamDestAddr))
 	upstreamPipeLock.Lock()
-	err = sendRequestToUpstreamPipe(*s.upstreamDestAddr, requestingPaw, SEND_EXECUTION_RESULTS, msgPayload, mailBoxPipePath)
+	err = sendRequestToUpstreamPipe(s.upstreamDestAddr, requestingPaw, SEND_EXECUTION_RESULTS, msgPayload, mailBoxPipePath)
 	upstreamPipeLock.Unlock()
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error sending execution results upstream: %s", err.Error()))
@@ -503,9 +503,9 @@ func (s *SmbPipeAPI) UploadFileBytes(profile map[string]interface{}, uploadName 
 	if err != nil {
 		return err
 	}
-	output.VerbosePrint(fmt.Sprintf("[*] P2p Client: uploading file %s to %s", uploadName, *s.upstreamDestAddr))
+	output.VerbosePrint(fmt.Sprintf("[*] P2p Client: uploading file %s to %s", uploadName, s.upstreamDestAddr))
 	upstreamPipeLock.Lock()
-	err = sendRequestToUpstreamPipe(*s.upstreamDestAddr, requestingPaw, SEND_FILE_UPLOAD_BYTES, msgPayload, mailBoxPipePath)
+	err = sendRequestToUpstreamPipe(s.upstreamDestAddr, requestingPaw, SEND_FILE_UPLOAD_BYTES, msgPayload, mailBoxPipePath)
 	if err != nil {
 		upstreamPipeLock.Unlock()
 		return err
