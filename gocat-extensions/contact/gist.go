@@ -83,7 +83,7 @@ func (g GIST) C2RequirementsMet(profile map[string]interface{}, criteria map[str
     return false, nil
 }
 
-func (g GIST) SetUpstreamDestAddr(upstreamDestAddr *string) {
+func (g GIST) SetUpstreamDestAddr(upstreamDestAddr string) {
 	// Upstream destination will be the github API.
 	return
 }
