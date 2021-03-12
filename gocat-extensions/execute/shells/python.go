@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"fmt"
 	"strings"
-	"github.com/mitre/gocat/output"
+//	"github.com/mitre/gocat/output"
 	"github.com/mitre/gocat/execute"
 )
 
@@ -65,8 +65,8 @@ func checkVersion(name string) string {
 	}
 // returns the first number from the python version (i.e. python version 2.7.1 would return 2 as a string)
 	str_ver = string(version)
-	str_ver = strings.TrimSuffix(str_ver, "\n")
-	str_ver = strings.TrimSuffix(str_ver, "\r")
+	str_ver = strings.TrimSpace(str_ver, "\n\r")
+//	str_ver = strings.TrimSpace(string(version), "\n\r")
 	return str_ver
 }
 
