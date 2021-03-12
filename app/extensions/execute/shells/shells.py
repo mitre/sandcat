@@ -11,5 +11,6 @@ class Shells(Extension):
         super().__init__([
             ('osascript.go', 'execute/shells'),
             ('powershell_core.go', 'execute/shells'),
+            ('python.go', 'execute/shells')
         ])
         self.dependencies = []
