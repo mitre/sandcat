@@ -83,6 +83,11 @@ func (g GIST) C2RequirementsMet(profile map[string]interface{}, criteria map[str
     return false, nil
 }
 
+func (g GIST) SetUpstreamDestAddr(upstreamDestAddr string) {
+	// Upstream destination will be the github API.
+	return
+}
+
 //SendExecutionResults send results to the server
 func (g GIST) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}){
 	profileCopy := make(map[string]interface{})
