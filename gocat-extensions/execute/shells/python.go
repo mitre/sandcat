@@ -19,11 +19,12 @@ type Python struct {
 
 func init() {
 	setExecutor("python3")
+	setExecutor("python2")
 	setExecutor("python")
 }
 
 func setExecutor(name string) bool {
-// Checks if python3 or python is available on the system and
+// Checks if python3, python2, or python is available on the system and
 // sets the shell executor with the appropriate path
 	var path string
 	var val string
@@ -51,22 +52,19 @@ func setExecutor(name string) bool {
 		execute.Executors[shell.shortName] = shell
 		return true
 	} 
-	fmt.Print("%s is not installed", name)
+	fmt.Print(name, " is not installed\n")
 	return false
 }
 
+// checks the python version and returns the major version
 func checkVersion(name string) string {
 	var str_ver string
-// checks the python version 
 	version, err := exec.Command("python", "-c", "import platform; print(platform.python_version().split('.')[0])").CombinedOutput()
 	fmt.Print("version", string(version), "\n")
 	if err != nil {
 		fmt.Print("Error:", err, "\n")
 	}
-// returns the first number from the python version (i.e. python version 2.7.1 would return 2 as a string)
-	str_ver = string(version)
-	str_ver = strings.TrimSpace(str_ver, "\n\r")
-//	str_ver = strings.TrimSpace(string(version), "\n\r")
+	str_ver = strings.TrimSpace(string(version))
 	return str_ver
 }
 
