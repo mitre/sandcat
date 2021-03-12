@@ -63,6 +63,7 @@ func checkVersion(name string) string {
 	fmt.Print("version", string(version), "\n")
 	if err != nil {
 		fmt.Print("Error:", err, "\n")
+		return ""
 	}
 	str_ver = strings.TrimSpace(string(version))
 	return str_ver
