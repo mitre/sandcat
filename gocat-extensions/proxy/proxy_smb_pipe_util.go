@@ -56,8 +56,8 @@ type uploadResponseInfo struct {
  * SMB Read/Write helper functions
  */
 
-// Send a P2pMessage to the server using the specified server pipe path, paw, message type, payload, and return mailbox path.
-func sendRequestToServer(pipePath string, paw string, messageType int, payload []byte, returnMailBoxPipePath string) error {
+// Send a P2pMessage to the specified server pipe path with specified paw, message type, payload, and return mailbox path.
+func sendRequestToUpstreamPipe(pipePath string, paw string, messageType int, payload []byte, returnMailBoxPipePath string) error {
     pipeMsgData, err := buildP2pMsgBytes(paw, messageType, payload, returnMailBoxPipePath)
     if err != nil {
     	return err
