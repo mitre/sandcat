@@ -187,13 +187,13 @@ func (d* DnsTunneling) UploadFileBytes(profile map[string]interface{}, uploadNam
 		}
 
 		// Let server know we want to upload a file.
-		messageID := generateRandomMessageID()
-		if err = d.tunnelBytesToServer(server, messageID, UPLOAD_REQUEST_TYPE, metadata); err != nil {
+		messageID, err := d.tunnelBytes(UPLOAD_REQUEST_TYPE, metadata)
+		if err != nil {
 			return err
 		}
 
 		// Send upload data, using same message ID as before.
-		return d.tunnelBytesToServer(server, messageID, UPLOAD_DATA_TYPE, data)
+		return d.tunnelBytesWithSpecificID(messageID, UPLOAD_DATA_TYPE, data)
 	}
 	return errors.New("File upload request missing paw and/or file name.")
 }
@@ -218,6 +218,10 @@ func (d *DnsTunneling) fetchPayloadData(messageID string) ([]byte, error) {
 func (d* DnsTunneling) tunnelBytes(dataType string, data []byte) (string, error) {
 	messageID := generateRandomMessageID()
 
+	return messageID, d.tunnelBytesWithSpecificID(messageID, dataType, data)
+}
+
+func (d* DnsTunneling) tunnelBytesWithSpecificID(messageID string, dataType string, data []byte) error {
 	// Chunk out data
 	dataSize := len(data)
 	numChunks := int(math.Ceil(float64(dataSize) / float64(MAX_UPLOAD_CHUNK_SIZE)))
@@ -237,7 +241,7 @@ func (d* DnsTunneling) tunnelBytes(dataType string, data []byte) (string, error)
 			return err
 		}
 		if err = d.sendDataChunk(qname, finalChunk); err != nil {
-			return "", err
+			return err
 		}
 		start += MAX_UPLOAD_CHUNK_SIZE
 	}
