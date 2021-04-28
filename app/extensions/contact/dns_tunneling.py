@@ -9,6 +9,7 @@ FILE_NAME = 'dns_tunneling.go'
 DOMAIN_CONFIG = 'app.contact.dns.domain'
 TEXT_TO_REPLACE = r'{DNS_TUNNELING_C2_DOMAIN}'
 
+
 def load():
     return DnsTunneling()
 
