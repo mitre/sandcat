@@ -7,9 +7,7 @@ GOCAT_PLUGIN = 'gocat'
 PACKAGE_NAME = 'contact'
 FILE_NAME = 'dns_tunneling.go'
 DOMAIN_CONFIG = 'app.contact.dns.domain'
-TEXT_TO_REPLACE = r'BASE_DOMAIN = "mycaldera.caldera"'
-REPLACEMENT_TEMPLATE = 'BASE_DOMAIN = "{}"'
-
+TEXT_TO_REPLACE = r'{DNS_TUNNELING_C2_DOMAIN}'
 
 def load():
     return DnsTunneling()
@@ -25,8 +23,6 @@ class DnsTunneling(Extension):
         """Will replace the C2 domain variable with the domain in the C2 configuration."""
         domain_name = BaseWorld.get_config(prop=DOMAIN_CONFIG)
         if domain_name:
-            replacement_text = REPLACEMENT_TEMPLATE.format(domain_name)
-            new_data = re.sub(TEXT_TO_REPLACE, replacement_text, original_data, count=1)
-            return new_data
+            return re.sub(TEXT_TO_REPLACE, domain_name, original_data, count=1)
         else:
             raise Exception('No DNS tunneling domain specified in C2 configuration file under app.contact.dns.domain')
