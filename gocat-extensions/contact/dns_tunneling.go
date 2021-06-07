@@ -23,7 +23,7 @@ const (
 	RECORD_TYPE_A = 1
 	RECORD_TYPE_TXT = 16
 	TIMEOUT_SECONDS = 10
-	BASE_DOMAIN = "mycaldera.caldera"
+	BASE_DOMAIN = "{DNS_TUNNELING_C2_DOMAIN}"
 	MIN_MESSAGE_ID = 10000000
 	MAX_MESSAGE_ID = 99999999
 	MAX_UPLOAD_CHUNK_SIZE = 31 // DNS label is 63 characters max, so 31 bytes in hex reaches 62 characters.

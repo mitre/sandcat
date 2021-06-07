@@ -223,9 +223,9 @@ class SandService(BaseService):
         module = self.sandcat_extensions.get(name)
         if module:
             try:
-                return module.copy_module_files(base_dir=self.sandcat_dir)
+                return await module.copy_module_files(base_dir=self.sandcat_dir)
             except Exception as e:
-                self.log.error('Error copying files for module %s: %s' % (module, e))
+                self.log.error('Error copying files for module %s: %s', name, e)
         else:
             self.log.error('Module %s not found' % name)
         return False
