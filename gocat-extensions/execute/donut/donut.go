@@ -78,6 +78,14 @@ func (d *Donut) CheckIfAvailable() bool {
 	return IsAvailable()
 }
 
+func (d *Donut) UpdateBinary(newBinary string) {
+	return
+}
+
+func (d *Donut) UpdateExecArgs(newArgs []string) {
+	return
+}
+
 func (d* Donut) DownloadPayloadToMemory(payloadName string) bool {
 	return strings.HasSuffix(payloadName, ".donut")
 }
