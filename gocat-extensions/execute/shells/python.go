@@ -85,3 +85,12 @@ func (p *Python) CheckIfAvailable() bool {
 func (p *Python) DownloadPayloadToMemory(payloadName string) bool {
 	return false
 }
+
+func (p *Python) UpdateBinary(newBinary string) {
+	p.path = newBinary
+}
+
+func (p *Python) UpdateExecArgs(newArgs []string) {
+	p.execArgs = make([]string, len(newArgs))
+	copy(p.execArgs, newArgs)
+}
