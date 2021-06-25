@@ -26,10 +26,6 @@ type FTP struct {
 	upstreamDestAddr string
 }
 
-//TODO:
-// Functions themselves complete are complete, but:
-// Add functionality to server.upload_file & server.download_file
-// write heartbeat results to response.txt add paw to response, results, and alive string?
 func init() {
 	CommunicationChannels["FTP"] = FTP{ name: "FTP" }
 }
@@ -124,6 +120,8 @@ func FtpBeacon(profile map[string]interface{}) ([]byte, bool){
 		return error
 	}
 
+    RemoveFile("Alive.txt")
+
 	response, err := FileToByteArray("Response.txt")
 	if err != nil {
 	    output.VerbosePrint("[!] Error converting response to byte array - cannot obtain response")
@@ -169,6 +167,7 @@ func FileToByteArray(fileName string) ([]byte, error){
 
     fileContent = []byte(string(file))
     defer file.Close()
+    RemoveFile(fileName)
     return fileContent, nil
 }
 
@@ -201,6 +200,16 @@ func DownloadPayload(paw string, payloadName string) error{
 	err := server.download_file(fileName, paw)
 	if err != nil{
 	    output.VerbosePrint(fmt.Sprintf("[-] Failed to download payload file from FTP Server anonymously: %s", err.Error()))
+        return err
+    }
+
+    return nil
+}
+
+func RemoveFile(filename string) error{
+    err := os.Remove(filename)
+    if err != nil{
+	    output.VerbosePrint(fmt.Sprintf("[-] Failed to remove file for cleanup: %s", err.Error()))
         return err
     }
 
