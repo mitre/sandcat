@@ -9,4 +9,4 @@ class FTP(Extension):
 
     def __init__(self):
         super().__init__([('ftp.go', 'contact')])
-        self.dependencies = ['']
+        self.dependencies = ['github.com/jlaffaye/ftp']
