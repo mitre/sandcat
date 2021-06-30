@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"unicode"
+	"time"
 
 	"github.com/mitre/gocat/execute"
 )
@@ -27,13 +28,14 @@ func init() {
 	}
 }
 
-func (s *Shellcode) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string) {
+func (s *Shellcode) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
 	bytes, _ := stringToByteArrayString(command)
+	executionTimestamp := time.Now()
 	task, pid := Runner(bytes)
 	if task {
-		return []byte("Shellcode executed successfully."), execute.SUCCESS_STATUS, pid
+		return []byte("Shellcode executed successfully."), execute.SUCCESS_STATUS, pid, executionTimestamp
 	}
-	return []byte("Shellcode execution failed."), execute.ERROR_STATUS, pid
+	return []byte("Shellcode execution failed."), execute.ERROR_STATUS, pid, executionTimestamp
 }
 
 func (s *Shellcode) String() string {

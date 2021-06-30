@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"fmt"
 	"strings"
+	"time"
+
 	"github.com/mitre/gocat/execute"
 )
 
@@ -68,7 +70,7 @@ func checkVersion(name string) string {
 	return str_ver
 }
 
-func (p *Python) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string) {
+func (p *Python) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
 	return runShellExecutor(*exec.Command(p.path, append(p.execArgs, command)...), timeout)
 }
 
