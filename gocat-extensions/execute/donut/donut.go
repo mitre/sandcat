@@ -89,3 +89,7 @@ func getDonutBytes(inMemoryPayloads map[string][]byte) (string, []byte) {
 	}
 	return "", nil
 }
+
+func (d *Donut) UpdateBinary(newBinary string) {
+	return
+}

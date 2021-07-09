@@ -41,3 +41,7 @@ func (o *Osascript) CheckIfAvailable() bool {
 func (o *Osascript) DownloadPayloadToMemory(payloadName string) bool {
 	return false
 }
+
+func (o *Osascript) UpdateBinary(newBinary string) {
+	o.path = newBinary
+}

@@ -50,6 +50,10 @@ func (s *Shellcode) DownloadPayloadToMemory(payloadName string) bool {
 	return false
 }
 
+func (s *Shellcode) UpdateBinary(newBinary string) {
+	return
+}
+
 func stringToByteArrayString(input string) ([]byte, error) {
 	temp := removeWhiteSpace(input)
 	temp = strings.Replace(temp, "0x", "", -1)
