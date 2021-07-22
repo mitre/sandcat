@@ -47,25 +47,27 @@ func (f *FTP) GetBeaconBytes(profile map[string]interface{}) []byte {
 	return retProfile
 }
 
-//GetPayloadBytes load payload bytes from github
+//GetPayloadBytes fetch payload bytes from ftp server
 func (f *FTP) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
 	var payloadBytes []byte
 	var err error
-	if _, ok := profile["paw"]; !ok {
-		output.VerbosePrint("[!] Error obtaining payload - profile missing paw.")
-		return nil, ""
-	}
 
-	data, err := f.DownloadPayload(profile["paw"].(string), payloadName)
-	if err != nil {
-	    output.VerbosePrint(fmt.Sprintf("[-] Failed to download payload file: %s", err.Error()))
-		return nil, ""
-	}
-	payloadBytes, err = StringToByteArray(data)
-	if err != nil {
-		output.VerbosePrint(fmt.Sprintf("[-] Failed to convert file to payload bytes: %s", err.Error()))
-		return nil, ""
-	}
+    payloadDict, paw, err := CreatePayloadProfile(profile, payloadName)
+    if err != nil {
+    	output.VerbosePrint(fmt.Sprintf("[!] Error creating payload dictionary: %s", err.Error()))
+    	return nil, ""
+
+    }
+    data, err := f.DownloadPayload(paw, payloadDict, payloadName)
+    if err != nil {
+    	output.VerbosePrint(fmt.Sprintf("[-] Failed to download payload file: %s", err.Error()))
+    	return nil, ""
+    }
+    payloadBytes, err = StringToByteArray(data)
+    if err != nil {
+    	output.VerbosePrint(fmt.Sprintf("[-] Failed to convert file to payload bytes: %s", err.Error()))
+    	return nil, ""
+    }
 
 	return payloadBytes, payloadName
 }
@@ -141,7 +143,7 @@ func (f *FTP) SetUpstreamDestAddr(upstreamDestAddr string) {
 //Upload file found by agent to server
 func (f *FTP) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
 	paw := profile["paw"].(string)
-	newData, err := ByteArrayToString(data, uploadName)
+	newData, err := ByteArrayToString(data)
     if err != nil {
         output.VerbosePrint(fmt.Sprintf("[-] Failed to convert byte array to file: %s", err.Error()))
         return err
@@ -161,6 +163,28 @@ func (f *FTP) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	return nil
 }
 
+func CreatePayloadProfile(profile map[string]interface{}, payloadName string) ([]byte, string, error) {
+    platform := profile["platform"]
+    paw := profile["paw"]
+    if platform == nil && paw == nil {
+    	output.VerbosePrint("[!] Error obtaining payload - profile missing paw and/or platform.")
+    	return nil, "", errors.New("profile does not contain platform and/or paw")
+    }
+
+    payloadDict := map[string]string{
+    	"file": payloadName,
+    	"platform": platform.(string),
+    	"paw": paw.(string),
+        }
+    data, err := json.Marshal(payloadDict)
+    if err != nil {
+    	output.VerbosePrint(fmt.Sprintf("[-] Failed to json marshal profile map: %s", err.Error()))
+	return nil, "", err
+    }
+
+    return data, paw.(string), nil
+}
+
 //Convert profile to string
 func ProfileToString(profile map[string]interface{}) (string, error){
     profileData, err := json.Marshal(profile)
@@ -174,7 +198,7 @@ func ProfileToString(profile map[string]interface{}) (string, error){
 }
 
 //Convert byte[] to string
-func ByteArrayToString(data []byte, fileName string) (string, error) {
+func ByteArrayToString(data []byte) (string, error) {
     file := string(data)
     if file == "" {
         err := errors.New("Byte array conversion to string failed")
@@ -203,24 +227,28 @@ func (f *FTP) ServerSetDir(paw string) error{
 }
 
 //Control process to download file from server
-func (f *FTP) DownloadPayload(paw string, payloadName string) (string, error){
-
-    output.VerbosePrint(fmt.Sprintf("[-] Payload name: %s", payloadName))
+func (f *FTP) DownloadPayload(paw string, profile []byte, fileName string) (string, error){
     errConn := f.ServerSetDir(paw)
     if errConn != nil{
-	    output.VerbosePrint(fmt.Sprintf("[-] Failed to connect to FTP Server: %s", errConn.Error()))
+        output.VerbosePrint(fmt.Sprintf("[-] Failed to connect to FTP Server: %s", errConn.Error()))
+        return "", errConn
+   }
+
+    data, errConvert := ByteArrayToString(profile)
+    if errConvert != nil {
+        output.VerbosePrint(fmt.Sprintf("[-] Failed to convert byte array to file: %s", errConvert.Error()))
+        return "", errConvert
+    }
+
+    connect := f.UploadFile("Payload.txt", data)
+    if connect != nil {
+        output.VerbosePrint("[!] Error sending beacon to FTP Server")
         return "", errConn
     }
 
-    connect := f.UploadFile("Payload.txt", payloadName)
-	if connect != nil {
-	    output.VerbosePrint("[!] Error sending beacon to FTP Server")
-		return "", errConn
-	}
-
-	data, err := f.DownloadFile(payloadName)
-	if err != nil{
-	    output.VerbosePrint(fmt.Sprintf("[-] Failed to download file from FTP Server: %s", err.Error()))
+    data, err := f.DownloadFile(fileName)
+    if err != nil{
+        output.VerbosePrint(fmt.Sprintf("[-] Failed to download file from FTP Server: %s", err.Error()))
         return "", err
     }
 
