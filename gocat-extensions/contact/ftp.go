@@ -143,6 +143,12 @@ func (f *FTP) SetUpstreamDestAddr(upstreamDestAddr string) {
 //Upload file found by agent to server
 func (f *FTP) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
 	paw := profile["paw"].(string)
+	uniqueFileName := uploadName
+	if uploadName != "Alive.txt"{
+	    uploadId := getNewUploadId()
+	    uniqueFileName = uploadName + "-" + uploadId
+	}
+
 	newData, err := ByteArrayToString(data)
     if err != nil {
         output.VerbosePrint(fmt.Sprintf("[-] Failed to convert byte array to file: %s", err.Error()))
@@ -155,7 +161,7 @@ func (f *FTP) UploadFileBytes(profile map[string]interface{}, uploadName string,
         return errConn
     }
 
-	connect := f.UploadFile(uploadName, newData)
+	connect := f.UploadFile(uniqueFileName, newData)
 	if connect != nil {
 		return connect
 	}
@@ -332,6 +338,12 @@ func RemoveFile(filename string) error{
 
 //If no paw, create one
 func getBeaconNameIdentifier() string {
+	rand.Seed(time.Now().UnixNano())
+	return strconv.Itoa(rand.Int())
+}
+
+//Create unique id for file upload
+func getNewUploadId() string {
 	rand.Seed(time.Now().UnixNano())
 	return strconv.Itoa(rand.Int())
 }
