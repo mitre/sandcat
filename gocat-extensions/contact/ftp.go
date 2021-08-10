@@ -130,7 +130,7 @@ func (f *FTP) SetUpstreamDestAddr(upstreamDestAddr string) {
             panic(err)
         }
     }
-
+    //Have I tested anonymous login?
 }
 
 //Upload file found by agent to server
