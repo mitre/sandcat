@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 	"errors"
-	"os"
 	"bytes"
 
     "github.com/jlaffaye/ftp"
@@ -98,12 +97,6 @@ func (f *FTP) SendExecutionResults(profile map[string]interface{}, result map[st
 	        output.VerbosePrint(fmt.Sprintf("[-] Failed to upload file bytes: %s", err.Error()))
 	    }
 	}
-
-    //if _, errQuit := f.client.conn.Cmd("QUIT\r\n"); errQuit != nil {
-	//if errQuit := f.client.Quit(); errQuit != nil {
-    //    output.VerbosePrint(fmt.Sprintf("[-] Failed to Quit: %s", errQuit.Error()))
-    //}
-
 }
 
 //Return 'ftp'
@@ -323,17 +316,6 @@ func (f *FTP) DownloadFile(filename string) (string,error){
     data := string(buf)
 
     return data, nil
-}
-
-//Remove tmp files that were created to comunicate with server
-func RemoveFile(filename string) error{
-    err := os.Remove(filename)
-    if err != nil{
-	    output.VerbosePrint(fmt.Sprintf("[-] Failed to remove file for cleanup: %s", err.Error()))
-        return err
-    }
-
-    return nil
 }
 
 //If no paw, create one
