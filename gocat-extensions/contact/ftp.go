@@ -46,7 +46,6 @@ func (f *FTP) GetBeaconBytes(profile map[string]interface{}) []byte {
 
 //GetPayloadBytes fetch payload bytes from ftp server
 func (f *FTP) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
-    var payloadBytes []byte
     var err error
 
     payloadReqDict, paw, err := CreatePayloadRequest(profile, payloadName)
@@ -177,18 +176,18 @@ func (f *FTP) DownloadPayload(paw string, payloadReq []byte, fileName string) ([
     errConn := f.ServerSetDir(paw)
     if errConn != nil{
         output.VerbosePrint(fmt.Sprintf("[-] Failed to connect to FTP Server: %s", errConn.Error()))
-        return "", errConn
+        return nil, errConn
    }
     connect := f.UploadFile("Payload.txt", payloadReq)
     if connect != nil {
         output.VerbosePrint("[!] Error sending payload request to FTP Server")
-        return "", errConn
+        return nil, errConn
     }
 
     data, err := f.DownloadFile(fileName)
     if err != nil{
         output.VerbosePrint(fmt.Sprintf("[-] Failed to download file from FTP Server: %s", err.Error()))
-        return "", err
+        return nil, err
     }
 
     return data, nil
@@ -196,14 +195,13 @@ func (f *FTP) DownloadPayload(paw string, payloadReq []byte, fileName string) ([
 
 //Controls process to send beacon to server
 func (f *FTP) FtpBeacon(profile map[string]interface{}) ([]byte, bool) {
-    paw := profile["paw"].(string)
     data, heartbeat := json.Marshal(profile)
     if heartbeat != nil{
         output.VerbosePrint("[!] Error converting profile map to String - cannot send beacon")
         return nil, false
     }
 
-    connect := UploadFileBytes(profile, "Alive.txt", data)
+    connect := f.UploadFileBytes(profile, "Alive.txt", data)
 	if connect != nil {
 	    output.VerbosePrint("[!] Error sending beacon to FTP Server")
 		return nil, false
@@ -221,7 +219,8 @@ func (f *FTP) FtpBeacon(profile map[string]interface{}) ([]byte, bool) {
 //Upload file to server
 func (f *FTP) UploadFile(filename string, data []byte) error {
     //newData := bytes.NewBufferString(data)
-    return f.client.Stor(filename, data)
+    reader := bytes.NewReader(data)
+    return f.client.Stor(filename, reader)
 }
 
 //Download file from server
@@ -229,11 +228,11 @@ func (f *FTP) DownloadFile(filename string) ([]byte,error) {
     reader, err := f.client.Retr(filename)
     defer reader.Close()
     if err != nil {
-        return "", err
+        return nil, err
     }
     data, errRead := ioutil.ReadAll(reader)
     if errRead != nil {
-        return "", errRead
+        return nil, errRead
     }
     if filename == "Response.txt"{
         f.client.Delete(filename)
