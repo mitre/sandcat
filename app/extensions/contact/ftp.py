@@ -21,13 +21,13 @@ class FTP(Extension):
                          file_hooks={FILE_NAME: self.hook_set_custom_values})
 
     async def hook_set_custom_values(self, original_data):
-        # Will replace the ftp variables with the variables in the C2 configuration.
+        """Will replace the ftp variables with the variables in the C2 configuration."""
         for var, text in zip(DOMAIN_CONFIG, TEXT_TO_REPLACE):
             replace_name = BaseWorld.get_config(prop=var)
             if replace_name:
                 data = re.sub(text, replace_name, original_data, count=1)
             else:
-                raise Exception('No variable specified in C2 configuration file under ' + var)
+                raise Exception('No variable specified in C2 configuration file under '+var)
             original_data = data
 
         return original_data
