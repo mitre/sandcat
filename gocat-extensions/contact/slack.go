@@ -274,7 +274,7 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 
 func getSlacks(slackType string, uniqueID string) []string {
 	var contents []string
-	var url_file string
+	var urlFile string
 	var msgs []byte
 
 	var result map[string]interface{}
@@ -289,8 +289,8 @@ func getSlacks(slackType string, uniqueID string) []string {
 	for i := range result["messages"].([]interface{}) {
 		text := result["messages"].([]interface{})[i].(map[string]interface{})["text"]
 		if strings.Index(fmt.Sprintf("%s", text), fmt.Sprintf("%s-%s", slackType, uniqueID)) == 0 {
-			url_file = result["messages"].([]interface{})[i].(map[string]interface{})["files"].([]interface{})[0].(map[string]interface{})["url_private_download"].(string)
-			contents = append(contents, fmt.Sprintf("%s", getRequestWithAuth(url_file)))
+			urlFile = result["messages"].([]interface{})[i].(map[string]interface{})["files"].([]interface{})[0].(map[string]interface{})["url_private_download"].(string)
+			contents = append(contents, fmt.Sprintf("%s", getRequestWithAuth(urlFile)))
 			
 			requestBody, err := json.Marshal(map[string]interface{}{
 				"channel":channelId,
