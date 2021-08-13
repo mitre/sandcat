@@ -247,15 +247,15 @@ func createSlack(slackName string, description string, data []byte) bool {
 
 func getSlackMessages(slackType string, uniqueID string) []string {
 	var contents []string
-	var popog []byte
+	var msgs []byte
 
 	var result map[string]interface{}
-	popog = get_request(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channel_id, time.Now().Unix()-slackTimeout*2))
-	json.Unmarshal(popog, &result);
+	msgs = get_request(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channel_id, time.Now().Unix()-slackTimeout*2))
+	json.Unmarshal(msgs, &result);
 
 	if result["ok"] == false {
 		// error stuff
-		output.VerbosePrint(fmt.Sprintf("[-] Failed to get slack messages: %s", popog))
+		output.VerbosePrint(fmt.Sprintf("[-] Failed to get slack messages: %s", msgs))
 		return contents
 	}
 
@@ -295,15 +295,15 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 func getSlacks(slackType string, uniqueID string) []string {
 	var contents []string
 	var url_file string
-	var popog []byte
+	var msgs []byte
 
 	var result map[string]interface{}
-	popog = get_request(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channel_id, time.Now().Unix()-slackTimeout*2))
-	json.Unmarshal(popog, &result);
+	msgs = get_request(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channel_id, time.Now().Unix()-slackTimeout*2))
+	json.Unmarshal(msgs, &result);
 
 	if result["ok"] == false {
 		// error stuff
-		output.VerbosePrint(fmt.Sprintf("[-] Failed to get slack messages: %s", popog))
+		output.VerbosePrint(fmt.Sprintf("[-] Failed to get slack messages: %s", msgs))
 		return contents
 	}
 
