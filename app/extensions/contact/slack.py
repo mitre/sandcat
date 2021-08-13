@@ -21,8 +21,8 @@ class SLACK(Extension):
 
     async def hook_set_custom_channel(self, original_data):
         """Will replace the C2 channel variable with the Slack channel in the C2 configuration."""
-        domain_name = BaseWorld.get_config(prop=CHANNEL_CONFIG)
-        if domain_name:
-            return re.sub(TEXT_TO_REPLACE, domain_name, original_data, count=1)
+        channel_name = BaseWorld.get_config(prop=CHANNEL_CONFIG)
+        if channel_name:
+            return re.sub(TEXT_TO_REPLACE, channel_name, original_data, count=1)
         else:
             raise Exception('No Slack channel ID specified in C2 configuration file under app.contact.slack.channel_id')
