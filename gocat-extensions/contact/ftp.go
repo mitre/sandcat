@@ -69,7 +69,7 @@ func (f *FTP) GetPayloadBytes(profile map[string]interface{}, payloadName string
         return nil, ""
     }
     f.client.Delete(payloadName)
-	return data, payloadName
+    return data, payloadName
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
@@ -84,24 +84,24 @@ func (f *FTP) C2RequirementsMet(profile map[string]interface{}, c2Config map[str
 //SendExecutionResults send results to the server
 func (f *FTP) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
     profileCopy := make(map[string]interface{})
-	for k,v := range profile {
-		profileCopy[k] = v
-	}
-	results := [1]map[string]interface{}{result}
-	profileCopy["results"] = results
+    for k,v := range profile {
+        profileCopy[k] = v
+    }
+    results := [1]map[string]interface{}{result}
+    profileCopy["results"] = results
 
     data, err := json.Marshal(profileCopy)
-	if err == nil{
-	    err = f.UploadFileBytes(profile, f.beacon, data)
-	    if err != nil{
-	        output.VerbosePrint(fmt.Sprintf("[-] Failed to upload file bytes for SendExecutionResults: %s", err.Error()))
-	    }
-	}
+    if err == nil{
+        err = f.UploadFileBytes(profile, f.beacon, data)
+        if err != nil{
+            output.VerbosePrint(fmt.Sprintf("[-] Failed to upload file bytes for SendExecutionResults: %s", err.Error()))
+        }
+    }
 }
 
 //Return 'ftp'
 func (f *FTP) GetName() string {
-	return f.name
+    return f.name
 }
 
 //Return upstreamDestAddr
@@ -114,8 +114,8 @@ func (f *FTP) SetUpstreamDestAddr(upstreamDestAddr string) {
     f.payload = PAYLOAD
     f.response = RESPONSE
 
-	client, errConnect := ftp.Dial(f.ipAddress)
-	if errConnect != nil {
+    client, errConnect := ftp.Dial(f.ipAddress)
+    if errConnect != nil {
         output.VerbosePrint(fmt.Sprintf("[-] Failed to connect to FTP server: %s", errConnect.Error()))
     }
     f.client = client
@@ -131,32 +131,32 @@ func (f *FTP) SetUpstreamDestAddr(upstreamDestAddr string) {
 //Upload file found by agent to server
 func (f *FTP) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
     paw := profile["paw"].(string)
-	uniqueFileName := uploadName
-	if uniqueFileName != f.beacon && uniqueFileName != f.payload{
-	    uploadId := getRandomId()
-	    uniqueFileName = uploadName + "-" + uploadId
-	}
+    uniqueFileName := uploadName
+    if uniqueFileName != f.beacon && uniqueFileName != f.payload{
+        uploadId := getRandomId()
+        uniqueFileName = uploadName + "-" + uploadId
+    }
 
     errConn := f.ServerSetDir(paw)
     if errConn != nil{
-	    output.VerbosePrint(fmt.Sprintf("[-] Failed to connect to FTP Server: %s", errConn.Error()))
+        output.VerbosePrint(fmt.Sprintf("[-] Failed to connect to FTP Server: %s", errConn.Error()))
         return errConn
     }
 
-	connect := f.UploadFile(uniqueFileName, data)
-	if connect != nil {
+    connect := f.UploadFile(uniqueFileName, data)
+    if connect != nil {
         return connect
-	}
+    }
 
-	return nil
+    return nil
 }
 
 func CreatePayloadRequest(profile map[string]interface{}, payloadName string) ([]byte, error) {
     platform := profile["platform"]
     paw := profile["paw"]
     if platform == nil && paw == nil {
-    	output.VerbosePrint("[!] Error obtaining payload - profile missing paw and/or platform.")
-    	return nil, errors.New("profile does not contain platform and/or paw")
+        output.VerbosePrint("[!] Error obtaining payload - profile missing paw and/or platform.")
+        return nil, errors.New("profile does not contain platform and/or paw")
     }
 
     payloadReqDict := map[string]string{
@@ -197,14 +197,14 @@ func (f *FTP) FtpBeacon(profile map[string]interface{}) ([]byte, bool) {
     if connectErr != nil {
         output.VerbosePrint("[!] Error sending beacon to FTP Server")
         return nil, false
-	}
+    }
 
     data, err := f.DownloadFile(f.response)
     if err != nil{
         output.VerbosePrint(fmt.Sprintf("[-] Failed to download file from FTP Server: %s", err.Error()))
         return nil, false
     }
-	return data, true
+    return data, true
 
 }
 
