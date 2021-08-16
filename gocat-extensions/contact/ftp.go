@@ -18,6 +18,9 @@ const (
     USER = "{FTP_C2_USER}"
     PWORD = "{FTP_C2_PASSWORD}"
     DIRECTORY = "{FTP_C2_DIRECTORY}"
+    BEACON = "Alive.txt"
+    PAYLOAD = "Payload.txt"
+    RESPONSE = "Response.txt"
 )
 
 //API communicates through FTP
@@ -28,6 +31,9 @@ type FTP struct {
     user string
     pword string
     directory string
+    beacon string
+    payload string
+    response string
 }
 
 func init() {
@@ -52,7 +58,7 @@ func (f *FTP) GetPayloadBytes(profile map[string]interface{}, payloadName string
         output.VerbosePrint(fmt.Sprintf("[!] Error creating payload dictionary: %s", err.Error()))
         return nil, ""
     }
-    err = f.UploadFileBytes(profile, "Payload.txt", payloadReqDict)
+    err = f.UploadFileBytes(profile, f.payload, payloadReqDict)
     if err != nil {
         output.VerbosePrint(fmt.Sprintf("[-] Failed to download payload file: %s", err.Error()))
         return nil, ""
@@ -86,7 +92,7 @@ func (f *FTP) SendExecutionResults(profile map[string]interface{}, result map[st
 
     data, err := json.Marshal(profileCopy)
 	if err == nil{
-	    err = f.UploadFileBytes(profile, "Alive.txt", data)
+	    err = f.UploadFileBytes(profile, f.beacon, data)
 	    if err != nil{
 	        output.VerbosePrint(fmt.Sprintf("[-] Failed to upload file bytes for SendExecutionResults: %s", err.Error()))
 	    }
@@ -104,6 +110,9 @@ func (f *FTP) SetUpstreamDestAddr(upstreamDestAddr string) {
     f.user = USER
     f.pword = PWORD
     f.directory = "/" + DIRECTORY
+    f.beacon = BEACON
+    f.payload = PAYLOAD
+    f.response = RESPONSE
 
 	client, errConnect := ftp.Dial(f.ipAddress)
 	if errConnect != nil {
@@ -123,7 +132,7 @@ func (f *FTP) SetUpstreamDestAddr(upstreamDestAddr string) {
 func (f *FTP) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
     paw := profile["paw"].(string)
 	uniqueFileName := uploadName
-	if uniqueFileName != "Alive.txt" && uniqueFileName != "Payload.txt"{
+	if uniqueFileName != f.beacon && uniqueFileName != f.payload{
 	    uploadId := getRandomId()
 	    uniqueFileName = uploadName + "-" + uploadId
 	}
@@ -184,13 +193,13 @@ func (f *FTP) FtpBeacon(profile map[string]interface{}) ([]byte, bool) {
         return nil, false
     }
 
-    connectErr := f.UploadFileBytes(profile, "Alive.txt", data)
+    connectErr := f.UploadFileBytes(profile, f.beacon, data)
     if connectErr != nil {
         output.VerbosePrint("[!] Error sending beacon to FTP Server")
         return nil, false
 	}
 
-    data, err := f.DownloadFile("Response.txt")
+    data, err := f.DownloadFile(f.response)
     if err != nil{
         output.VerbosePrint(fmt.Sprintf("[-] Failed to download file from FTP Server: %s", err.Error()))
         return nil, false
@@ -217,12 +226,12 @@ func (f *FTP) DownloadFile(filename string) ([]byte,error) {
     if errRead != nil {
         return nil, errRead
     }
-    if filename == "Response.txt"{
+    if filename == f.response{
         f.client.Delete(filename)
-        f.client.Delete("Alive.txt")
+        f.client.Delete(f.beacon)
     }
-    if filename != "Alive.txt" && filename != "Response.txt"{
-        f.client.Delete("Payload.txt")
+    if filename != f.beacon && filename != f.response{
+        f.client.Delete(f.payload)
     }
     return data, nil
 }

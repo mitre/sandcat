@@ -27,7 +27,13 @@ class FTP(Extension):
             if replace_name:
                 data = re.sub(text, replace_name, original_data, count=1)
             else:
-                raise Exception('No variable specified in C2 configuration file under ' + var)
+                print('No variable specified in C2 configuration file under ' + var)
+                raise ConfigFileError
             original_data = data
 
         return original_data
+
+
+class ConfigFileError(Exception):
+    """Raised when no variable specified in C2 configuration file under"""
+    pass
