@@ -6,7 +6,7 @@ from plugins.sandcat.app.utility.base_extension import Extension, ConfigFileExce
 GOCAT_PLUGIN = 'gocat'
 PACKAGE_NAME = 'contact'
 FILE_NAME = 'ftp.go'
-DOMAIN_CONFIG = ['app.contact.ftp.user', 'app.contact.ftp.pword', 'app.contact.ftp.server.dir']
+FTP_CONFIG_VARIABLES = ['app.contact.ftp.user', 'app.contact.ftp.pword', 'app.contact.ftp.server.dir']
 TEXT_TO_REPLACE = [r'{FTP_C2_USER}', r'{FTP_C2_PASSWORD}', r'{FTP_C2_DIRECTORY}']
 
 
@@ -22,7 +22,7 @@ class FTP(Extension):
 
     async def hook_set_custom_values(self, original_data):
         """Will replace the ftp variables with the variables in the C2 configuration."""
-        for var, text in zip(DOMAIN_CONFIG, TEXT_TO_REPLACE):
+        for var, text in zip(FTP_CONFIG_VARIABLES, TEXT_TO_REPLACE):
             replace_name = BaseWorld.get_config(prop=var)
             if replace_name:
                 data = re.sub(text, replace_name, original_data, count=1)

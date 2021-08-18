@@ -104,7 +104,7 @@ func (f *FTP) GetName() string {
     return f.name
 }
 
-//Return upstreamDestAddr
+//Set upstreamDestAddr
 func (f *FTP) SetUpstreamDestAddr(upstreamDestAddr string) {
     f.ipAddress = upstreamDestAddr
     f.user = USER
@@ -235,7 +235,7 @@ func (f *FTP) DownloadFile(filename string) ([]byte,error) {
     return data, nil
 }
 
-//If no paw, create one
+//Create random id
 func getRandomId() string {
     rand.Seed(time.Now().UnixNano())
     return strconv.Itoa(rand.Int())
