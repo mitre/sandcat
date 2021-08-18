@@ -143,9 +143,9 @@ func (f *FTP) UploadFileBytes(profile map[string]interface{}, uploadName string,
         return errConn
     }
 
-    connect := f.UploadFile(uniqueFileName, data)
-    if connect != nil {
-        return connect
+    errUpload := f.UploadFile(uniqueFileName, data)
+    if errUpload != nil {
+        return errUpload
     }
 
     return nil
@@ -210,7 +210,6 @@ func (f *FTP) FtpBeacon(profile map[string]interface{}) ([]byte, bool) {
 
 //Upload file to server
 func (f *FTP) UploadFile(filename string, data []byte) error {
-    //newData := bytes.NewBufferString(data)
     reader := bytes.NewReader(data)
     return f.client.Stor(filename, reader)
 }

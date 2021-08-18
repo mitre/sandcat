@@ -1,7 +1,7 @@
 import re
 
 from app.utility.base_world import BaseWorld
-from plugins.sandcat.app.utility.base_extension import Extension
+from plugins.sandcat.app.utility.base_extension import Extension, ConfigFileException
 
 GOCAT_PLUGIN = 'gocat'
 PACKAGE_NAME = 'contact'
@@ -27,13 +27,7 @@ class FTP(Extension):
             if replace_name:
                 data = re.sub(text, replace_name, original_data, count=1)
             else:
-                print('No variable specified in C2 configuration file under ' + var)
-                raise ConfigFileError
+                raise ConfigFileException('No variable specified in C2 configuration file under ' + var)
             original_data = data
 
         return original_data
-
-
-class ConfigFileError(Exception):
-    """Raised when no variable specified in C2 configuration file under"""
-    pass
