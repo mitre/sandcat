@@ -21,7 +21,7 @@ const (
     BEACON_FILENAME = "Alive.txt"
     PAYLOAD_FILENAME = "Payload.txt"
     RESPONSE_FILENAME = "Response.txt"
-    RESULT_FILENAME = "Alive.txt" //"Results.txt"
+    RESULT_FILENAME = "Alive.txt"
 )
 
 //API communicates through FTP
@@ -174,7 +174,7 @@ func (f *FTP) ServerSetDir(paw string) error {
 func (f *FTP) FtpBeacon(profile map[string]interface{}) ([]byte, bool) {
     data, heartbeat := json.Marshal(profile)
     if heartbeat != nil{
-        output.VerbosePrint("[!] Error converting profile map to String - cannot send BEACON_FILENAME")
+        output.VerbosePrint("[!] Error converting profile map to String - cannot send beacon")
         return nil, false
     }
 
