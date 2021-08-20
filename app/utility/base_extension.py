@@ -81,3 +81,9 @@ class Extension(ABC):
             full_path = os.path.join(dir_path, dir_item)
             if os.path.isfile(full_path) and dir_item != 'load.go':
                 os.remove(full_path)
+
+
+class ConfigFileException(Exception):
+    """Raise this exception when a required variable or setting for the
+    extension is not specified in the C2 configuration file"""
+    pass
