@@ -24,12 +24,14 @@ jobs:
     - name: Mod tidy
       run: |
         cd gocat
-        pwd
-        ls -al
         go mod tidy
 
     - name: Build
-      run: go build -v gocat/
+      run: |
+        cd gocat
+        go build -v .
 
     - name: Test binary
-      run: file gocat && ./gocat -help
+      run: |
+        cd gocat
+        file gocat && ./gocat -help
