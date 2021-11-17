@@ -24,6 +24,8 @@ jobs:
     - name: Mod tidy
       run: |
         cd gocat
+        pwd
+        ls -al
         go mod tidy
 
     - name: Build
