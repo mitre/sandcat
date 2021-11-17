@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     defaults:
-      runs:
+      run:
         working-directory: ./gocat
     steps:
     - uses: actions/checkout@v2
