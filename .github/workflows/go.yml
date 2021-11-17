@@ -10,6 +10,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    defaults:
+      runs:
+        working-directory: ./gocat
     steps:
     - uses: actions/checkout@v2
       with:
@@ -22,13 +25,10 @@ jobs:
         go-version: 1.16
 
     - name: Mod tidy
-      working-directory: ./gocat
       run: go mod tidy
 
     - name: Build
-      working-directory: ./gocat
       run: go build -v .
 
     - name: Test binary
-      working-directory: ./gocat
       run: file gocat && ./gocat -help
