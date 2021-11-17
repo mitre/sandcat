@@ -14,18 +14,21 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 1
-        ref: master    
+        ref: master
 
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
         go-version: 1.16
-        
+
     - name: Mod tidy
+      working-directory: ./gocat
       run: go mod tidy
-      
-    - name: Build 
+
+    - name: Build
+      working-directory: ./gocat
       run: go build -v .
 
     - name: Test binary
+      working-directory: ./gocat
       run: file gocat && ./gocat -help
