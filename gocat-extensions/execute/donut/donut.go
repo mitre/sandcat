@@ -43,7 +43,7 @@ func (d *Donut) Run(command string, timeout int, info execute.InstructionInfo) (
 
         // Run the shellcode and wait for it to complete
         output.VerbosePrint(fmt.Sprint("[i] Donut: Running shellcode"))
-        executionTimestamp := time.Now()
+        executionTimestamp := time.Now().UTC()
         task, err := Runner(bytes, handle, stdout, &stdoutBytes, stderr, &stderrBytes, &eventCode)
         output.VerbosePrint(fmt.Sprint("[i] Donut: Shellcode execution finished"))
 

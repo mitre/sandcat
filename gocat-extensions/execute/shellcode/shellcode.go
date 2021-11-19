@@ -30,7 +30,7 @@ func init() {
 
 func (s *Shellcode) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
 	bytes, _ := stringToByteArrayString(command)
-	executionTimestamp := time.Now()
+	executionTimestamp := time.Now().UTC()
 	task, pid := Runner(bytes)
 	if task {
 		return []byte("Shellcode executed successfully."), execute.SUCCESS_STATUS, pid, executionTimestamp
