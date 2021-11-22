@@ -43,7 +43,7 @@ func (d *Donut) Run(command string, timeout int, info execute.InstructionInfo) (
 
         // Run the shellcode and wait for it to complete
         output.VerbosePrint(fmt.Sprint("[i] Donut: Running shellcode"))
-        executionTimestamp := time.Now()
+        executionTimestamp := time.Now().UTC()
         task, err := Runner(bytes, handle, stdout, &stdoutBytes, stderr, &stderrBytes, &eventCode)
         output.VerbosePrint(fmt.Sprint("[i] Donut: Shellcode execution finished"))
 
@@ -66,7 +66,7 @@ func (d *Donut) Run(command string, timeout int, info execute.InstructionInfo) (
         return []byte(fmt.Sprintf("Shellcode execution failed. Error message: %s", fmt.Sprint(err))), execute.ERROR_STATUS, fmt.Sprint(pid), executionTimestamp
     } else {
         // Empty payload
-        return []byte(fmt.Sprintf("Empty payload: %s", payload)), execute.ERROR_STATUS, "-1", time.Now()
+        return []byte(fmt.Sprintf("Empty payload: %s", payload)), execute.ERROR_STATUS, "-1", time.Now().UTC()
     }
 }
 
