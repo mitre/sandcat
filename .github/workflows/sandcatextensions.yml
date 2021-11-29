@@ -21,21 +21,7 @@ jobs:
       with:
         go-version: 1.16
 
-    - name: Setup Shared Extensions
-      run: |
-        mkdir -p gocat/shared
-        cp gocat-extensions/shared/shared.go gocat/shared/
-        cd gocat
-        go mod tidy
-
-    - name: Build Shared (DLL)
-      run: |
-        cd gocat/shared
-        GOOS=windows
-        go build -o sandcat.dll -ldflags="-s -w" shared.go
-        file sandcat.dll
-
-    - name: Setup Remaining Extensions
+    - name: Setup Extensions
       run: |
         mkdir -p gocat/execute/shellcode
         mkdir -p gocat/execute/donut
