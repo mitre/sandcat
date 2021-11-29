@@ -39,10 +39,8 @@ jobs:
         cp gocat-extensions/contact/*.go gocat/contact/
         cp gocat-extensions/proxy/*.go gocat/proxy/
 
-    - name: Build Shared Binary
+    - name: Build Shared (DLL)
       run: |
-        mkdir gocat/shared
-        cp gocat-extensions/shared/shared.go gocat/shared/
         cd gocat/shared
         GOOS=windows
         go build -o sandcat.dll -ldflags="-s -w" shared.go
