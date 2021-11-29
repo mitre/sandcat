@@ -21,21 +21,10 @@ jobs:
       with:
         go-version: 1.16
 
-    - name: Setup Extensions
+    - name: Setup Shared Extensions
       run: |
         mkdir -p gocat/shared
-        mkdir -p gocat/execute/shellcode
-        mkdir -p gocat/execute/donut
-        mkdir -p gocat/execute/shells
         cp gocat-extensions/shared/shared.go gocat/shared/
-        cp gocat-extensions/execute/shells/*.go gocat/execute/shells/
-        cp gocat-extensions/execute/shellcode/*.go gocat/execute/shellcode/
-        cp gocat-extensions/execute/donut/*.go gocat/execute/donut/
-        cp gocat-extensions/contact/*.go gocat/contact/
-        cp gocat-extensions/proxy/*.go gocat/proxy/
-
-    - name: Mod tidy
-      run: |
         cd gocat
         go mod tidy
 
@@ -45,6 +34,19 @@ jobs:
         GOOS=windows
         go build -o sandcat.dll -ldflags="-s -w" shared.go
         file sandcat.dll
+
+    - name: Setup Remaining Extensions
+      run: |
+        mkdir -p gocat/execute/shellcode
+        mkdir -p gocat/execute/donut
+        mkdir -p gocat/execute/shells
+        cp gocat-extensions/execute/shells/*.go gocat/execute/shells/
+        cp gocat-extensions/execute/shellcode/*.go gocat/execute/shellcode/
+        cp gocat-extensions/execute/donut/*.go gocat/execute/donut/
+        cp gocat-extensions/contact/*.go gocat/contact/
+        cp gocat-extensions/proxy/*.go gocat/proxy/
+        cd gocat
+        go mod tidy
 
     - name: Build Windows Extensions
       run: |
