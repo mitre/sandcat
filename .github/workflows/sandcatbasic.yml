@@ -1,0 +1,50 @@
+name: Sandcat Basic
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+        ref: master
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Mod tidy
+      run: |
+        cd gocat
+        go mod tidy
+
+    - name: Build Windows
+      run: |
+        cd gocat
+        GOOS=windows
+        go build -o sandcat.go-windows -ldflags="-s -w" sandcat.go
+
+    - name: Build Darwin
+        run: |
+          cd gocat
+          GOOS=darwin
+          go build -o sandcat.go-darwin -ldflags="-s -w" sandcat.go
+
+    - name: Build Linux
+      run: |
+        cd gocat
+        GOOS=linux
+        go build -o sandcat.go-linux -ldflags="-s -w" sandcat.go
+
+    - name: Test Linux Binary
+      run: |
+        cd gocat
+        file sandcat.go-linux && ./sandcat.go-linux -help
