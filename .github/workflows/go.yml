@@ -33,7 +33,7 @@ jobs:
         go build -o sandcat.go-windows -ldflags="-s -w" sandcat.go
 
     - name: Build Darwin
-        run: |
+      run: |
           cd gocat
           GOOS=darwin
           go build -o sandcat.go-darwin -ldflags="-s -w" sandcat.go
