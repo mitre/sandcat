@@ -1,6 +1,6 @@
 # 54ndc47 (Sandcat)
 [![Basic Agent Build](https://github.com/mitre/sandcat/actions/workflows/go.yml/badge.svg)](https://github.com/mitre/sandcat/actions/workflows/go.yml)
-[![Agent Extensions Build](https://github.com/mitre/sandcat/actions/workflows/sandcatextensions.yml/badge.svg)](https://github.com/mitre/sandcat/actions/workflows/sandcatsandcatextensions.yml)
+[![Agent Extensions Build](https://github.com/mitre/sandcat/actions/workflows/sandcatextensions.yml/badge.svg)](https://github.com/mitre/sandcat/actions/workflows/sandcatextensions.yml)
 
 A plugin supplying a default agent to be used in a CALDERA operation.
 
