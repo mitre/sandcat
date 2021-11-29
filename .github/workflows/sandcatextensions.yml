@@ -54,6 +54,6 @@ jobs:
       run: |
         cd gocat
         go build -o sandcatextended.go-linux -ldflags="-s -w" sandcat.go
-        file sandcatextended.go-linux && && ls -al sandcatextended.go-linux && ./sandcatextended.go-linux -help
+        file sandcatextended.go-linux && ls -al sandcatextended.go-linux && ./sandcatextended.go-linux -help
       env:
         GOOS: linux
