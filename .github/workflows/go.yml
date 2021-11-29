@@ -30,7 +30,7 @@ jobs:
       run: |
         cd gocat
         go build -o sandcat.go-windows -ldflags="-s -w" sandcat.go
-        file sandcat.go-windows
+        file sandcat.go-windows && ls -al sandcat.go-windows
       env:
         GOOS: windows
 
@@ -38,7 +38,7 @@ jobs:
       run: |
         cd gocat
         go build -o sandcat.go-darwin -ldflags="-s -w" sandcat.go
-        file sandcat.go-darwin
+        file sandcat.go-darwin && ls -al sandcat.go-darwin
       env:
         GOOS: darwin
 
@@ -46,6 +46,6 @@ jobs:
       run: |
         cd gocat
         go build -o sandcat.go-linux -ldflags="-s -w" sandcat.go
-        file sandcat.go-linux && ./sandcat.go-linux -help
+        file sandcat.go-linux && ls -al sandcat.go-linux && ./sandcat.go-linux -help
       env:
         GOOS: linux
