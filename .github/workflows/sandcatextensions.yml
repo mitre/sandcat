@@ -21,11 +21,6 @@ jobs:
       with:
         go-version: 1.16
 
-    - name: Mod tidy
-      run: |
-        cd gocat
-        go mod tidy
-
     - name: Setup Extensions
       run: |
         mkdir -p gocat/shared
@@ -38,6 +33,11 @@ jobs:
         cp gocat-extensions/execute/donut/*.go gocat/execute/donut/
         cp gocat-extensions/contact/*.go gocat/contact/
         cp gocat-extensions/proxy/*.go gocat/proxy/
+
+    - name: Mod tidy
+        run: |
+          cd gocat
+          go mod tidy
 
     - name: Build Shared (DLL)
       run: |
