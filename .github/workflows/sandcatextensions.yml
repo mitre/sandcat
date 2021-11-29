@@ -35,9 +35,9 @@ jobs:
         cp gocat-extensions/proxy/*.go gocat/proxy/
 
     - name: Mod tidy
-        run: |
-          cd gocat
-          go mod tidy
+      run: |
+        cd gocat
+        go mod tidy
 
     - name: Build Shared (DLL)
       run: |
