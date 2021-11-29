@@ -2,9 +2,9 @@ name: Sandcat Extensions
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, workflow-updates ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, workflow-updates ]
 
 jobs:
 
