@@ -39,20 +39,18 @@ jobs:
         cd gocat
         GOOS=windows
         go build -o sandcatextended.go-windows -ldflags="-s -w" sandcat.go
+        file sandcatextended.go-windows
 
     - name: Build Darwin Extensions
       run: |
           cd gocat
           GOOS=darwin
           go build -o sandcatextended.go-darwin -ldflags="-s -w" sandcat.go
+          file sandcatextended.go-darwin
 
     - name: Build Linux Extensions
       run: |
         cd gocat
         GOOS=linux
         go build -o sandcatextended.go-linux -ldflags="-s -w" sandcat.go
-
-    - name: Test Linux Binary
-      run: |
-        cd gocat
         file sandcatextended.go-linux && ./sandcatextended.go-linux -help
