@@ -33,7 +33,7 @@ func VoidFunc() {
 	if err != nil {
 		return
 	}
-	core.Core(trimmedServer, tunnelConfig, group, 0, contactConfig, listenP2P, false, paw, 0)
+	core.Core(trimmedServer, tunnelConfig, group, 0, contactConfig, listenP2P, false, paw, "")
 }
 
 func main() {}
