@@ -19,9 +19,13 @@ type Python struct {
 }
 
 func init() {
-	setExecutor("python3")
-	setExecutor("python2")
-	setExecutor("python")
+	python3Detected := setExecutor("python3")
+	python2Detected := setExecutor("python2")
+	pythonDetected := setExecutor("python")
+	if !(python3Detected || python2Detected || pythonDetected) {
+		// if no versions found
+		fmt.Print("No python versions detected\n")
+	}
 }
 
 func setExecutor(name string) bool {
@@ -51,9 +55,9 @@ func setExecutor(name string) bool {
 	}
 	if shell.CheckIfAvailable() {
 		execute.Executors[shell.shortName] = shell
+		fmt.Print(sName, " detected \n")
 		return true
 	} 
-	fmt.Print(name, " is not installed\n")
 	return false
 }
 
@@ -61,12 +65,10 @@ func setExecutor(name string) bool {
 func checkVersion(name string) string {
 	var str_ver string
 	version, err := exec.Command("python", "-c", "import platform; print(platform.python_version().split('.')[0])").CombinedOutput()
-	fmt.Print("version", string(version), "\n")
+	str_ver = strings.TrimSpace(string(version))
 	if err != nil {
-		fmt.Print("Error:", err, "\n")
 		return ""
 	}
-	str_ver = strings.TrimSpace(string(version))
 	return str_ver
 }
 
