@@ -18,6 +18,7 @@ import (
 	"github.com/mitre/gocat/contact"
 	"github.com/mitre/gocat/encoders"
 	"github.com/mitre/gocat/execute"
+	"github.com/mitre/gocat/handler"
 	"github.com/mitre/gocat/output"
 	"github.com/mitre/gocat/privdetect"
 	"github.com/mitre/gocat/proxy"
@@ -175,6 +176,7 @@ func (a *Agent) GetFullProfile() map[string]interface{} {
 		"location":           a.location,
 		"pid":                a.pid,
 		"ppid":               a.ppid,
+		"handlers":           handler.AvailableCommandHandlers(),
 		"executors":          execute.AvailableExecutors(),
 		"privilege":          a.privilege,
 		"exe_name":           a.exe_name,
@@ -277,8 +279,13 @@ func (a *Agent) runInstructionCommand(instruction map[string]interface{}) map[st
 		InMemoryPayloads: inMemoryPayloads,
 	}
 
+	// Handle command (transform, parse, execute, etc...)
+	cmd_handler, ok := info.Instruction["handler"].(string)
+	if !ok {
+		cmd_handler = handler.DefaultName
+	}
 	// Execute command
-	commandOutput, status, pid, commandTimestamp := execute.RunCommand(info)
+	commandOutput, status, pid, commandTimestamp := handler.Handlers[cmd_handler].HandleCommand(info)
 
 	// Clean up payloads
 	a.removePayloadsOnDisk(onDiskPayloads)
@@ -289,7 +296,7 @@ func (a *Agent) runInstructionCommand(instruction map[string]interface{}) map[st
 	result["output"] = commandOutput
 	result["status"] = status
 	result["pid"] = pid
-	result["agent_reported_time"] = getFormattedTimestamp(commandTimestamp, "2006-01-02T15:04:05Z")
+	result["agent_reported_time"] = getFormattedTimestamp(commandTimestamp, "2006-01-02T03:04:05Z")
 	return result
 }
 

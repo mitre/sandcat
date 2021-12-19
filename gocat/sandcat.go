@@ -15,13 +15,13 @@ These default  values can be overridden during linking - server, group, and slee
 with command-line arguments at runtime.
 */
 var (
-	key       = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
-	server    = "http://localhost:8888"
-	paw       = ""
-	group     = "red"
-	c2Name    = "HTTP"
-	c2Key     = ""
-	listenP2P = "false" // need to set as string to allow ldflags -X build-time variable change on server-side.
+	key              = "JWHQZM9Z4HQOYICDHW4OCJAXPPNHBA"
+	server           = "http://localhost:8888"
+	paw              = ""
+	group            = "red"
+	c2Name           = "HTTP"
+	c2Key            = ""
+	listenP2P        = "false" // need to set as string to allow ldflags -X build-time variable change on server-side.
 	httpProxyGateway = ""
 )
 
@@ -31,7 +31,7 @@ func main() {
 		parsedListenP2P = false
 	}
 	server := flag.String("server", server, "The FQDN of the server")
-	httpProxyUrl :=  flag.String("httpProxyGateway", httpProxyGateway, "URL for the HTTP proxy gateway. For environments that use proxies to reach the internet.")
+	httpProxyUrl := flag.String("httpProxyGateway", httpProxyGateway, "URL for the HTTP proxy gateway. For environments that use proxies to reach the internet.")
 	paw := flag.String("paw", paw, "Optionally specify a PAW on initialization")
 	group := flag.String("group", group, "Attach a group to this agent")
 	c2Protocol := flag.String("c2", c2Name, "C2 Channel for agent")
@@ -53,8 +53,8 @@ func main() {
 		return
 	}
 	contactConfig := map[string]string{
-		"c2Name": *c2Protocol,
-		"c2Key": c2Key,
+		"c2Name":           *c2Protocol,
+		"c2Key":            c2Key,
 		"httpProxyGateway": *httpProxyUrl,
 	}
 	core.Core(trimmedServer, tunnelConfig, *group, *delay, contactConfig, *listenP2P, *verbose, *paw, *originLinkID)
