@@ -71,12 +71,20 @@ func (ch *BaseCommandHandler) String() string {
 	return ch.shortName
 }
 
+func (ch *BaseCommandHandler) AddDiskPayload(name string) {
+	ch.diskPayloads[name] = struct{}{}
+}
+
+func (ch *BaseCommandHandler) AddMemoryPayload(name string, data []byte) {
+	ch.memPayloads[name] = data
+}
+
 func (ch *BaseCommandHandler) AddPayloads(onDisk []string, inMemory map[string][]byte) {
 	for _, v := range onDisk {
-		ch.diskPayloads[v] = struct{}{}
+		ch.AddDiskPayload(v)
 	}
 	for k, v := range inMemory {
-		ch.memPayloads[k] = v
+		ch.AddMemoryPayload(k, v)
 	}
 }
 

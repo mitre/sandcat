@@ -8,25 +8,24 @@ import (
 	"time"
 
 	"github.com/mitre/gocat/execute"
-	"github.com/mitre/gocat/handler"
 	"github.com/mitre/gocat/payload"
 )
 
-const name = "dab-dsl"
+const name = "json-config"
 
-type ConfigCommandHandler struct {
-	handler.BaseCommandHandler
+type JsonCommandHandler struct {
+	BaseCommandHandler
 	shortName string
 }
 
 func init() {
-	handler.Handlers[name] = &ConfigCommandHandler{
+	Handlers[name] = &JsonCommandHandler{
 		shortName: name,
 	}
 }
 
 //Run the actual command
-func (ch *ConfigCommandHandler) HandleCommand(info execute.InstructionInfo) ([]byte, string, string, time.Time) {
+func (ch *JsonCommandHandler) HandleCommand(info execute.InstructionInfo) ([]byte, string, string, time.Time) {
 	// This layer is above executor and below agent.
 	// 1) Parse instruction header for executor
 	// 2) Dump behavior DSL into a JSON on disk (IDEA: consider support for CLi JSON passing too, or IPC (after startup))
@@ -47,7 +46,13 @@ func (ch *ConfigCommandHandler) HandleCommand(info execute.InstructionInfo) ([]b
 	encodedCommand := info.Instruction["command"].(string)
 	executor := info.Instruction["executor"].(string)
 	timeout := int(info.Instruction["timeout"].(float64))
-	onDiskPayloads := info.OnDiskPayloads
+
+	missingPaths := payload.CheckIfOnDisk(info.OnDiskPayloads)
+	if len(missingPaths) != 0 {
+		return err_handler(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
+	}
+
+	ch.AddPayloads(info.OnDiskPayloads, info.InMemoryPayloads)
 
 	decoded, err := base64.StdEncoding.DecodeString(encodedCommand)
 	if err != nil {
@@ -60,33 +65,19 @@ func (ch *ConfigCommandHandler) HandleCommand(info execute.InstructionInfo) ([]b
 		return err_handler(fmt.Sprintf("Error when unmarshaling command JSON: %s", err.Error()))
 	}
 
-	// Write behavior DSL to disk and add it to payloads.
-	_, err = WriteConfigToDisk(command["behavior"])
-	if err != nil {
-		return err_handler(fmt.Sprintf("Error when writing DSL to disk: %s", err.Error()))
+	config_bytes, ok := command["config"].([]byte)
+	if !ok {
+		return err_handler(fmt.Sprintf("Error when getting config bytes: %s", err.Error()))
 	}
 
-	missingPaths := payload.CheckIfOnDisk(onDiskPayloads)
-	if len(missingPaths) != 0 {
-		return err_handler(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
+	if location, err := payload.WriteToDisk("config", config_bytes); err != nil {
+		return err_handler(fmt.Sprintf("Error writing config to disk: %s", err.Error()))
+	} else {
+		ch.AddDiskPayload(location)
 	}
 
 	header := command["header"].(map[string]interface{})
 	run_cmd := header["start_command"].(string)
 
 	return execute.Executors[executor].Run(run_cmd, timeout, info)
-}
-
-func WriteConfigToDisk(data interface{}, filename_opt ...string) (string, error) {
-	// Save DSL to JSON file on disk
-	// FIXME: Need to figure out best way to name this
-	filename := "config"
-	if len(filename_opt) > 0 {
-		filename = filename_opt[0]
-	}
-	if file, err := json.MarshalIndent(data, "", " "); err != nil {
-		return "", err
-	} else {
-		return payload.WriteToDisk(filename, file)
-	}
 }
