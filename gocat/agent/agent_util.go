@@ -1,26 +1,12 @@
 package agent
 
 import (
-	"fmt"
-	"os"
 	"os/exec"
 	"os/user"
 	"time"
 
 	"github.com/mitre/gocat/output"
 )
-
-// Checks for a file
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true
-	}
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
 
 func getUsername() (string, error) {
 	if userInfo, err := user.Current(); err != nil {
