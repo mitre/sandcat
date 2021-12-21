@@ -29,6 +29,7 @@ jobs:
         cp gocat-extensions/execute/shells/*.go gocat/execute/shells/
         cp gocat-extensions/execute/shellcode/*.go gocat/execute/shellcode/
         cp gocat-extensions/execute/donut/*.go gocat/execute/donut/
+        cp -R gocat-extensions/execute/native gocat/execute/native
         cp gocat-extensions/contact/dns_tunneling.go gocat-extensions/contact/ftp.go gocat-extensions/contact/gist.go gocat/contact/
         cp gocat-extensions/proxy/*.go gocat/proxy/
         cd gocat
