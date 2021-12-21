@@ -10,6 +10,6 @@ class NativeExecutor(Extension):
     def __init__(self):
         super().__init__([
             ('native.go', 'execute/native'),
-            ('discovery.go', 'execute/native/discovery'),
+            ('ls.go', 'execute/native/discovery'),
         ])
         self.dependencies = []

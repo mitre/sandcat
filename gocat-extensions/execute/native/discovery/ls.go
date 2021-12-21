@@ -55,18 +55,19 @@ func listDirectory(dirName string) (string, error) {
 		return "", err
 	}
 	sizeWidth := getSizeWidth(dirEntries)
-	var fileInfoStr string
 	var fileListing []string
-	var fileName string
 	for _, fileInfo := range dirEntries {
-		fileName = fileInfo.Name()
-		if fileInfo.IsDir() {
-			fileName += "/"
-		}
-		fileInfoStr = fmt.Sprintf("%s  %*d  %s", fileInfo.Mode().String(), sizeWidth, fileInfo.Size(), fileName)
-		fileListing = append(fileListing, fileInfoStr)
+		fileListing = append(fileListing, getFileEntryInfoStr(fileInfo, sizeWidth))
 	}
 	return strings.Join(fileListing[:], "\n"), nil
+}
+
+func getFileEntryInfoStr(fileInfo os.FileInfo, sizeWidth int) string {
+	fileName := fileInfo.Name()
+	if fileInfo.IsDir() {
+		fileName += "/"
+	}
+	return fmt.Sprintf("%s  %*d  %s", fileInfo.Mode().String(), sizeWidth, fileInfo.Size(), fileName)
 }
 
 func handleSingleDir(dirName string) native.NativeCmdResult {
