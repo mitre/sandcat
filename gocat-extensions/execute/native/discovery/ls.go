@@ -8,16 +8,16 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mitre/gocat/execute/native"
+	"github.com/mitre/gocat/execute/native/util"
 )
 
 func init() {
-	native.NativeMethods["ListDir"] = ListDirectories
-	native.NativeMethods["ls"] = ListDirectories
+	util.NativeMethods["ListDir"] = ListDirectories
+	util.NativeMethods["ls"] = ListDirectories
 }
 
 // Lists file information for each directory in the args list
-func ListDirectories(dirList []string) native.NativeCmdResult {
+func ListDirectories(dirList []string) util.NativeCmdResult {
 	if len(dirList) == 0 {
 		return handleSingleDir(".")
 	}
@@ -42,7 +42,7 @@ func ListDirectories(dirList []string) native.NativeCmdResult {
 		stderr = strings.Join(stderrLines[:], "\n")
 		resultErr = errors.New(stderr)
 	}
-	return native.NativeCmdResult{
+	return util.NativeCmdResult{
 		Stdout: []byte(strings.Join(stdoutLines[:], "\n")),
 		Stderr: []byte(stderr),
 		Err: resultErr,
@@ -70,16 +70,16 @@ func getFileEntryInfoStr(fileInfo os.FileInfo, sizeWidth int) string {
 	return fmt.Sprintf("%s  %*d  %s", fileInfo.Mode().String(), sizeWidth, fileInfo.Size(), fileName)
 }
 
-func handleSingleDir(dirName string) native.NativeCmdResult {
+func handleSingleDir(dirName string) util.NativeCmdResult {
 	output, err := listDirectory(dirName)
 	if err != nil {
-		return native.NativeCmdResult{
+		return util.NativeCmdResult{
 			Stdout: nil,
 			Stderr: []byte(err.Error()),
 			Err: err,
 		}
 	}
-	return native.NativeCmdResult{
+	return util.NativeCmdResult{
 		Stdout: []byte(output),
 		Stderr: nil,
 		Err: nil,

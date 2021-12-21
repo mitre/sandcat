@@ -15,7 +15,6 @@ import (
 	_ "github.com/mitre/gocat/execute/shellcode" // necessary to initialize all submodules
 	_ "github.com/mitre/gocat/execute/shells"    // necessary to initialize all submodules
 	_ "github.com/mitre/gocat/execute/native"    // necessary to initialize all submodules
-	_ "github.com/mitre/gocat/execute/native/discovery"    // necessary to initialize all submodules
 )
 
 // Initializes and returns sandcat agent.

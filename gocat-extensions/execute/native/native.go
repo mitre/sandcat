@@ -9,6 +9,9 @@ import (
 	"github.com/google/shlex"
 
 	"github.com/mitre/gocat/execute"
+	"github.com/mitre/gocat/execute/native/util"
+
+	_ "github.com/mitre/gocat/execute/native/discovery" // necessary to initialize all submodules
 )
 
 type NativeExecutor struct {
@@ -16,17 +19,6 @@ type NativeExecutor struct {
 	pid int
 	pidStr string
 }
-
-type NativeCmdResult struct {
-	Stdout []byte
-	Stderr []byte
-	Err error
-}
-
-type NativeMethod func ([]string) NativeCmdResult
-
-// Map command names to golang functions
-var NativeMethods map[string]NativeMethod
 
 func init() {
 	pid := os.Getpid()
@@ -37,7 +29,6 @@ func init() {
 		pidStr: pidStr,
 	}
 	execute.Executors[executor.shortName] = executor
-	NativeMethods = make(map[string]NativeMethod)
 }
 
 func (n *NativeExecutor) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
@@ -61,7 +52,7 @@ func (n *NativeExecutor) UpdateBinary(newBinary string) {
 }
 
 func (n *NativeExecutor) runNativeExecutor(command string, timeout int) ([]byte, string, string, time.Time) {
-	done := make(chan NativeCmdResult, 1)
+	done := make(chan util.NativeCmdResult, 1)
 	status := execute.SUCCESS_STATUS
 	executionTimestamp := time.Now().UTC()
 	methodName, methodArgs, err := getMethodAndArgs(command)
@@ -87,13 +78,13 @@ func (n *NativeExecutor) runNativeExecutor(command string, timeout int) ([]byte,
 	}
 }
 
-func runCommand(method string, args []string) NativeCmdResult {
+func runCommand(method string, args []string) util.NativeCmdResult {
 	var errMsg string
-	if toCall, ok := NativeMethods[method]; ok {
+	if toCall, ok := util.NativeMethods[method]; ok {
 		return toCall(args)
 	}
 	errMsg = fmt.Sprintf("Method name %s not supported.", method)
-	return NativeCmdResult{
+	return util.NativeCmdResult{
 		Stdout: nil,
 		Stderr: []byte(errMsg),
 		Err: errors.New(errMsg),
