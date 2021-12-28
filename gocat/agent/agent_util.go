@@ -1,8 +1,10 @@
 package agent
 
 import (
-	"os/exec"
+	"fmt"
+	"os"
 	"os/user"
+	"os/exec"
 	"time"
 
 	"github.com/mitre/gocat/output"
