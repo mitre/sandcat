@@ -82,12 +82,13 @@ class SandService(BaseService):
         """
         Recursively searches the app/extensions folder for valid extension modules.
         """
+        gocat_dir = os.path.join(self.sandcat_dir, 'gocat')
         for root, dirs, files in os.walk(os.path.join(self.sandcat_dir, 'app', 'extensions')):
             files = [f for f in files if not f[0] == '.' and not f[0] == "_"]
             dirs[:] = [d for d in dirs if not d[0] == '.' and not d[0] == "_"]
             for file in files:
                 module = await self._load_extension_module(root, file)
-                if module and (module.check_go_dependencies() or module.install_dependencies()):
+                if module and (module.check_go_dependencies(gocat_dir) or module.install_dependencies()):
                     module_name = file.split('.')[0]
                     self.sandcat_extensions[module_name] = module
                     self.log.debug('Loaded gocat extension module: %s' % module_name)
