@@ -1,19 +1,19 @@
 package contact
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
-	"strconv"
-	"time"
 	"net/http"
 	"net/url"
-	"bytes"
-	"io/ioutil"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mitre/gocat/output"
 )
@@ -349,7 +349,7 @@ func postRequestWithAuth(address string, data []byte) []byte {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to perform HTTP request: %s", err.Error()))
 		return nil
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response: %s", err.Error()))
 		return nil
@@ -376,7 +376,7 @@ func postFormWithAuth(address string, data url.Values) []byte {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to perform HTTP request: %s", err.Error()))
 		return nil
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response: %s", err.Error()))
 		return nil
@@ -401,7 +401,7 @@ func getRequestWithAuth(address string) []byte {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to perform HTTP request: %s", err.Error()))
 		return nil
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response: %s", err.Error()))
 		return nil

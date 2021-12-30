@@ -3,7 +3,7 @@ package contact
 import (
     "encoding/json"
     "fmt"
-    "io/ioutil"
+    "io"
     "math/rand"
     "strconv"
     "time"
@@ -206,7 +206,7 @@ func (f *FTP) DownloadFile(filename string) ([]byte,error) {
     if err != nil {
         return nil, err
     }
-    data, errRead := ioutil.ReadAll(reader)
+    data, errRead := io.ReadAll(reader)
     if errRead != nil {
         return nil, errRead
     }

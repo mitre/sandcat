@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -67,7 +66,7 @@ func (a *API) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == ok {
-			buf, err := ioutil.ReadAll(resp.Body)
+			buf, err := io.ReadAll(resp.Body)
 			if err != nil {
 				output.VerbosePrint(fmt.Sprintf("[-] Error reading HTTP response: %s", err.Error()))
 				return nil, ""
@@ -202,7 +201,7 @@ func (a *API) request(address string, data []byte) []byte {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to perform HTTP request: %s", err.Error()))
 		return nil
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response: %s", err.Error()))
 		return nil

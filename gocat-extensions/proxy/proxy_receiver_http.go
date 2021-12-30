@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"io"
-	"io/ioutil"
 	"sync"
 	"strconv"
 	"time"
@@ -113,13 +112,13 @@ func (h *HttpReceiver) startHttpProxy() {
 // Handle beacon/execution results sent to /beacon
 func (h *HttpReceiver) handleBeaconEndpoint(writer http.ResponseWriter, reader *http.Request) {
 	// Get data from the message that client peer sent.
-	body, err := ioutil.ReadAll(reader.Body)
+	body, err := io.ReadAll(reader.Body)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error: could not read data from beacon request: %s", err.Error()))
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	reader.Body = ioutil.NopCloser(bytes.NewReader(body))
+	reader.Body = io.NopCloser(bytes.NewReader(body))
 
 	// Extract profile from the data.
 	profileData, err := base64.StdEncoding.DecodeString(string(body))
