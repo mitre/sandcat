@@ -14,10 +14,10 @@ class Extension(ABC):
         # Maps file name to async function that takes in file data, processes it, and returns processed output.
         self.file_hooks = file_hooks if file_hooks else dict()
 
-    def check_go_dependencies(self):
+    def check_go_dependencies(self, gocat_dir):
         """Returns True if the golang dependencies are met for this module, False if not."""
         for d in self.dependencies:
-            dep_result = subprocess.run('go list "{}"'.format(d), shell=True,
+            dep_result = subprocess.run('go list "{}"'.format(d), shell=True, cwd=gocat_dir,
                                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             if (dep_result.stdout.decode()).strip() != d:
                 return False

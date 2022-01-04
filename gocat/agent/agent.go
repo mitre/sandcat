@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -317,7 +316,7 @@ func (a *Agent) uploadSingleFile(path string) error {
 	output.VerbosePrint(fmt.Sprintf("Uploading file: %s", path))
 
 	// Get file bytes
-	fetchedBytes, err := ioutil.ReadFile(path)
+	fetchedBytes, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
