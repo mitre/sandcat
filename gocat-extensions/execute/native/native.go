@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
 	"github.com/google/shlex"
 
@@ -92,6 +94,9 @@ func runCommand(method string, args []string) util.NativeCmdResult {
 }
 
 func getMethodAndArgs(commandLine string) (string, []string, error) {
+	if runtime.GOOS == "windows" {
+		commandLine = strings.ReplaceAll(commandLine, "\\", "\\\\")
+	}
 	split, err := shlex.Split(commandLine)
 	if err != nil {
 		return "", nil, err
