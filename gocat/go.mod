@@ -3,9 +3,12 @@ module github.com/mitre/gocat
 go 1.17
 
 require (
-    github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/grandcat/zeroconf v1.0.0
 	golang.org/x/crypto v0.0.0-20210415154028-4f45737414dc
+)
+
+require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
