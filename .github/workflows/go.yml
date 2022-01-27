@@ -49,3 +49,10 @@ jobs:
         file sandcat.go-linux && ls -al sandcat.go-linux && ./sandcat.go-linux -help
       env:
         GOOS: linux
+
+    - name: Test Shells Executors
+      run: |
+        cd gocat
+        go test ./execute/shells/...
+      env:
+        GOOS: linux
