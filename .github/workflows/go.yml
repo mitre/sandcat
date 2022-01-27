@@ -49,4 +49,5 @@ jobs:
     - name: Test Shells Executors
       run: |
         cd gocat
+        ls -alR
         go test -v ./execute/shells/...
