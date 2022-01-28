@@ -14,12 +14,20 @@ import (
 	"github.com/mitre/gocat/output"
 )
 
+// Compatible with the exec.Cmd struct
+type ProcCmdHandle interface {
+	Start() error
+}
+
 type CwdGetter func() (string, error)
 type OsGetter func() string
 type PidGetter func() int
 type FileDeleter func(string) error
 type TimeGenerator func() time.Time
-type CommandRunner func(string, []string, int) ([]byte, string, string, time.Time)
+type StandardCmdRunner func(string, []string, int) ([]byte, string, string, time.Time)
+type CmdHandleRunner func (*exec.Cmd) error // wrapper for exec.Cmd.Run()
+type CmdHandlePidGetter func(*exec.Cmd) int // wrapper for handle.Process.Pid
+
 
 type Proc struct {
 	name string
@@ -28,8 +36,9 @@ type Proc struct {
 	pidStr string
 	fileDeleter FileDeleter
 	timeStampGenerator TimeGenerator
-	standardCmdRunner CommandRunner
-	backgroundCmdRunner CommandRunner
+	standardCmdRunner StandardCmdRunner
+	cmdHandleRunner CmdHandleRunner
+	cmdHandlePidGetter CmdHandlePidGetter
 }
 
 func getOsName() string {
@@ -40,14 +49,23 @@ func getUtcTime() time.Time {
 	return time.Now().UTC()
 }
 
+func runCmdHandle(handle *exec.Cmd) error {
+	return handle.Run()
+}
+
+func getCmdPid(handle *exec.Cmd) int {
+	return handle.Process.Pid
+}
+
 type ProcFunctionHandles struct {
 	cwdGetter CwdGetter
 	osGetter OsGetter
 	pidGetter PidGetter
 	fileDeleter FileDeleter
 	timeStampGenerator TimeGenerator
-	standardCmdRunner CommandRunner
-	backgroundCmdRunner CommandRunner
+	standardCmdRunner StandardCmdRunner
+	cmdHandleRunner CmdHandleRunner
+	cmdHandlePidGetter CmdHandlePidGetter
 }
 
 func GenerateProcExecutor(funcHandles *ProcFunctionHandles) *Proc {
@@ -62,7 +80,8 @@ func GenerateProcExecutor(funcHandles *ProcFunctionHandles) *Proc {
 		fileDeleter: funcHandles.fileDeleter,
 		timeStampGenerator: funcHandles.timeStampGenerator,
 		standardCmdRunner: funcHandles.standardCmdRunner,
-		backgroundCmdRunner: funcHandles.backgroundCmdRunner,
+		cmdHandleRunner: funcHandles.cmdHandleRunner,
+		cmdHandlePidGetter: funcHandles.cmdHandlePidGetter,
 	}
 }
 
@@ -74,7 +93,8 @@ func init() {
 		fileDeleter: os.Remove,
 		timeStampGenerator: getUtcTime,
 		standardCmdRunner: runStandardCmd,
-		backgroundCmdRunner: runBackgroundCmd,
+		cmdHandleRunner: runCmdHandle,
+		cmdHandlePidGetter: getCmdPid,
 	}
 	executor := GenerateProcExecutor(procFuncHandles)
 	execute.Executors[executor.name] = executor
@@ -91,7 +111,7 @@ func (p *Proc) Run(command string, timeout int, info execute.InstructionInfo) ([
 	if exePath == "del" || exePath == "rm" {
 		return p.deleteFiles(exeArgs)
 	} else if exePath == "exec-background" {
-		return p.backgroundCmdRunner(exeArgs[0], exeArgs[1:], timeout)
+		return p.runBackgroundCmd(exeArgs[0], exeArgs[1:])
 	}
 	return p.standardCmdRunner(exePath, exeArgs, timeout)
 }
@@ -146,14 +166,14 @@ func runStandardCmd(exePath string, exeArgs []string, timeout int) ([]byte, stri
 	return runShellExecutor(*exec.Command(exePath, append(exeArgs)...), timeout)
 }
 
-func runBackgroundCmd(exePath string, exeArgs []string, timeout int) ([]byte, string, string, time.Time) {
+func (p *Proc) runBackgroundCmd(exePath string, exeArgs []string) ([]byte, string, string, time.Time) {
 	handle := exec.Command(exePath, append(exeArgs)...)
-	err := handle.Start()
+	err := p.cmdHandleRunner(handle)
 	if err != nil {
-		return []byte(err.Error()), execute.ERROR_STATUS, execute.ERROR_PID, time.Now().UTC()
+		return []byte(err.Error()), execute.ERROR_STATUS, execute.ERROR_PID, p.timeStampGenerator()
 	}
-	pid := handle.Process.Pid
+	pid := p.cmdHandlePidGetter(handle)
 	pidStr := strconv.Itoa(pid)
-	retMsg := fmt.Sprintf("Executed background process with PID %d", pid)
-	return []byte(retMsg), execute.SUCCESS_STATUS, pidStr, time.Now().UTC()
+	retMsg := fmt.Sprintf("Executed background process %s with PID %d and args: %s", exePath, pid, strings.Join(exeArgs, ", "))
+	return []byte(retMsg), execute.SUCCESS_STATUS, pidStr, p.timeStampGenerator()
 }
