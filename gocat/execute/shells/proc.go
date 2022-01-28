@@ -49,8 +49,8 @@ func getUtcTime() time.Time {
 	return time.Now().UTC()
 }
 
-func runCmdHandle(handle *exec.Cmd) error {
-	return handle.Run()
+func startCmdHandle(handle *exec.Cmd) error {
+	return handle.Start()
 }
 
 func getCmdPid(handle *exec.Cmd) int {
@@ -93,7 +93,7 @@ func init() {
 		fileDeleter: os.Remove,
 		timeStampGenerator: getUtcTime,
 		standardCmdRunner: runStandardCmd,
-		cmdHandleRunner: runCmdHandle,
+		cmdHandleRunner: startCmdHandle,
 		cmdHandlePidGetter: getCmdPid,
 	}
 	executor := GenerateProcExecutor(procFuncHandles)
