@@ -1,8 +1,8 @@
 ---
 
 - id: 2f34977d-9558-4c12-abad-349716777c6b
-  name: 54ndc47
-  description: A GoLang agent which communicates through the HTTP contact
+  name: Sandcat
+  description: CALDERA's default agent, written in GoLang. Communicates through the HTTP(S) contact by default.
   tactic: command-and-control
   technique:
     attack_id: T1105
