@@ -76,7 +76,7 @@ func (p *Proc) Run(command string, timeout int, info execute.InstructionInfo) ([
 	if err != nil {
 		errMsg := fmt.Sprintf("[!] Error parsing command line: %s", err.Error())
 		output.VerbosePrint(errMsg)
-		return []byte(errMsg), execute.ERROR_STATUS, execute.ERROR_PID, time.Now().UTC()
+		return []byte(errMsg), execute.ERROR_STATUS, execute.ERROR_PID, p.timeStampGenerator()
 	}
 	output.VerbosePrint(fmt.Sprintf("[*] Starting process %s with args %v", exePath, exeArgs))
 	if exePath == "del" || exePath == "rm" {
