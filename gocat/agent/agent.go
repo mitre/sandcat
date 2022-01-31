@@ -551,7 +551,7 @@ func (a *Agent) DiscoverPeers() {
 	// Recover on any panic on the external module call and not take down the whole agent.
 	defer func() {
 		if err := recover(); err != nil {
-			output.VerbosePrint(fmt.Sprintf("[-] Panic occurred when calling zeroconf:", err))
+			output.VerbosePrint(fmt.Sprintf("[-] Panic occurred when calling zeroconf: %v", err))
 		}
 	}()
 
