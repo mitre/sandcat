@@ -45,7 +45,7 @@ jobs:
       env:
         GOOS: linux
 
-    - name: Test Shells Executors
+    - name: Golang Unit Tests
       run: |
         cd gocat
-        go test -v ./execute/shells/...
+        go test -v ./...
