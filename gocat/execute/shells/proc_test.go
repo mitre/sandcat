@@ -3,7 +3,9 @@ package shells
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +15,11 @@ import (
 const MOCK_CWD = "/mock/working/dir"
 const PROC_NAME = "proc"
 const DUMMY_ERROR_MSG = "dummy error msg"
+const DUMMY_PID = 123
+const DUMMY_PID_STR = "123"
+const WINDOWS_OS = "windows"
+const LINUX_OS = "linux"
+const DUMMY_OS = "DummyOS"
 const TEST_TIMEOUT = 10
 var TEST_TIME = time.Date(2000, time.November, 10, 15, 0, 0, 0, time.UTC)
 
@@ -21,19 +28,19 @@ func MockGetCwd() (string, error) {
 }
 
 func MockGetWindowsOsName() string {
-	return "windows"
+	return WINDOWS_OS
 }
 
 func MockGetLinuxOsName() string {
-	return "linux"
+	return LINUX_OS
 }
 
 func MockGetDummyOsName() string {
-	return "DummyOS"
+	return DUMMY_OS
 }
 
 func MockPidGetter() int {
-	return 123
+	return DUMMY_PID
 }
 
 func MockFileDeleter(file string) error {
@@ -46,6 +53,22 @@ func MockFileDeleteFail(file string) error {
 
 func MockTimeGenerator() time.Time {
 	return TEST_TIME
+}
+
+func MockStandardCmdRunner(name string, args []string, timeout int) ([]byte, string, string, time.Time) {
+	return []byte(fmt.Sprintf("%s; %s; %d", name, strings.Join(args, ","), timeout)), execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME
+}
+
+func MockCmdHandleRunner(handle *exec.Cmd) error {
+	return nil
+}
+
+func MockCmdHandleRunnerFail(handle *exec.Cmd) error {
+	return errors.New(DUMMY_ERROR_MSG)
+}
+
+func MockGetHandlePid(handle *exec.Cmd) int {
+	return DUMMY_PID
 }
 
 func DummyInstructionInfo() execute.InstructionInfo {
@@ -72,6 +95,9 @@ func generateProcExecutor(osGetter OsGetter) *Proc {
 		pidGetter: MockPidGetter,
 		fileDeleter: MockFileDeleter,
 		timeStampGenerator: MockTimeGenerator,
+		standardCmdRunner: MockStandardCmdRunner,
+		cmdHandleRunner: MockCmdHandleRunner,
+		cmdHandlePidGetter: MockGetHandlePid,
 	}
 	return GenerateProcExecutor(procFuncHandles)
 }
@@ -80,10 +106,13 @@ func TestGenerateProcExecutor(t *testing.T) {
 	want := &Proc{
 		currDir: MOCK_CWD,
 		name: PROC_NAME,
-		osName: "DummyOS",
-		pidStr: "123",
+		osName: DUMMY_OS,
+		pidStr: DUMMY_PID_STR,
 		fileDeleter: MockFileDeleter,
 		timeStampGenerator: MockTimeGenerator,
+		standardCmdRunner: MockStandardCmdRunner,
+		cmdHandleRunner: MockCmdHandleRunner,
+		cmdHandlePidGetter: MockGetHandlePid,
 	}
 	generated := generateProcExecutor(MockGetDummyOsName)
 	if generated.currDir != want.currDir {
@@ -100,6 +129,9 @@ func TestGenerateProcExecutor(t *testing.T) {
 	}
 	compareFunctionAddr(t, generated.fileDeleter, want.fileDeleter)
 	compareFunctionAddr(t, generated.timeStampGenerator, want.timeStampGenerator)
+	compareFunctionAddr(t, generated.standardCmdRunner, want.standardCmdRunner)
+	compareFunctionAddr(t, generated.cmdHandleRunner, want.cmdHandleRunner)
+	compareFunctionAddr(t, generated.cmdHandlePidGetter, want.cmdHandlePidGetter)
 }
 
 func TestProcString(t *testing.T) {
@@ -216,20 +248,14 @@ func TestDeleteSingleFileWindows(t *testing.T) {
 	p := generateProcExecutor(MockGetWindowsOsName)
 	cmd := "del C:\\path\\to\\file"
 	wantMsg := "Removed file C:\\path\\to\\file."
-	wantStatus := execute.SUCCESS_STATUS
-	wantPid := "123"
-	wantTimestamp := TEST_TIME
-	testAndValidateCmd(t, p, cmd, wantMsg, wantStatus, wantPid, wantTimestamp)
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME)
 }
 
 func TestDeleteMultipleFileWindows(t *testing.T) {
 	p := generateProcExecutor(MockGetWindowsOsName)
 	cmd := "del C:\\path\\to\\file1 .\\file2 file3.txt"
 	wantMsg := "Removed file C:\\path\\to\\file1.\nRemoved file .\\file2.\nRemoved file file3.txt."
-	wantStatus := execute.SUCCESS_STATUS
-	wantPid := "123"
-	wantTimestamp := TEST_TIME
-	testAndValidateCmd(t, p, cmd, wantMsg, wantStatus, wantPid, wantTimestamp)
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME)
 }
 
 func TestDeleteMultipleFilesFailureWindows(t *testing.T) {
@@ -238,30 +264,21 @@ func TestDeleteMultipleFilesFailureWindows(t *testing.T) {
 	cmd := "del C:\\path\\to\\file1 .\\file2 file3.txt"
 	wantMsg := fmt.Sprintf("Failed to remove C:\\path\\to\\file1: %s\nFailed to remove .\\file2: %s\nFailed to remove file3.txt: %s",
 						   DUMMY_ERROR_MSG, DUMMY_ERROR_MSG, DUMMY_ERROR_MSG)
-	wantStatus := execute.ERROR_STATUS
-	wantPid := "123"
-	wantTimestamp := TEST_TIME
-	testAndValidateCmd(t, p, cmd, wantMsg, wantStatus, wantPid, wantTimestamp)
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.ERROR_STATUS, DUMMY_PID_STR, TEST_TIME)
 }
 
 func TestDeleteSingleFileLinux(t *testing.T) {
 	p := generateProcExecutor(MockGetLinuxOsName)
 	cmd := "del /path/to/file"
 	wantMsg := "Removed file /path/to/file."
-	wantStatus := execute.SUCCESS_STATUS
-	wantPid := "123"
-	wantTimestamp := TEST_TIME
-	testAndValidateCmd(t, p, cmd, wantMsg, wantStatus, wantPid, wantTimestamp)
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME)
 }
 
 func TestDeleteMultipleFileLinux(t *testing.T) {
 	p := generateProcExecutor(MockGetLinuxOsName)
 	cmd := "del /path/to/file1 ./file2 file3.txt"
 	wantMsg := "Removed file /path/to/file1.\nRemoved file ./file2.\nRemoved file file3.txt."
-	wantStatus := execute.SUCCESS_STATUS
-	wantPid := "123"
-	wantTimestamp := TEST_TIME
-	testAndValidateCmd(t, p, cmd, wantMsg, wantStatus, wantPid, wantTimestamp)
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME)
 }
 
 func TestDeleteMultipleFilesFailureLinux(t *testing.T) {
@@ -270,8 +287,47 @@ func TestDeleteMultipleFilesFailureLinux(t *testing.T) {
 	cmd := "del /path/to/file1 ./file2 file3.txt"
 	wantMsg := fmt.Sprintf("Failed to remove /path/to/file1: %s\nFailed to remove ./file2: %s\nFailed to remove file3.txt: %s",
 						   DUMMY_ERROR_MSG, DUMMY_ERROR_MSG, DUMMY_ERROR_MSG)
-	wantStatus := execute.ERROR_STATUS
-	wantPid := "123"
-	wantTimestamp := TEST_TIME
-	testAndValidateCmd(t, p, cmd, wantMsg, wantStatus, wantPid, wantTimestamp)
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.ERROR_STATUS, DUMMY_PID_STR, TEST_TIME)
+}
+
+func TestRunCmdWindows(t *testing.T) {
+	p := generateProcExecutor(MockGetWindowsOsName)
+	cmd := "C:\\path\\to\\executable.exe arg1 arg2 \"arg with space\" -45 .\\path\\to\\file"
+	wantMsg := fmt.Sprintf("C:\\path\\to\\executable.exe; arg1,arg2,arg with space,-45,.\\path\\to\\file; %d", TEST_TIMEOUT)
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME)
+}
+
+func TestRunCmdLinux(t *testing.T) {
+	p := generateProcExecutor(MockGetLinuxOsName)
+	cmd := "/path/to/executable arg1 arg2 \"arg with space\" -flag -45 ../path/to/file"
+	wantMsg := fmt.Sprintf("/path/to/executable; arg1,arg2,arg with space,-flag,-45,../path/to/file; %d", TEST_TIMEOUT)
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME)
+}
+
+func TestRunBackgroundCmdWindows(t *testing.T) {
+	p := generateProcExecutor(MockGetWindowsOsName)
+	cmd := "exec-background C:\\path\\to\\executable.exe arg1 arg2 \"arg with space\" -45 .\\path\\to\\file"
+	wantMsg := "Executed background process C:\\path\\to\\executable.exe with PID 123 and args: arg1, arg2, arg with space, -45, .\\path\\to\\file"
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME)
+}
+
+func TestRunBackgroundCmdLinux(t *testing.T) {
+	p := generateProcExecutor(MockGetLinuxOsName)
+	cmd := "exec-background /path/to/executable arg1 arg2 \"arg with space\" -flag -45 ../path/to/file"
+	wantMsg := "Executed background process /path/to/executable with PID 123 and args: arg1, arg2, arg with space, -flag, -45, ../path/to/file"
+	testAndValidateCmd(t, p, cmd, wantMsg, execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME)
+}
+
+func TestRunBackgroundCmdWindowsError(t *testing.T) {
+	p := generateProcExecutor(MockGetWindowsOsName)
+	p.cmdHandleRunner = MockCmdHandleRunnerFail
+	cmd := "exec-background C:\\path\\to\\executable.exe arg1 arg2 \"arg with space\" -45 .\\path\\to\\file"
+	testAndValidateCmd(t, p, cmd, DUMMY_ERROR_MSG, execute.ERROR_STATUS, execute.ERROR_PID, TEST_TIME)
+}
+
+func TestRunBackgroundCmdLinuxError(t *testing.T) {
+	p := generateProcExecutor(MockGetLinuxOsName)
+	p.cmdHandleRunner = MockCmdHandleRunnerFail
+	cmd := "exec-background /path/to/executable arg1 arg2 \"arg with space\" -flag -45 ../path/to/file"
+	testAndValidateCmd(t, p, cmd, DUMMY_ERROR_MSG, execute.ERROR_STATUS, execute.ERROR_PID, TEST_TIME)
 }
