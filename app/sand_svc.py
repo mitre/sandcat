@@ -41,7 +41,7 @@ class SandService(BaseService):
                                           output_name=name,
                                           extension_names=extension_names,
                                           compile_target_dir='gocat')
-        return await self.app_svc.retrieve_compiled_file(name, platform)
+        return await self.app_svc.retrieve_compiled_file(name, platform, location='payloads')
 
     async def dynamically_compile_library(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
@@ -76,7 +76,7 @@ class SandService(BaseService):
                                               flag_params=default_flag_params,
                                               extension_names=extension_names,
                                               compile_target_dir='gocat/shared')
-        return await self.app_svc.retrieve_compiled_file(name, platform)
+        return await self.app_svc.retrieve_compiled_file(name, platform, location='payloads')
 
     async def load_sandcat_extension_modules(self):
         """
