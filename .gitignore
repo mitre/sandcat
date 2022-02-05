@@ -9,6 +9,7 @@
 *.tokens
 *__pycache__*
 .idea/*
+.vscode/*
 .logs/*
 !.logs/.gitkeep
 .idea
