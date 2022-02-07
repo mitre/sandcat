@@ -18,7 +18,7 @@ jobs:
 
     - name: Setup Extensions
       run: |
-        cp -R gocat-extensions/ gocat/
+        cp -R gocat-extensions/ gocat
         cd gocat
         go mod tidy
 
@@ -48,6 +48,5 @@ jobs:
 
     - name: Golang Unit Tests
       run: |
-        ls -alR gocat
         cd gocat
         go test -v ./...
