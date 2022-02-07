@@ -48,6 +48,6 @@ jobs:
         GOOS: linux
 
     - name: Golang Unit Tests
-        run: |
-          cd gocat
-          go test -v ./...
+      run: |
+        cd gocat
+        go test -v ./...
