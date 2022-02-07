@@ -46,3 +46,8 @@ jobs:
         file sandcatextended.go-linux && ls -al sandcatextended.go-linux && ./sandcatextended.go-linux -help
       env:
         GOOS: linux
+
+    - name: Golang Unit Tests
+        run: |
+          cd gocat
+          go test -v ./...
