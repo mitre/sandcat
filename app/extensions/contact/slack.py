@@ -1,6 +1,7 @@
+import re
+
 from plugins.sandcat.app.utility.base_extension import Extension
 from app.utility.base_world import BaseWorld
-import re
 
 GOCAT_PLUGIN = 'gocat'
 PACKAGE_NAME = 'contact'
@@ -15,7 +16,7 @@ def load():
 class SLACK(Extension):
 
     def __init__(self):
-        super().__init__([(FILE_NAME, PACKAGE_NAME)],
+        super().__init__([(FILE_NAME, PACKAGE_NAME), ('util.go', PACKAGE_NAME)],
                          dependencies=[],
                          file_hooks={FILE_NAME: self.hook_set_custom_channel})
 

