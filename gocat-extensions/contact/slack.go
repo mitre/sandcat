@@ -8,10 +8,8 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/rand"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -22,9 +20,9 @@ const (
 	slackTimeout = 60
 	slackTimeoutResetInterval = 5
 	slackError = 500
-	beaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon slack response before giving up.
-	beaconWait = 10 // number of seconds to wait for beacon slack response in case of initial failure.
-	maxDataChunkSize = 750000 // Slack has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
+	slackBeaconResponseFailThreshold = 3 // number of times to attempt fetching a beacon slack response before giving up.
+	slackBeaconWait = 10 // number of seconds to wait for beacon slack response in case of initial failure.
+	slackMaxDataChunkSize = 750000 // Slack has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
 	slackDeleteEndpoint = "https://slack.com/api/chat.delete"
 	slackUploadFileEndpoint = "https://slack.com/api/files.upload"
 	slackPostMessageEndpoint = "https://slack.com/api/chat.postMessage"
@@ -46,7 +44,7 @@ func init() {
 
 //GetInstructions sends a beacon and returns instructions
 func (s Slack) GetBeaconBytes(profile map[string]interface{}) []byte {
-	checkValidSlackSleepInterval(profile, slackTimeout, slackTimeoutResetInterval)
+	checkValidSleepInterval(profile, slackTimeout, slackTimeoutResetInterval)
 	var retBytes []byte
 	bites, heartbeat := slackBeacon(profile)
 	if heartbeat == true {
@@ -115,11 +113,11 @@ func (s Slack) UploadFileBytes(profile map[string]interface{}, uploadName string
 	// Upload file in chunks
 	uploadId := getRandomIdentifier()
 	dataSize := len(data)
-	numChunks := int(math.Ceil(float64(dataSize) / float64(maxDataChunkSize)))
+	numChunks := int(math.Ceil(float64(dataSize) / float64(slackMaxDataChunkSize)))
 	start := 0
 	slackName := getSlackNameForUpload(paw)
 	for i := 0; i < numChunks; i++ {
-		end := start + maxDataChunkSize
+		end := start + slackMaxDataChunkSize
 		if end > dataSize {
 			end = dataSize
 		}
@@ -128,7 +126,7 @@ func (s Slack) UploadFileBytes(profile map[string]interface{}, uploadName string
 		if err := uploadFileChunkSlack(slackName, slackDescription, chunk); err != nil {
 			return err
 		}
-		start += maxDataChunkSize
+		start += slackMaxDataChunkSize
 	}
 	return nil
 }
@@ -153,7 +151,7 @@ func slackBeacon(profile map[string]interface{}) ([]byte, bool) {
 	failCount := 0
 	heartbeat := createHeartbeatSlack("beacon", profile)
 	if heartbeat {
-		for failCount < beaconResponseFailThreshold {
+		for failCount < slackBeaconResponseFailThreshold {
 			contents := getSlackMessages("instructions", profile["paw"].(string));
 			if contents != nil {
 				decodedContents, err := base64.StdEncoding.DecodeString(contents[0])
@@ -163,7 +161,7 @@ func slackBeacon(profile map[string]interface{}) ([]byte, bool) {
 				}
 				return decodedContents, heartbeat
 			}
-			time.Sleep(time.Duration(float64(beaconWait)) * time.Second)
+			time.Sleep(time.Duration(float64(slackBeaconWait)) * time.Second)
 			failCount += 1
 		}
 		output.VerbosePrint("[!] Failed to fetch beacon response from C2.")
