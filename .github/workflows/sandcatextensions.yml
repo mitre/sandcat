@@ -48,5 +48,6 @@ jobs:
 
     - name: Golang Unit Tests
       run: |
+        ls -alR gocat
         cd gocat
         go test -v ./...
