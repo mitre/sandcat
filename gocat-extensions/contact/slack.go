@@ -142,7 +142,7 @@ func getSlackDescriptionForUpload(uploadId string, encodedFilename string, chunk
 func uploadFileChunkSlack(slackName string, slackDescription string, data []byte) error {
 	output.VerbosePrint("[-] Uploading file...")
 	if result := createSlackContent(slackName, slackDescription, data); result != true {
-		return errors.New(fmt.Sprintf("Failed to create file upload Slack. Response code: %s", result))
+		return errors.New(fmt.Sprintf("Failed to create file upload Slack. Response code: %t", result))
 	}
 	return nil
 }
