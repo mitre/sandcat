@@ -30,12 +30,15 @@ type GIST struct {
 	username string
 	client *github.Client
 	clientGetter ClientGetter
+	randomIdGetter RandomIdGetter
 }
 
 type ClientGetter func(string) *github.Client
+type RandomIdGetter func() string
 
 type GistFunctionHandles struct {
 	clientGetter ClientGetter
+	randomIdGetter RandomIdGetter
 }
 
 func getGithubClient(token string) *github.Client {
@@ -51,12 +54,14 @@ func GenerateGistContactHandler(funcHandles *GistFunctionHandles) *GIST {
 	return &GIST{
 		name: "GIST",
 		clientGetter: funcHandles.clientGetter,
+		randomIdGetter: funcHandles.randomIdGetter,
 	}
 }
 
 func init() {
 	gistFuncHandles := &GistFunctionHandles{
 		clientGetter: getGithubClient,
+		randomIdGetter: getRandomIdentifier,
 	}
 	CommunicationChannels["GIST"] = GenerateGistContactHandler(gistFuncHandles)
 }
@@ -97,9 +102,10 @@ func (g *GIST) C2RequirementsMet(profile map[string]interface{}, criteria map[st
     if len(criteria["c2Key"]) > 0 {
         g.token = criteria["c2Key"]
         if len(profile["paw"].(string)) == 0 {
-        	config["paw"] = getRandomIdentifier()
+        	config["paw"] = g.randomIdGetter()
         }
-        return g.createNewClient(), config
+        g.createNewClient()
+        return true, config
     }
     return false, nil
 }
@@ -261,11 +267,6 @@ func (g *GIST) getGists(gistType string, uniqueID string) []string {
 	return contents
 }
 
-func (g *GIST) createNewClient() bool {
-	client := g.clientGetter(g.token)
-	if client != nil {
-		return false
-	}
-	g.client = client
-	return true
+func (g *GIST) createNewClient() {
+	g.client = g.clientGetter(g.token)
 }
