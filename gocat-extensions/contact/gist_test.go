@@ -1,8 +1,12 @@
 package contact
 
 import (
+	"context"
+	"encoding/base64"
 	"fmt"
+	"net/http"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/github"
 )
@@ -12,6 +16,9 @@ const (
 	RANDOM_ID = "123456"
 	GIVEN_PAW = "givenpaw"
 	C2_KEY = "thisisadummykey"
+	DUMMY_GIST_NAME = "dummygistname"
+	DUMMY_GIST_DESC = "dummygistdesc"
+	SUCCESS_STATUS = 200
 )
 
 var (
@@ -24,6 +31,8 @@ var (
 	testGistCriteria = map[string]string{
 		"c2Key": C2_KEY,
 	}
+	postedGist *github.Gist
+	DUMMY_GIST_DATA = []byte("data123123")
 )
 
 func MockGetClient(token string) *github.Client {
@@ -32,6 +41,28 @@ func MockGetClient(token string) *github.Client {
 
 func MockGetGistRandomIdentifier() string {
 	return RANDOM_ID
+}
+
+func MockPostGistSuccessful(client *github.Client, ctx context.Context, gist *github.Gist) (*github.Gist, *github.Response, error) {
+	respStruct := &github.Response{
+		&http.Response{
+			StatusCode: 200,
+			Status: "200 OK",
+		},
+		1,
+		1,
+		1,
+		1,
+		github.Rate{
+			10,
+			10,
+			github.Timestamp{
+				time.Now(),
+			},
+		},
+	}
+	postedGist = gist
+	return gist, respStruct, nil
 }
 
 func compareFunctionAddr(t *testing.T, outputFunc interface{}, wantFunc interface{}) {
@@ -46,6 +77,7 @@ func generateTestGistContactHandler() *GIST {
 	gistFuncHandles := &GistFunctionHandles{
 		clientGetter: MockGetClient,
 		randomIdGetter: MockGetGistRandomIdentifier,
+		gistPoster: MockPostGistSuccessful,
 	}
 	return GenerateGistContactHandler(gistFuncHandles)
 }
@@ -55,6 +87,7 @@ func TestGenerateGistHandler(t *testing.T) {
 		name: GIST_NAME,
 		clientGetter: MockGetClient,
 		randomIdGetter: MockGetGistRandomIdentifier,
+		gistPoster: MockPostGistSuccessful,
 	}
 	generated := generateTestGistContactHandler()
 	if generated.name != want.name {
@@ -62,6 +95,7 @@ func TestGenerateGistHandler(t *testing.T) {
 	}
 	compareFunctionAddr(t, generated.clientGetter, want.clientGetter)
 	compareFunctionAddr(t, generated.randomIdGetter, want.randomIdGetter)
+	compareFunctionAddr(t, generated.gistPoster, want.gistPoster)
 }
 
 func TestGistC2ReqsMetNoKey(t *testing.T) {
@@ -114,5 +148,38 @@ func TestGistGetName(t *testing.T) {
 	name := handler.GetName()
 	if name != GIST_NAME {
 		t.Errorf("got '%s' from GetName; expected '%s'", name, GIST_NAME)
+	}
+}
+
+func TestCreateAndPostGist(t *testing.T) {
+	handler := generateTestGistContactHandler()
+	postedGist = &github.Gist{}
+	result := handler.createAndPostGist(DUMMY_GIST_NAME, DUMMY_GIST_DESC, DUMMY_GIST_DATA)
+	if result != SUCCESS_STATUS {
+		t.Errorf("got '%d' status code from posting gist; expected '%d'", result, SUCCESS_STATUS)
+	}
+	verifyPostedGist(t, postedGist, DUMMY_GIST_NAME, DUMMY_GIST_DESC, DUMMY_GIST_DATA)
+}
+
+func verifyPostedGist(t *testing.T, postedGist *github.Gist, wantName, wantDesc string, wantData []byte) {
+	expectedDataEnc := base64.StdEncoding.EncodeToString(wantData)
+	if *postedGist.Description != wantDesc {
+		t.Errorf("got '%s' from posted GIST description; expected '%s'", *postedGist.Description, wantDesc)
+	}
+	if *postedGist.Public {
+		t.Error("Posted gist must not be public.")
+	}
+	numFilesPosted := len(postedGist.Files)
+	numFilesExpected := 1
+	if numFilesPosted != numFilesExpected {
+		t.Errorf("got '%d' files posted for gist; expected '%d'", numFilesPosted, numFilesExpected)
+	}
+	postedFile, ok := postedGist.Files[github.GistFilename(wantName)]
+	if !ok {
+		t.Errorf("Expected file %s to be posted, but it was not", wantName)
+	} else {
+		if *postedFile.Content != expectedDataEnc {
+			t.Errorf("got '%s' from posted GIST content; expected '%s'", *postedFile.Content, expectedDataEnc)
+		}
 	}
 }

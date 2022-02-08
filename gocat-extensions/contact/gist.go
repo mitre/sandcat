@@ -31,14 +31,17 @@ type GIST struct {
 	client *github.Client
 	clientGetter ClientGetter
 	randomIdGetter RandomIdGetter
+	gistPoster GistPoster
 }
 
 type ClientGetter func(string) *github.Client
 type RandomIdGetter func() string
+type GistPoster func(*github.Client, context.Context, *github.Gist) (*github.Gist, *github.Response, error)
 
 type GistFunctionHandles struct {
 	clientGetter ClientGetter
 	randomIdGetter RandomIdGetter
+	gistPoster GistPoster
 }
 
 func getGithubClient(token string) *github.Client {
@@ -50,11 +53,16 @@ func getGithubClient(token string) *github.Client {
 	return github.NewClient(tc)
 }
 
+func postGist(gistClient *github.Client, ctx context.Context, gistToPost *github.Gist) (*github.Gist, *github.Response, error) {
+	return gistClient.Gists.Create(ctx, gistToPost)
+}
+
 func GenerateGistContactHandler(funcHandles *GistFunctionHandles) *GIST {
 	return &GIST{
 		name: "GIST",
 		clientGetter: funcHandles.clientGetter,
 		randomIdGetter: funcHandles.randomIdGetter,
+		gistPoster: funcHandles.gistPoster,
 	}
 }
 
@@ -62,6 +70,7 @@ func init() {
 	gistFuncHandles := &GistFunctionHandles{
 		clientGetter: getGithubClient,
 		randomIdGetter: getRandomIdentifier,
+		gistPoster: postGist,
 	}
 	CommunicationChannels["GIST"] = GenerateGistContactHandler(gistFuncHandles)
 }
@@ -164,7 +173,7 @@ func getGistDescriptionForUpload(uploadId string, encodedFilename string, chunkN
 }
 
 func (g *GIST) uploadFileChunkGist(gistName string, gistDescription string, data []byte) error {
-	if result := g.createGist(gistName, gistDescription, data); result != created {
+	if result := g.createAndPostGist(gistName, gistDescription, data); result != created {
 		return errors.New(fmt.Sprintf("Failed to create file upload GIST. Response code: %d", result))
 	}
 	return nil
@@ -204,7 +213,7 @@ func (g *GIST) createHeartbeatGist(gistType string, profile map[string]interface
 		paw := profile["paw"].(string)
 		gistName := getDescriptor(gistType, paw)
 		gistDescription := gistName
-		if g.createGist(gistName, gistDescription, data) != created {
+		if g.createAndPostGist(gistName, gistDescription, data) != created {
 			output.VerbosePrint("[-] Heartbeat GIST: FAILED")
 			return false
 		}
@@ -222,7 +231,7 @@ func (g *GIST) gistResults(result map[string]interface{}) {
 		paw := result["paw"].(string)
 		gistName := getDescriptor("results", paw)
 		gistDescription := gistName
-		if g.createGist(gistName, gistDescription, data) != created {
+		if g.createAndPostGist(gistName, gistDescription, data) != created {
 			output.VerbosePrint("[-] Results GIST: FAILED")
 		} else {
 			output.VerbosePrint("[+] Results GIST: SUCCESS")
@@ -230,21 +239,24 @@ func (g *GIST) gistResults(result map[string]interface{}) {
 	}
 }
 
-
-func (g *GIST) createGist(gistName string, description string, data []byte) int {
+func (g *GIST) createAndPostGist(gistName string, description string, data []byte) int {
 	ctx := context.Background()
-	stringified := base64.StdEncoding.EncodeToString(data)
-	file := github.GistFile{Content: &stringified,}
-	files := make(map[github.GistFilename]github.GistFile)
-	files[github.GistFilename(gistName)] = file
-	public := false
-	gist := github.Gist{Description: &description, Public: &public, Files: files,}
-	_, resp, err := g.client.Gists.Create(ctx, &gist)
+	gistToPost := g.createGistStruct(gistName, description, data)
+	_, resp, err := g.gistPoster(g.client, ctx, gistToPost)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error creating GIST: %s", err.Error()))
 		return githubError
 	}
 	return resp.StatusCode
+}
+
+func (g *GIST) createGistStruct(gistName string, description string, data []byte) *github.Gist {
+	stringified := base64.StdEncoding.EncodeToString(data)
+	file := github.GistFile{Content: &stringified,}
+	files := make(map[github.GistFilename]github.GistFile)
+	files[github.GistFilename(gistName)] = file
+	public := false
+	return &github.Gist{Description: &description, Public: &public, Files: files,}
 }
 
 func (g *GIST) getGists(gistType string, uniqueID string) []string {
