@@ -108,3 +108,11 @@ func TestGistC2ReqsMetGivenPaw(t *testing.T) {
 		t.Errorf("got '%s' as handler's token; expected '%s'", handler.token, C2_KEY)
 	}
 }
+
+func TestGistGetName(t *testing.T) {
+	handler := generateTestGistContactHandler()
+	name := handler.GetName()
+	if name != GIST_NAME {
+		t.Errorf("got '%s' from GetName; expected '%s'", name, GIST_NAME)
+	}
+}
