@@ -1,6 +1,7 @@
 package payload
 
 import (
+	"bytes"
 	"os"
 	"reflect"
 	"testing"
@@ -18,12 +19,19 @@ func TestWriteToDisk(t *testing.T) {
 	loc, err := WriteToDisk(FILE_NAME, PAYLOAD_BYTES)
 	if err != nil {
 		t.Errorf("Failed to write file to disk: %s", err.Error())
-	} else {
-		clearFile(t, FILE_NAME)
+		return
 	}
 	if loc != FILE_NAME {
 		t.Errorf("Got %s as returned file location; expected %s", loc, FILE_NAME)
 	}
+	contents, err := os.ReadFile(loc)
+	if err != nil {
+		t.Errorf("Failed to read file on disk: %s", err.Error())
+	}
+	if !bytes.Equal(contents, PAYLOAD_BYTES) {
+		t.Errorf("Got %s as written file bytes; expected %s", string(contents[:]), string(PAYLOAD_BYTES[:]))
+	}
+	clearFile(t, FILE_NAME)
 }
 
 func TestWriteToDiskAlreadyExisting(t *testing.T) {
