@@ -18,6 +18,7 @@ import (
 	"github.com/mitre/gocat/encoders"
 	"github.com/mitre/gocat/execute"
 	"github.com/mitre/gocat/output"
+	"github.com/mitre/gocat/payload"
 	"github.com/mitre/gocat/privdetect"
 	"github.com/mitre/gocat/proxy"
 )
@@ -435,7 +436,7 @@ func (a *Agent) DownloadPayloadsForInstruction(instruction map[string]interface{
 			output.VerbosePrint(fmt.Sprintf("[*] Storing payload %s in memory", payloadName))
 			inMemoryPayloads[payloadName] = payloadBytes
 		} else {
-			if location, err := a.WritePayloadToDisk(payloadName, payloadBytes); err != nil {
+			if location, err := payload.WriteToDisk(payloadName, payloadBytes); err != nil {
 				output.VerbosePrint(fmt.Sprintf("[-] %s", err.Error()))
 			} else {
 				onDiskPayloadNames = append(onDiskPayloadNames, location)
@@ -443,19 +444,6 @@ func (a *Agent) DownloadPayloadsForInstruction(instruction map[string]interface{
 		}
 	}
 	return onDiskPayloadNames, inMemoryPayloads
-}
-
-// Will download the specified payload data to disk using the specified filename.
-// Returns filepath of the payload and any errors that occurred. If the payload already exists,
-// no error will be returned.
-func (a *Agent) WritePayloadToDisk(filename string, payloadBytes []byte) (string, error) {
-	location := filepath.Join(filename)
-	if !fileExists(location) {
-		output.VerbosePrint(fmt.Sprintf("[*] Writing payload %s to disk at %s", filename, location))
-		return location, writePayloadBytes(location, payloadBytes)
-	}
-	output.VerbosePrint(fmt.Sprintf("[*] File %s already exists", filename))
-	return location, nil
 }
 
 // Will request payload bytes from the C2 for the specified payload and return them.
