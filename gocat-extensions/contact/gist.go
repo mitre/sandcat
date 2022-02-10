@@ -105,6 +105,7 @@ func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	paw := profile["paw"].(string)
 
 	// Upload file in chunks
+	output.VerbosePrint(fmt.Sprintf("[+] Uploading file %s", uploadName))
 	uploadId := getRandomIdentifier()
 	dataSize := len(data)
 	numChunks := int(math.Ceil(float64(dataSize) / float64(gistMaxDataChunkSize)))
