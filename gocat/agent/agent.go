@@ -280,7 +280,9 @@ func (a *Agent) runInstructionCommand(instruction map[string]interface{}) map[st
 	commandOutput, status, pid, commandTimestamp := execute.RunCommand(info)
 
 	// Clean up payloads
-	a.removePayloadsOnDisk(onDiskPayloads)
+	if instruction["delete_payload"].(bool) {
+	    a.removePayloadsOnDisk(onDiskPayloads)
+	}
 
 	// Handle results
 	result := make(map[string]interface{})
