@@ -2,10 +2,10 @@ from plugins.sandcat.app.utility.base_extension import Extension
 
 
 def load():
-    return GIST()
+    return Gist()
 
 
-class GIST(Extension):
+class Gist(Extension):
 
     def __init__(self):
         super().__init__([('gist.go', 'contact'), ('util.go', 'contact')])

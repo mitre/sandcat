@@ -9,11 +9,12 @@ FILE_NAME = 'slack.go'
 CHANNEL_CONFIG = 'app.contact.slack.channel_id'
 TEXT_TO_REPLACE = r'{SLACK_C2_CHANNEL_ID}'
 
+
 def load():
-    return SLACK()
+    return Slack()
 
 
-class SLACK(Extension):
+class Slack(Extension):
 
     def __init__(self):
         super().__init__([(FILE_NAME, PACKAGE_NAME), ('util.go', PACKAGE_NAME)],
