@@ -10,7 +10,6 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 1
-        ref: master
 
     - name: Set up Go
       uses: actions/setup-go@v2
@@ -19,14 +18,7 @@ jobs:
 
     - name: Setup Extensions
       run: |
-        mkdir -p gocat/execute/shellcode
-        mkdir -p gocat/execute/donut
-        mkdir -p gocat/execute/shells
-        cp gocat-extensions/execute/shells/*.go gocat/execute/shells/
-        cp gocat-extensions/execute/shellcode/*.go gocat/execute/shellcode/
-        cp gocat-extensions/execute/donut/*.go gocat/execute/donut/
-        cp gocat-extensions/contact/dns_tunneling.go gocat-extensions/contact/ftp.go gocat-extensions/contact/gist.go gocat/contact/
-        cp gocat-extensions/proxy/*.go gocat/proxy/
+        cp -R gocat-extensions/* gocat/
         cd gocat
         go mod tidy
 
@@ -53,3 +45,8 @@ jobs:
         file sandcatextended.go-linux && ls -al sandcatextended.go-linux && ./sandcatextended.go-linux -help
       env:
         GOOS: linux
+
+    - name: Golang Unit Tests
+      run: |
+        cd gocat
+        go test -v ./...
