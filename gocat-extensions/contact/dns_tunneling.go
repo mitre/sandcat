@@ -202,7 +202,7 @@ func (d* DnsTunneling) GetName() string {
 	return d.name
 }
 
-func SupportsContinuous() bool {
+func (d* DnsTunneling) SupportsContinuous() bool {
     return false
 }
 

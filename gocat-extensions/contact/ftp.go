@@ -220,7 +220,7 @@ func (f *FTP) DownloadFile(filename string) ([]byte,error) {
     return data, nil
 }
 
-func SupportsContinuous() bool {
+func (f *FTP) SupportsContinuous() bool {
     return false
 }
 

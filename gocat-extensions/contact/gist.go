@@ -126,7 +126,7 @@ func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	return nil
 }
 
-func SupportsContinuous() bool {
+func (g GIST) SupportsContinuous() bool {
     return false
 }
 

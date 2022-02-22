@@ -164,7 +164,7 @@ func (a *API) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	return nil
 }
 
-func SupportsContinuous() bool {
+func (a *API) SupportsContinuous() bool {
     return false
 }
 
