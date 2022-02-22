@@ -133,6 +133,10 @@ func (s *Slack) UploadFileBytes(profile map[string]interface{}, uploadName strin
 	return nil
 }
 
+func SupportsContinuous() bool {
+    return false
+}
+
 func getSlackNameForUpload(paw string) string {
 	return getDescriptor("upload", paw)
 }

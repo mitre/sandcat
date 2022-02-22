@@ -164,6 +164,10 @@ func (a *API) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	return nil
 }
 
+func SupportsContinuous() bool {
+    return false
+}
+
 func createUploadForm(requestBody *bytes.Buffer, data []byte, uploadName string) (string, error) {
 	writer := multipart.NewWriter(requestBody)
 	defer writer.Close()

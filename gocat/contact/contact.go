@@ -14,6 +14,7 @@ type Contact interface {
 	GetName() string
 	SetUpstreamDestAddr(upstreamDestAddr string)
 	UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error
+	SupportsContinuous() bool
 }
 
 //CommunicationChannels contains the contact implementations
