@@ -280,7 +280,7 @@ func (a *Agent) runInstructionCommand(instruction map[string]interface{}) map[st
 	commandOutput, status, pid, commandTimestamp := execute.RunCommand(info)
 
 	// Clean up payloads
-	if instruction["delete_payload"].(bool) {
+	if del, ok := instruction["delete_payload"].(bool); ok && del {
 	    a.removePayloadsOnDisk(onDiskPayloads)
 	}
 
@@ -424,6 +424,7 @@ func (a *Agent) DownloadPayloadsForInstruction(instruction map[string]interface{
 		return onDiskPayloadNames, inMemoryPayloads
 	}
 	availablePayloads := reflect.ValueOf(payloads)
+
 	for i := 0; i < availablePayloads.Len(); i++ {
 		payloadName := availablePayloads.Index(i).Elem().String()
 		payloadBytes, filename := a.FetchPayloadBytes(payloadName)
