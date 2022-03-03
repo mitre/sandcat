@@ -47,7 +47,7 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 	// Incorrect arg count - too few
 	args := []string{
 		"filePath",
-		"bucketName",
+		"s3://bucketPath",
 	}
 	result := UploadToS3Bucket(args)
 	verifyResult(t, result, "", argErrMsg, argErrMsg)
@@ -55,7 +55,7 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 	// Incorrect arg count - too many
 	args = []string{
 		"filePath",
-		"bucketName",
+		"s3://bucketPath",
 		"keyName",
 		"10m",
 		"extraArg",
@@ -66,7 +66,7 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 	// Invalid duration
 	args = []string{
 		"filePath",
-		"bucketName",
+		"s3://bucketPath",
 		"keyName",
 		"badduration",
 	}
@@ -77,42 +77,55 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 	// Bad file path
 	args = []string{
 		"filePath",
-		"bucketName",
+		"s3://bucketPath",
 		"keyName",
 		"10m",
 	}
 	result = UploadToS3Bucket(args)
 	verifyResult(t, result, "", fileNotFoundMsg, fileNotFoundMsg)
 }
-/*
+
 func TestUploadToS3BucketNoErr(t *testing.T) {
 	funcWrappers = &funcWrapperStruct{
 		openFileFn: mockOpenFile,
 		uploadDataFn: mockUploadDataNoErr,
 	}
 	args := []string{
-		//[file to upload] [bucket name] [object key] [timeout]
 		"dummyFile",
+		"s3://bucketPath",
+		"keyName",
+		"10m",
 	}
-	UploadToS3Bucket()
+	result := UploadToS3Bucket(args)
+	want := "Successfully uploaded file dummyFile to s3://bucketPath/keyName"
+	verifyResult(t, result, want, "", "")
 }
 
 func TestUploadToS3BucketErrors(t *testing.T) {
+	// timeout error
 	funcWrappers = &funcWrapperStruct{
 		openFileFn: mockOpenFile,
 		uploadDataFn: mockUploadDataTimeoutErr,
 	}
 	args := []string{
-		//[file to upload] [bucket name] [object key] [timeout]
 		"dummyFile",
+		"s3://bucketPath",
+		"keyName",
+		"10m",
 	}
-	UploadToS3Bucket()
-
-	// timeout error
+	result := UploadToS3Bucket(args)
+	want := "Upload canceled due to timeout: RequestCanceled: Dummy error msg"
+	verifyResult(t, result, "", want, want)
 
 	// other error
+	funcWrappers = &funcWrapperStruct{
+		openFileFn: mockOpenFile,
+		uploadDataFn: mockUploadDataOtherErr,
+	}
+	result = UploadToS3Bucket(args)
+	want = "Failed to upload object: Dummy error msg"
+	verifyResult(t, result, "", want, want)
 }
-*/
 
 func verifyResult(t *testing.T, result util.NativeCmdResult, expectedStdout, expectedStderr, expectedErrMsg string) {
 	if string(result.Stdout) != expectedStdout {

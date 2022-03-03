@@ -88,14 +88,14 @@ func UploadToS3Bucket(uploadArgs []string) util.NativeCmdResult {
 	err = funcWrappers.uploadDataFn(ctx, bucket, key, fileReadSeeker)
 	if err != nil {
  		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == request.CanceledErrorCode {
- 			errMsg = fmt.Sprintf("Upload canceled due to timeout: %v\n", err)
+ 			errMsg = fmt.Sprintf("Upload canceled due to timeout: %v", err)
  		} else {
- 			errMsg = fmt.Sprintf("Failed to upload object: %v\n", err)
+ 			errMsg = fmt.Sprintf("Failed to upload object: %v", err)
  		}
  		return util.GenerateErrorResultFromString(errMsg)
  	}
  	return util.NativeCmdResult{
-		Stdout: []byte(fmt.Sprintf("Successfully uploaded file %s to %s/%s\n", fileToUpload, bucket, key)),
+		Stdout: []byte(fmt.Sprintf("Successfully uploaded file %s to %s/%s", fileToUpload, bucket, key)),
 		Stderr: nil,
 		Err: nil,
 	}
