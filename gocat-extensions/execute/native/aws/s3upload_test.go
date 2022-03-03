@@ -47,7 +47,8 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 	// Incorrect arg count - too few
 	args := []string{
 		"filePath",
-		"s3://bucketPath",
+		"regionName",
+		"bucketPath",
 	}
 	result := UploadToS3Bucket(args)
 	verifyResult(t, result, "", argErrMsg, argErrMsg)
@@ -55,7 +56,8 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 	// Incorrect arg count - too many
 	args = []string{
 		"filePath",
-		"s3://bucketPath",
+		"regionName",
+		"bucketPath",
 		"keyName",
 		"10m",
 		"extraArg",
@@ -66,7 +68,8 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 	// Invalid duration
 	args = []string{
 		"filePath",
-		"s3://bucketPath",
+		"regionName",
+		"bucketPath",
 		"keyName",
 		"badduration",
 	}
@@ -77,7 +80,8 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 	// Bad file path
 	args = []string{
 		"filePath",
-		"s3://bucketPath",
+		"regionName",
+		"bucketPath",
 		"keyName",
 		"10m",
 	}
@@ -92,12 +96,13 @@ func TestUploadToS3BucketNoErr(t *testing.T) {
 	}
 	args := []string{
 		"dummyFile",
-		"s3://bucketPath",
+		"regionName",
+		"bucketPath",
 		"keyName",
 		"10m",
 	}
 	result := UploadToS3Bucket(args)
-	want := "Successfully uploaded file dummyFile to s3://bucketPath/keyName"
+	want := "Successfully uploaded file dummyFile to bucketPath/keyName"
 	verifyResult(t, result, want, "", "")
 }
 
@@ -109,7 +114,8 @@ func TestUploadToS3BucketErrors(t *testing.T) {
 	}
 	args := []string{
 		"dummyFile",
-		"s3://bucketPath",
+		"regionName",
+		"bucketPath",
 		"keyName",
 		"10m",
 	}

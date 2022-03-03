@@ -17,14 +17,14 @@ import (
 )
 
 type openFileWrapper func(string) (*os.File, error)
-type uploadDataWrapper func(context.Context, string, string, io.ReadSeeker) error
+type uploadDataWrapper func(context.Context, string, string, string, io.ReadSeeker) error
 
 type funcWrapperStruct struct {
 	openFileFn openFileWrapper
 	uploadDataFn uploadDataWrapper
 }
 
-const argErrMsg = "Expected format: [file to upload] [bucket name] [object key] [timeout]"
+const argErrMsg = "Expected format: [file to upload] [region name] [bucket name] [object key] [timeout]"
 
 var funcWrappers *funcWrapperStruct
 
@@ -42,8 +42,9 @@ func openFile(path string) (*os.File, error) {
 }
 
 // Wrapper for uploading data to S3 bucket
-func uploadDataToBucket(ctx context.Context, bucket string, key string, fileReadSeeker io.ReadSeeker) error {
-	svc := s3.New(session.Must(session.NewSession()))
+func uploadDataToBucket(ctx context.Context, region, bucket, key string, fileReadSeeker io.ReadSeeker) error {
+	config := &aws.Config{Region: aws.String(region)}
+	svc := s3.New(session.Must(session.NewSession(config)))
   	_, err := svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
  		Bucket: aws.String(bucket),
  		Key: aws.String(key),
@@ -53,13 +54,13 @@ func uploadDataToBucket(ctx context.Context, bucket string, key string, fileRead
 }
 
 // Uploads specified file to s3 bucket.
-// Expects args to be of the format: [file to upload] [bucket name] [object key] [timeout]
+// Expects args to be of the format: [file to upload] [region name] [bucket name] [object key] [timeout]
 // Reference: https://pkg.go.dev/github.com/aws/aws-sdk-go#hdr-Complete_SDK_Example
 func UploadToS3Bucket(uploadArgs []string) util.NativeCmdResult {
 	var errMsg string
 
 	// Process args
-	if len(uploadArgs) != 4 {
+	if len(uploadArgs) != 5 {
 		return util.GenerateErrorResultFromString(argErrMsg)
 	}
 	fileToUpload := uploadArgs[0]
