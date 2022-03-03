@@ -64,9 +64,10 @@ func UploadToS3Bucket(uploadArgs []string) util.NativeCmdResult {
 		return util.GenerateErrorResultFromString(argErrMsg)
 	}
 	fileToUpload := uploadArgs[0]
-	bucket := uploadArgs[1]
-	key := uploadArgs[2]
-  	timeout, err := time.ParseDuration(uploadArgs[3])
+	region := uploadArgs[1]
+	bucket := uploadArgs[2]
+	key := uploadArgs[3]
+  	timeout, err := time.ParseDuration(uploadArgs[4])
   	if err != nil {
   		return util.GenerateErrorResult(err)
   	}
@@ -86,7 +87,7 @@ func UploadToS3Bucket(uploadArgs []string) util.NativeCmdResult {
   	defer cancelFn()
 
 	// Upload to S3
-	err = funcWrappers.uploadDataFn(ctx, bucket, key, fileReadSeeker)
+	err = funcWrappers.uploadDataFn(ctx, region, bucket, key, fileReadSeeker)
 	if err != nil {
  		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == request.CanceledErrorCode {
  			errMsg = fmt.Sprintf("Upload canceled due to timeout: %v", err)

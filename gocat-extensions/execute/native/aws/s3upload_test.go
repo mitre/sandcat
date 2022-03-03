@@ -26,15 +26,15 @@ func mockOpenFileNotFound(path string) (*os.File, error) {
 	return nil, errors.New(fileNotFoundMsg)
 }
 
-func mockUploadDataNoErr(ctx context.Context, bucket string, key string, fileReadSeeker io.ReadSeeker) error {
+func mockUploadDataNoErr(ctx context.Context, region, bucket, key string, fileReadSeeker io.ReadSeeker) error {
 	return nil
 }
 
-func mockUploadDataTimeoutErr(ctx context.Context, bucket string, key string, fileReadSeeker io.ReadSeeker) error {
+func mockUploadDataTimeoutErr(ctx context.Context, region, bucket, key string, fileReadSeeker io.ReadSeeker) error {
 	return awserr.New(request.CanceledErrorCode, errMsg, nil)
 }
 
-func mockUploadDataOtherErr(ctx context.Context, bucket string, key string, fileReadSeeker io.ReadSeeker) error {
+func mockUploadDataOtherErr(ctx context.Context, region, bucket, key string, fileReadSeeker io.ReadSeeker) error {
 	return errors.New(errMsg)
 }
 
