@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 
-	"github.com/mitre/gocat/execute/native/util"
+	"github.com/mitre/gocat/execute/native/testutil"
 )
 
 var (
@@ -51,7 +51,7 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 		"bucketPath",
 	}
 	result := UploadToS3Bucket(args)
-	verifyResult(t, result, "", argErrMsg, argErrMsg)
+	testutil.VerifyResult(t, result, "", argErrMsg, argErrMsg)
 
 	// Incorrect arg count - too many
 	args = []string{
@@ -63,7 +63,7 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 		"extraArg",
 	}
 	result = UploadToS3Bucket(args)
-	verifyResult(t, result, "", argErrMsg, argErrMsg)
+	testutil.VerifyResult(t, result, "", argErrMsg, argErrMsg)
 
 	// Invalid duration
 	args = []string{
@@ -75,7 +75,7 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 	}
 	wantErrMsg := "time: invalid duration \"badduration\""
 	result = UploadToS3Bucket(args)
-	verifyResult(t, result, "", wantErrMsg, wantErrMsg)
+	testutil.VerifyResult(t, result, "", wantErrMsg, wantErrMsg)
 
 	// Bad file path
 	args = []string{
@@ -86,7 +86,7 @@ func TestUploadToS3BucketBadArgs(t *testing.T) {
 		"10m",
 	}
 	result = UploadToS3Bucket(args)
-	verifyResult(t, result, "", fileNotFoundMsg, fileNotFoundMsg)
+	testutil.VerifyResult(t, result, "", fileNotFoundMsg, fileNotFoundMsg)
 }
 
 func TestUploadToS3BucketNoErr(t *testing.T) {
@@ -103,7 +103,7 @@ func TestUploadToS3BucketNoErr(t *testing.T) {
 	}
 	result := UploadToS3Bucket(args)
 	want := "Successfully uploaded file dummyFile to bucketPath/keyName"
-	verifyResult(t, result, want, "", "")
+	testutil.VerifyResult(t, result, want, "", "")
 }
 
 func TestUploadToS3BucketErrors(t *testing.T) {
@@ -121,7 +121,7 @@ func TestUploadToS3BucketErrors(t *testing.T) {
 	}
 	result := UploadToS3Bucket(args)
 	want := "Upload canceled due to timeout: RequestCanceled: Dummy error msg"
-	verifyResult(t, result, "", want, want)
+	testutil.VerifyResult(t, result, "", want, want)
 
 	// other error
 	funcWrappers = &funcWrapperStruct{
@@ -130,23 +130,5 @@ func TestUploadToS3BucketErrors(t *testing.T) {
 	}
 	result = UploadToS3Bucket(args)
 	want = "Failed to upload object: Dummy error msg"
-	verifyResult(t, result, "", want, want)
-}
-
-func verifyResult(t *testing.T, result util.NativeCmdResult, expectedStdout, expectedStderr, expectedErrMsg string) {
-	if string(result.Stdout) != expectedStdout {
-		t.Errorf("Expected stdout of '%s', got: %s", expectedStdout, string(result.Stdout))
-	}
-	if string(result.Stderr) != expectedStderr {
-		t.Errorf("Expected stderr of '%s', got: %s", expectedStderr, string(result.Stderr))
-	}
-	if len(expectedErrMsg) > 0 {
-		if result.Err == nil {
-			t.Errorf("Expected error, received none.")
-		} else if result.Err.Error() != expectedErrMsg {
-			t.Errorf("Expected error message '%s', got: %s", expectedErrMsg, result.Err.Error())
-		}
-	} else if result.Err != nil {
-		t.Errorf("Expected no error, got %v", result.Err)
-	}
+	testutil.VerifyResult(t, result, "", want, want)
 }
