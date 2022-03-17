@@ -16,15 +16,15 @@ import (
 
 type TCP struct {
 	conn                net.Conn
-	name                 string
-	serverAddr           string
-	serverIp             string
-	serverPort           string
-	instructionBucket    [][]byte
-	payloadBucket        map[string]*payloadRecord
-	outgoingBucket       [][]byte
-	proxyToClientBucket  [][]byte
-	proxyToServerBucket  [][]byte
+	name                string
+	serverAddr          string
+	serverIp            string
+	serverPort          string
+	instructionBucket   [][]byte
+	payloadBucket       map[string]*payloadRecord
+	outgoingBucket      [][]byte
+	proxyToClientBucket [][]byte
+	proxyToServerBucket [][]byte
 	// payloadRequestBucket [][]byte
 	// payloadBucket        map[string][]byte
 }
@@ -67,8 +67,8 @@ func (t *TCP) C2RequirementsMet(profile map[string]interface{}, c2Config map[str
 	output.VerbosePrint(fmt.Sprintf("[+] TCP established for %s", profile["paw"]))
 
 	go t.listenAndHandleIncoming(profile)
-	go handleOutgoing()
-	go handleProxy()
+	go t.handleOutgoing()
+	go t.handleProxy()
 	return true, nil
 
 }
@@ -109,8 +109,8 @@ func (t *TCP) listenAndHandleIncoming(profile map[string]interface{}) {
 					t.instructionBucket = append(t.instructionBucket, []byte(messageWrapper["message"].(string)))
 				} else if messageWrapper["messageType"] == "proxy" {
 					t.proxyToClientBucket = append(t.proxyToClientBucket, []byte(messageWrapper["message"].(string)))
-				} else if messageWrapper["messageType"] == "payload"{
-					handlePayloadResponse(messageWrapper["message"])
+				} else if messageWrapper["messageType"] == "payload" {
+					t.handlePayloadResponse([]byte(messageWrapper["message"].(string)))
 				} else {
 					output.VerbosePrint(fmt.Sprintf("[-] TCP Message Type not recognized: %s", messageWrapper["messageType"]))
 				}
@@ -129,27 +129,30 @@ func (t *TCP) listenAndHandleIncoming(profile map[string]interface{}) {
 	}
 }
 
-func handlePayloadResponse(payloadMessage []byte) {
+func (t *TCP) handlePayloadResponse(payloadMessage []byte) {
 	/*
 		This function processes received Payload responses. It stores the payload bytes returned into the appropriate
 			payloadRec, and then broadcasts to all waiting payload requests that the payload has been retrieved.
 	*/
 	var payloadResponse map[string]interface{}
-	if err := json.Unmarshal(payloadMessage, &payloadResponse) {
+	if err := json.Unmarshal(payloadMessage, &payloadResponse); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Malformed TCP message received: %s", err.Error()))
 	} else {
-		if payloadName, ok := payloadResponse["filename"]; !ok {
+		payloadName, ok := payloadResponse["filename"]
+		if !ok {
 			output.VerbosePrint(fmt.Sprintf("[-] Payload response did not include filename"))
 		}
-		if payloadRec, ok := payloadBucket[payloadName]; !ok {
+		payloadRec, ok := t.payloadBucket[payloadName.(string)]
+		if !ok {
 			output.VerbosePrint(fmt.Sprintf("[-] Payload returned, but no payload record for: %s", payloadName))
 		}
-		if payloadBytes, ok := payloadResponse["bytes"]; !ok {
+		payloadBytes, ok := payloadResponse["bytes"]
+		if !ok {
 			output.VerbosePrint(fmt.Sprintf("[-] Payload response did not include file bytes for: %s", payloadName))
 		}
 
 		payloadRec.Lock()
-		payloadRec.bytes = payloadBytes
+		payloadRec.bytes = []byte(payloadBytes.(string))
 		payloadRec.cond.Broadcast()
 		payloadRec.Unlock()
 	}
@@ -169,7 +172,7 @@ func (t *TCP) handleOutgoing() {
 }
 
 func (t *TCP) handleProxy() {
-	
+
 }
 
 func (t *TCP) GetBeaconBytes(profile map[string]interface{}) []byte {
@@ -188,8 +191,9 @@ func (t *TCP) GetBeaconBytes(profile map[string]interface{}) []byte {
 
 func (t *TCP) GetPayloadBytes(profile map[string]interface{}, payload string) ([]byte, string) {
 	/*
-		Gets payload name and places in payloadBucket.
-		Once handleOutgoing processes payload and retrieves payload bytes, this function returns those bytes.
+		Gets payload name and places in outgoingBucket.
+		Once handleOutgoing processes payload and retrieves payload bytes into payloadBucket.
+		This function returns those bytes.
 		We keep track of how many instances a payload is requested, so the payload is deleted from the bucket only
 			when there are no more requests for that payload.
 	*/
@@ -213,7 +217,7 @@ func (t *TCP) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 		if err != nil {
 			output.VerbosePrint(fmt.Sprintf("[-] Cannot send payload request. Error with profile marshal: %s", err.Error()))
 		} else {
-			append(t.outgoingBucket, request)
+			t.outgoingBucket = append(t.outgoingBucket, request)
 		}
 	}
 
@@ -233,7 +237,7 @@ func (t *TCP) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 		payloadRec.Unlock()
 	}
 
-	return payloadBytes, payloadName
+	return payloadBytes, payload
 }
 
 func (t *TCP) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
@@ -254,7 +258,7 @@ func (t *TCP) SendExecutionResults(profile map[string]interface{}, result map[st
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot send results. Error with profile marshal: %s", err.Error()))
 	} else {
-		append(t.outgoingBucket, data)
+		t.outgoingBucket = append(t.outgoingBucket, data)
 	}
 }
 
@@ -279,9 +283,9 @@ func (t *TCP) UploadFileBytes(profile map[string]interface{}, uploadName string,
 
 	request, err := json.Marshal(upload)
 	if err != nil {
-		return err)
+		return err
 	} else {
-		append(t.outgoingBucket, data)
+		t.outgoingBucket = append(t.outgoingBucket, request)
 	}
 	return nil
 }
