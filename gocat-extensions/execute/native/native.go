@@ -14,6 +14,7 @@ import (
 	"github.com/mitre/gocat/execute/native/util"
 
 	_ "github.com/mitre/gocat/execute/native/discovery" // necessary to initialize all submodules
+	_ "github.com/mitre/gocat/execute/native/aws" // necessary to initialize all submodules
 )
 
 type NativeExecutor struct {
