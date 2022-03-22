@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 /*
@@ -31,16 +32,17 @@ package proxy
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
-	"encoding/json"
-	"time"
-	"regexp"
 	"os"
+	"regexp"
 	"sync"
-	"github.com/mitre/gocat/output"
+	"time"
+
 	"github.com/mitre/gocat/contact"
+	"github.com/mitre/gocat/output"
 )
 
 var (
@@ -63,23 +65,23 @@ type SmbPipeAPI struct {
 
 	// Maps agent paws to Listener objects for the corresponding local pipe paths.
 	returnMailBoxListeners map[string]net.Listener
-	name string
-	upstreamDestAddr string // agent's upstream dest addr
+	name                   string
+	upstreamDestAddr       string // agent's upstream dest addr
 }
 
 //PipeReceiver forwards data received from SMB pipes to the upstream destination. Implements the P2pReceiver interface
 type SmbPipeReceiver struct {
-	agentPaw string // paw of agent running this receiver
-	receiverName string
-	mainPipeName string
-	localMainPipePath string // full pipe path from a local perrspective. \\.\pipe\<pipename>
-	externalMainPipePath string // full pipe path from an external perspective. \\hostname\pipe\<pipename>
-	upstreamComs *contact.Contact // Contact implementation to handle upstream communication.
-	listener net.Listener // Listener object for this receiver.
-	agentServer *string // refers to agent's current server value
-	waitgroup *sync.WaitGroup
-	receiverContext context.Context
-	receiverCancelFunc context.CancelFunc
+	agentPaw             string // paw of agent running this receiver
+	receiverName         string
+	mainPipeName         string
+	localMainPipePath    string           // full pipe path from a local perrspective. \\.\pipe\<pipename>
+	externalMainPipePath string           // full pipe path from an external perspective. \\hostname\pipe\<pipename>
+	upstreamComs         *contact.Contact // Contact implementation to handle upstream communication.
+	listener             net.Listener     // Listener object for this receiver.
+	agentServer          *string          // refers to agent's current server value
+	waitgroup            *sync.WaitGroup
+	receiverContext      context.Context
+	receiverCancelFunc   context.CancelFunc
 }
 
 func init() {
@@ -161,161 +163,161 @@ func (s *SmbPipeReceiver) startReceiverHelper() {
 			continue
 		}
 		switch message.MessageType {
-			case GET_INSTRUCTIONS:
-				go s.forwardGetBeaconBytes(message)
-			case GET_PAYLOAD_BYTES:
-				go s.forwardPayloadBytesDownload(message)
-			case SEND_EXECUTION_RESULTS:
-				go s.forwardSendExecResults(message)
-			case SEND_FILE_UPLOAD_BYTES:
-				go s.forwardSendUploadBytes(message)
-			default:
-				output.VerbosePrint(fmt.Sprintf("[!] ERROR: invalid instruction type for receiver-bound p2p message: %d", message.MessageType))
+		case GET_INSTRUCTIONS:
+			go s.forwardGetBeaconBytes(message)
+		case GET_PAYLOAD_BYTES:
+			go s.forwardPayloadBytesDownload(message)
+		case SEND_EXECUTION_RESULTS:
+			go s.forwardSendExecResults(message)
+		case SEND_FILE_UPLOAD_BYTES:
+			go s.forwardSendUploadBytes(message)
+		default:
+			output.VerbosePrint(fmt.Sprintf("[!] ERROR: invalid instruction type for receiver-bound p2p message: %d", message.MessageType))
 		}
 	}
 }
 
 // Pass the beacon request to the upstream destination, and return the response.
 func (s *SmbPipeReceiver) forwardGetBeaconBytes(message P2pMessage) {
-    // Message payload contains profile to send upstream
-    clientProfile := make(map[string]interface{})
-    if err := json.Unmarshal(message.Payload, &clientProfile); err != nil {
-    	output.VerbosePrint(fmt.Sprintf("[!] Error extracting client profile from p2p message: %s", err.Error()))
-    	return
-    }
-    clientProfile["server"] = *s.agentServer
+	// Message payload contains profile to send upstream
+	clientProfile := make(map[string]interface{})
+	if err := json.Unmarshal(message.Payload, &clientProfile); err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error extracting client profile from p2p message: %s", err.Error()))
+		return
+	}
+	clientProfile["server"] = *s.agentServer
 
-    // Update peer proxy chain information to indicate that the beacon is going through this agent.
+	// Update peer proxy chain information to indicate that the beacon is going through this agent.
 	updatePeerChain(clientProfile, s.agentPaw, s.externalMainPipePath, s.receiverName)
-    output.VerbosePrint(fmt.Sprintf("[*] Forwarding instructions request on behalf of paw %s", message.SourcePaw))
-    response := (*s.upstreamComs).GetBeaconBytes(clientProfile)
+	output.VerbosePrint(fmt.Sprintf("[*] Forwarding instructions request on behalf of paw %s", message.SourcePaw))
+	response := (*s.upstreamComs).GetBeaconBytes(clientProfile)
 
-    // Connect to client mailbox to send response back to client.
-    if len(message.SourceAddress) > 0 {
-        pipeMsgData, err := buildP2pMsgBytes("", RESPONSE_INSTRUCTIONS, response, "")
-        if err != nil {
-        	output.VerbosePrint(fmt.Sprintf("[!] Error building response message for client: %s", err.Error()))
-    		return
-        }
-        if _, err = sendDataToPipe(message.SourceAddress, pipeMsgData); err != nil {
+	// Connect to client mailbox to send response back to client.
+	if len(message.SourceAddress) > 0 {
+		pipeMsgData, err := buildP2pMsgBytes("", RESPONSE_INSTRUCTIONS, response, "")
+		if err != nil {
+			output.VerbosePrint(fmt.Sprintf("[!] Error building response message for client: %s", err.Error()))
+			return
+		}
+		if _, err = sendDataToPipe(message.SourceAddress, pipeMsgData); err != nil {
 			output.VerbosePrint(fmt.Sprintf("[!] Error sending response message to client: %s", err.Error()))
-    		return
-        }
-        output.VerbosePrint(fmt.Sprintf("[*] Sent beacon response to paw %s", message.SourcePaw))
-    } else {
-        output.VerbosePrint(fmt.Sprintf("[-] ERROR. P2p message from client did not specify a return address."))
-    }
+			return
+		}
+		output.VerbosePrint(fmt.Sprintf("[*] Sent beacon response to paw %s", message.SourcePaw))
+	} else {
+		output.VerbosePrint(fmt.Sprintf("[-] ERROR. P2p message from client did not specify a return address."))
+	}
 }
 
 // Pass the payload bytes download request to the upstream destination, and return the response.
 func (s *SmbPipeReceiver) forwardPayloadBytesDownload(message P2pMessage) {
-    // Message payload contains client profile and requested payload name.
-    var requestInfo payloadRequestInfo
-    if err := json.Unmarshal(message.Payload, &requestInfo); err != nil {
+	// Message payload contains client profile and requested payload name.
+	var requestInfo payloadRequestInfo
+	if err := json.Unmarshal(message.Payload, &requestInfo); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error extracting payload request info from p2p message: %s", err.Error()))
-    	return
-    }
+		return
+	}
 
-    // Get upstream response, which contains payload data and name, and forward response to client.
-    if requestInfo.Profile == nil {
-    	output.VerbosePrint("[!] Error - client did not send profile information in payload request.")
-    	return
-    }
-    if len(requestInfo.PayloadName) == 0 {
-    	output.VerbosePrint("[!] Error - client did not send payload name in payload request.")
-    	return
-    }
+	// Get upstream response, which contains payload data and name, and forward response to client.
+	if requestInfo.Profile == nil {
+		output.VerbosePrint("[!] Error - client did not send profile information in payload request.")
+		return
+	}
+	if len(requestInfo.PayloadName) == 0 {
+		output.VerbosePrint("[!] Error - client did not send payload name in payload request.")
+		return
+	}
 
-   	requestInfo.Profile["server"] = *s.agentServer
-    output.VerbosePrint(fmt.Sprintf("[*] Forwarding payload bytes request for payload %s on behalf of paw %s", requestInfo.PayloadName, message.SourcePaw))
-    payloadData, payloadName := (*s.upstreamComs).GetPayloadBytes(requestInfo.Profile, requestInfo.PayloadName)
-    respInfo := payloadResponseInfo{
-    	PayloadData: payloadData,
-    	PayloadName: payloadName,
-    }
-    respData, err := json.Marshal(respInfo)
-    if err != nil {
-    	output.VerbosePrint(fmt.Sprintf("[!] Error marshaling payload response info: %s", err.Error()))
-    	return
-    }
-    if len(message.SourceAddress) > 0 {
-        pipeMsgData, err := buildP2pMsgBytes("", RESPONSE_PAYLOAD_BYTES, respData, "")
-        if err != nil {
-        	output.VerbosePrint(fmt.Sprintf("[!] Error building payload response message: %s", err.Error()))
-    		return
-        }
-        sendDataToPipe(message.SourceAddress, pipeMsgData)
-        output.VerbosePrint(fmt.Sprintf("[*] Sent %d payload bytes for payload %s to client paw %s", len(payloadData), payloadName, message.SourcePaw))
-    } else {
-        output.VerbosePrint(fmt.Sprintf("[-] ERROR. P2p message from client did not specify a return address."))
-    }
+	requestInfo.Profile["server"] = *s.agentServer
+	output.VerbosePrint(fmt.Sprintf("[*] Forwarding payload bytes request for payload %s on behalf of paw %s", requestInfo.PayloadName, message.SourcePaw))
+	payloadData, payloadName := (*s.upstreamComs).GetPayloadBytes(requestInfo.Profile, requestInfo.PayloadName)
+	respInfo := payloadResponseInfo{
+		PayloadData: payloadData,
+		PayloadName: payloadName,
+	}
+	respData, err := json.Marshal(respInfo)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error marshaling payload response info: %s", err.Error()))
+		return
+	}
+	if len(message.SourceAddress) > 0 {
+		pipeMsgData, err := buildP2pMsgBytes("", RESPONSE_PAYLOAD_BYTES, respData, "")
+		if err != nil {
+			output.VerbosePrint(fmt.Sprintf("[!] Error building payload response message: %s", err.Error()))
+			return
+		}
+		sendDataToPipe(message.SourceAddress, pipeMsgData)
+		output.VerbosePrint(fmt.Sprintf("[*] Sent %d payload bytes for payload %s to client paw %s", len(payloadData), payloadName, message.SourcePaw))
+	} else {
+		output.VerbosePrint(fmt.Sprintf("[-] ERROR. P2p message from client did not specify a return address."))
+	}
 }
 
 func (s *SmbPipeReceiver) forwardSendExecResults(message P2pMessage) {
-    // message payload contains client profile and result info.
-    clientProfile := make(map[string]interface{})
-    if err := json.Unmarshal(message.Payload, &clientProfile); err != nil {
-    	output.VerbosePrint(fmt.Sprintf("[!] Error extracting execution result info from p2p message: %s", err.Error()))
-    	return
-    }
-    resultInfo, ok := clientProfile["results"]
-    if !ok {
-    	output.VerbosePrint("[!] Error. Client did not include execution results.")
-        return
-    }
-    result := resultInfo.([]interface{})[0]
-    clientProfile["server"] = *s.agentServer
+	// message payload contains client profile and result info.
+	clientProfile := make(map[string]interface{})
+	if err := json.Unmarshal(message.Payload, &clientProfile); err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error extracting execution result info from p2p message: %s", err.Error()))
+		return
+	}
+	resultInfo, ok := clientProfile["results"]
+	if !ok {
+		output.VerbosePrint("[!] Error. Client did not include execution results.")
+		return
+	}
+	result := resultInfo.([]interface{})[0]
+	clientProfile["server"] = *s.agentServer
 
-    // Send execution results upstream. No response will be sent to client.
-    output.VerbosePrint(fmt.Sprintf("[*] Forwarding execution results on behalf of paw %s", message.SourcePaw))
-    (*s.upstreamComs).SendExecutionResults(clientProfile, result.(map[string]interface{}))
+	// Send execution results upstream. No response will be sent to client.
+	output.VerbosePrint(fmt.Sprintf("[*] Forwarding execution results on behalf of paw %s", message.SourcePaw))
+	(*s.upstreamComs).SendExecutionResults(clientProfile, result.(map[string]interface{}))
 }
 
 func (s *SmbPipeReceiver) forwardSendUploadBytes(message P2pMessage) {
 	if len(message.SourceAddress) == 0 {
-        output.VerbosePrint(fmt.Sprintf("[-] ERROR. P2p message from client did not specify a return address."))
-        return
-    }
+		output.VerbosePrint(fmt.Sprintf("[-] ERROR. P2p message from client did not specify a return address."))
+		return
+	}
 
 	// Message payload contains client profile and file upload name/data.
 	var requestInfo uploadRequestInfo
-    if err := json.Unmarshal(message.Payload, &requestInfo); err != nil {
+	if err := json.Unmarshal(message.Payload, &requestInfo); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error extracting file upload request info from p2p message: %s", err.Error()))
 		s.sendUploadResultsToClient(message.SourceAddress, "", false)
-    	return
-    }
-    if len(requestInfo.UploadName) == 0 {
-    	output.VerbosePrint("[!] Error - client did not send upload name in upload request.")
-    	s.sendUploadResultsToClient(message.SourceAddress, "", false)
-    	return
-    }
-    if requestInfo.UploadData == nil {
-    	output.VerbosePrint("[!] Error. Client did not include file data for upload.")
-    	s.sendUploadResultsToClient(message.SourceAddress, requestInfo.UploadName, false)
-        return
-    }
-    requestInfo.Profile["server"] = *s.agentServer
-    output.VerbosePrint(fmt.Sprintf("[*] Forwarding upload request for file %s on behalf of paw %s", requestInfo.UploadName, message.SourcePaw))
-    successfulUpload := true
-    if err := (*s.upstreamComs).UploadFileBytes(requestInfo.Profile, requestInfo.UploadName, requestInfo.UploadData); err != nil {
-    	output.VerbosePrint(fmt.Sprintf("[!] Error uploading file bytes for client: %s", err.Error()))
-    	successfulUpload = false
-    }
+		return
+	}
+	if len(requestInfo.UploadName) == 0 {
+		output.VerbosePrint("[!] Error - client did not send upload name in upload request.")
+		s.sendUploadResultsToClient(message.SourceAddress, "", false)
+		return
+	}
+	if requestInfo.UploadData == nil {
+		output.VerbosePrint("[!] Error. Client did not include file data for upload.")
+		s.sendUploadResultsToClient(message.SourceAddress, requestInfo.UploadName, false)
+		return
+	}
+	requestInfo.Profile["server"] = *s.agentServer
+	output.VerbosePrint(fmt.Sprintf("[*] Forwarding upload request for file %s on behalf of paw %s", requestInfo.UploadName, message.SourcePaw))
+	successfulUpload := true
+	if err := (*s.upstreamComs).UploadFileBytes(requestInfo.Profile, requestInfo.UploadName, requestInfo.UploadData); err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error uploading file bytes for client: %s", err.Error()))
+		successfulUpload = false
+	}
 
-    // Send response to client
-    s.sendUploadResultsToClient(message.SourceAddress, requestInfo.UploadName, successfulUpload)
+	// Send response to client
+	s.sendUploadResultsToClient(message.SourceAddress, requestInfo.UploadName, successfulUpload)
 }
 
 func (s *SmbPipeReceiver) sendUploadResultsToClient(address string, uploadName string, successful bool) {
 	respInfo := uploadResponseInfo{
-    	UploadName: uploadName,
-    	Result: successful,
-    }
-    respData, err := json.Marshal(respInfo)
-    if err != nil {
-    	output.VerbosePrint(fmt.Sprintf("[!] Error marshaling upload response info: %s", err.Error()))
-    	return
-    }
+		UploadName: uploadName,
+		Result:     successful,
+	}
+	respData, err := json.Marshal(respInfo)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[!] Error marshaling upload response info: %s", err.Error()))
+		return
+	}
 	pipeMsgData, err := buildP2pMsgBytes("", RESPONSE_FILE_UPLOAD, respData, "")
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error building upload response message: %s", err.Error()))
@@ -376,7 +378,7 @@ func (s *SmbPipeAPI) GetPayloadBytes(profile map[string]interface{}, payload str
 	}
 	paw := profile["paw"].(string)
 
-    // Set up mailbox pipe and listener if needed.
+	// Set up mailbox pipe and listener if needed.
 	mailBoxPipePath, mailBoxListener, err := s.fetchClientMailBoxInfo(paw, true)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error obtaining mailbox and listener for client paw %s: %s", paw, err.Error()))
@@ -387,7 +389,7 @@ func (s *SmbPipeAPI) GetPayloadBytes(profile map[string]interface{}, payload str
 	// payload as a map[string]interface{} specifying the file name and agent profile.
 	requestInfo := payloadRequestInfo{
 		PayloadName: payload,
-		Profile: profile,
+		Profile:     profile,
 	}
 	msgPayload, err := json.Marshal(requestInfo)
 	if err != nil {
@@ -420,12 +422,12 @@ func (s *SmbPipeAPI) GetPayloadBytes(profile map[string]interface{}, payload str
 	var responseInfo payloadResponseInfo
 	if err = json.Unmarshal(respMessage.Payload, &responseInfo); err != nil {
 		output.VerbosePrint(fmt.Sprintf("[!] Error unmarshalling payload response info: %s", err.Error()))
-    	return nil, ""
+		return nil, ""
 	}
-    if len(responseInfo.PayloadName) == 0 {
-    	output.VerbosePrint("[!] Error. Upstream dest did not send payload name.")
-        return nil, ""
-    }
+	if len(responseInfo.PayloadName) == 0 {
+		output.VerbosePrint("[!] Error. Upstream dest did not send payload name.")
+		return nil, ""
+	}
 	return responseInfo.PayloadData, responseInfo.PayloadName
 }
 
@@ -445,7 +447,7 @@ func (s *SmbPipeAPI) C2RequirementsMet(profile map[string]interface{}, criteria 
 		config["upstreamDest"] = "\\\\" + s.upstreamDestAddr + "\\pipe\\" + getMainPipeName(s.upstreamDestAddr)
 		return true, config
 	}
-    return true, nil
+	return true, nil
 }
 
 func (s *SmbPipeAPI) SetUpstreamDestAddr(upstreamDestAddr string) {
@@ -464,7 +466,7 @@ func (s *SmbPipeAPI) SendExecutionResults(profile map[string]interface{}, result
 	// Build SMB pipe message for sending execution results.
 	// payload will contain JSON marshal of profile, with execution results
 	profileCopy := make(map[string]interface{})
-	for k,v := range profile {
+	for k, v := range profile {
 		profileCopy[k] = v
 	}
 	results := make([]map[string]interface{}, 1)
@@ -497,7 +499,7 @@ func (s *SmbPipeAPI) UploadFileBytes(profile map[string]interface{}, uploadName 
 	requestInfo := uploadRequestInfo{
 		UploadName: uploadName,
 		UploadData: data,
-		Profile: profile,
+		Profile:    profile,
 	}
 	msgPayload, err := json.Marshal(requestInfo)
 	if err != nil {
@@ -527,12 +529,16 @@ func (s *SmbPipeAPI) UploadFileBytes(profile map[string]interface{}, uploadName 
 	if err = json.Unmarshal(respMessage.Payload, &responseInfo); err != nil {
 		return err
 	}
-    if !responseInfo.Result {
-    	return errors.New(fmt.Sprintf("Failed upload for file %s", responseInfo.UploadName))
-    }
+	if !responseInfo.Result {
+		return errors.New(fmt.Sprintf("Failed upload for file %s", responseInfo.UploadName))
+	}
 	return nil
 }
 
 func (s *SmbPipeAPI) GetName() string {
 	return s.name
+}
+
+func (s *SmbPipeAPI) SupportsContinuous() bool {
+	return false
 }
