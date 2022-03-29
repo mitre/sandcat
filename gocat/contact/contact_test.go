@@ -11,6 +11,7 @@ var continuousContacts []string = make([]string, 0)
 
 func TestSupportsContinuous(t *testing.T) {
 	for contactName, contactImpl := range contact.CommunicationChannels {
+		t.Log(contactName)
 		var want bool
 		if contains(continuousContacts, contactName) {
 			want = true
