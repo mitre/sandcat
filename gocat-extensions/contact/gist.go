@@ -126,6 +126,10 @@ func (g GIST) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	return nil
 }
 
+func (g GIST) SupportsContinuous() bool {
+    return false
+}
+
 func getGistNameForUpload(paw string) string {
 	return getDescriptor("upload", paw)
 }

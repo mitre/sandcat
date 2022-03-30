@@ -202,6 +202,10 @@ func (d* DnsTunneling) GetName() string {
 	return d.name
 }
 
+func (d* DnsTunneling) SupportsContinuous() bool {
+    return false
+}
+
 func (d *DnsTunneling) fetchPayloadName( messageID string) (string, error) {
 	payloadNameBytes, err := d.fetchResponseViaTxt(messageID, PAYLOAD_FILENAME_DOWNLOAD_TYPE)
 	if err != nil {

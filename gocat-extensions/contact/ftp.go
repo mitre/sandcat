@@ -220,6 +220,10 @@ func (f *FTP) DownloadFile(filename string) ([]byte,error) {
     return data, nil
 }
 
+func (f *FTP) SupportsContinuous() bool {
+    return false
+}
+
 //Create random id
 func getRandomId() string {
     rand.Seed(time.Now().UnixNano())
