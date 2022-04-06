@@ -63,6 +63,7 @@ When running the Sandcat agent binary, there are optional parameters you can use
 
 Additionally, the sandcat agent can tunnel its communications to the C2 using the following options (for more details, see the [C2 tunneling documentation](../../C2-Tunneling.md)
 
+
 ## Extensions
 In order to keep the agent code lightweight, the default Sandcat agent binary ships with limited basic functionality.
 Users can dynamically compile additional features, referred to as "gocat extensions".
@@ -120,6 +121,23 @@ Additional functionality can be found in the following agent extensions:
 
 **Other Extensions**
 - `shared` extension provides the C sharing functionality for Sandcat. This can be used to compile Sandcat as a DLL rather than a `.exe` for Windows targets.
+
+### Building sandcat locally for development
+Build sandcat without extensions:
+```cd ./gocat; go build```
+Build sandcat with extensions:
+```cd ./gocat; cp ../gocat-extensions/<extension-type>/<your-extension>.go ./<extension-type>/; go build```
+
+### Building a new extension
+#### Contacts
+1. For testing your contact will need to be in the core code base to get compiled in.
+    - Create a copy of `api.go` in the `sandcat/gocat/contact/` folder.
+    - Name your copy something descriptive of your contact. `Eg. websocket_rev_contact`
+2. Add any static configuration to the vars section. ie. If you have a specific endpoint that won't change often.
+3. Add any dynamic variables that may change during the course of execution or at run time like upstream address to the struct for your contact.
+4. Update the init names for your contact struct. Eg. API -> Websocket
+5. Update the standard functions `GetBeaconBytes`, `GetPayloadBytes`, `C2RequirementsMet`, `SetUpstreamDestAddr`, `SendExecutionResults`, `GetName`, and `UploadFileBytes` to be implementations of your contacts struct and to perform the functions how you want.
+
 
 ## Customizing Default Options & Execution Without CLI Options
 
