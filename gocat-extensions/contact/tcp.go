@@ -1,15 +1,15 @@
 package contact
 
 import (
-	"bufio"
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"io"
 	"net"
-	"strconv"
+	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/mitre/gocat/output"
 )
@@ -18,8 +18,6 @@ type TCP struct {
 	conn                net.Conn
 	name                string
 	serverAddr          string
-	serverIp            string
-	serverPort          string
 	instructionBucket   [][]byte
 	payloadBucket       map[string]*payloadRecord
 	outgoingBucket      [][]byte
@@ -44,7 +42,7 @@ func newPayloadRecord() *payloadRecord {
 }
 
 func init() {
-	CommunicationChannels["tcp"] = TCP{}
+	CommunicationChannels["tcp"] = &TCP{name: "TCP"}
 }
 
 func (t *TCP) C2RequirementsMet(profile map[string]interface{}, c2Config map[string]string) (bool, map[string]string) {
@@ -55,16 +53,7 @@ func (t *TCP) C2RequirementsMet(profile map[string]interface{}, c2Config map[str
 		return false, nil
 	}
 
-	t.serverIp = addrParts[0]
-	t.serverPort = addrParts[1]
-	conn, err := net.Dial("tcp", t.serverPort)
-	if err != nil {
-		output.VerbosePrint(fmt.Sprintf("[-] %s", err))
-	}
-	t.conn = conn
-
-	handshake(conn, profile)
-	output.VerbosePrint(fmt.Sprintf("[+] TCP established for %s", profile["paw"]))
+	t.createTCPConnection(profile)
 
 	go t.listenAndHandleIncoming(profile)
 	go t.handleOutgoing()
@@ -73,18 +62,29 @@ func (t *TCP) C2RequirementsMet(profile map[string]interface{}, c2Config map[str
 
 }
 
-func handshake(conn net.Conn, profile map[string]interface{}) {
+func (t *TCP) createTCPConnection(profile map[string]interface{}) {
+	conn, err := net.Dial("tcp", t.serverAddr)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[-] %s", err))
+	}
+	t.conn = conn
+
+	t.handshake(profile)
+	output.VerbosePrint(fmt.Sprintf("[+] TCP established for %s", profile["paw"]))
+}
+
+func (t *TCP) handshake(profile map[string]interface{}) {
 	/*
 		Sends the initial beacon to the server after creating the connection. Retrieves a paw.
 	*/
 	//write the profile
 	jdata, _ := json.Marshal(profile)
-	conn.Write(jdata)
-	conn.Write([]byte("\n"))
+	t.conn.Write(jdata)
+	t.conn.Write([]byte("\n"))
 
 	//read back the paw
 	data := make([]byte, 512)
-	n, _ := conn.Read(data)
+	n, _ := t.conn.Read(data)
 	paw := string(data[:n])
 	// conn.Write([]byte("\n"))
 	profile["paw"] = strings.TrimSpace(string(paw))
@@ -98,33 +98,69 @@ func (t *TCP) listenAndHandleIncoming(profile map[string]interface{}) {
 		Currently, there are 2 types of messages: Instructions and Proxy.
 	*/
 
-	scanner := bufio.NewScanner(t.conn)
+	// scanner := bufio.NewScanner(t.conn)
+	buf := make([]byte, 2048)
 	for {
-		for scanner.Scan() {
+		// for scanner.Scan() {
+		numBytes, err := t.conn.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				//TCP Connection closed. We may want to handle this differently, but for now we'll just exit
+				output.VerbosePrint("Connection Read returned EOF, exiting")
+				os.Exit(-1)
+			} else {
+				output.VerbosePrint(fmt.Sprintf("Connection READ returned an error: %s", err.Error()))
+			}
+		}
+		if numBytes != 0 {
+			trimmedBuf := bytes.Trim(buf, "\x00")
 			var messageWrapper map[string]interface{}
-			if err := json.Unmarshal(scanner.Bytes(), &messageWrapper); err != nil {
+			if err := json.Unmarshal(trimmedBuf, &messageWrapper); err != nil {
 				output.VerbosePrint(fmt.Sprintf("[-] Malformed TCP message received: %s", err.Error()))
 			} else {
 				if messageWrapper["messageType"] == "instruction" {
-					t.instructionBucket = append(t.instructionBucket, []byte(messageWrapper["message"].(string)))
+
+					decodedInstructions, err := base64.StdEncoding.DecodeString(messageWrapper["message"].(string)) //messageInstructions
+					if err != nil {
+						output.VerbosePrint(fmt.Sprintf("[-] Error base64 decoding instructions: %s", err.Error()))
+						return
+					}
+					t.instructionBucket = append(t.instructionBucket, []byte(decodedInstructions))
+
 				} else if messageWrapper["messageType"] == "proxy" {
-					t.proxyToClientBucket = append(t.proxyToClientBucket, []byte(messageWrapper["message"].(string)))
+					var messageProxy string
+					if err := json.Unmarshal([]byte(messageWrapper["message"].(string)), &messageProxy); err != nil {
+						output.VerbosePrint(fmt.Sprintf("[-] Malformed TCP message received in proxy: %s", err.Error()))
+					}
+
+					decodedProxy, err := base64.StdEncoding.DecodeString(messageProxy)
+					if err != nil {
+						output.VerbosePrint(fmt.Sprintf("[-] Error base64 decoding proxy: %s", err.Error()))
+						return
+					}
+					t.proxyToClientBucket = append(t.proxyToClientBucket, []byte(decodedProxy))
 				} else if messageWrapper["messageType"] == "payload" {
-					t.handlePayloadResponse([]byte(messageWrapper["message"].(string)))
+					decodedPayload, err := base64.StdEncoding.DecodeString(messageWrapper["message"].(string))
+					if err != nil {
+						output.VerbosePrint(fmt.Sprintf("[-] Error base64 decoding payload: %s", err.Error()))
+						return
+					}
+
+					// var messagePayload string
+					// if err := json.Unmarshal([]byte(messageWrapper["message"].(string)), &messagePayload); err != nil {
+					// 	output.VerbosePrint(fmt.Sprintf("[-] Malformed TCP message received in payload: %s", err.Error()))
+					// }
+
+					// decodedPayload, err := base64.StdEncoding.DecodeString(messagePayload)
+					// if err != nil {
+					// 	output.VerbosePrint(fmt.Sprintf("[-] Error base64 decoding payload: %s", err.Error()))
+					// 	return
+					// }
+					t.handlePayloadResponse([]byte(decodedPayload))
 				} else {
 					output.VerbosePrint(fmt.Sprintf("[-] TCP Message Type not recognized: %s", messageWrapper["messageType"]))
 				}
 			}
-
-			// bites, status, commandTimestamp := commands.RunCommand(strings.TrimSpace(message), server, profile)
-			// pwd, _ := os.Getwd()
-			// response := make(map[string]interface{})
-			// response["response"] = string(bites)
-			// response["status"] = status
-			// response["pwd"] = pwd
-			// response["agent_reported_time"] = util.GetFormattedTimestamp(commandTimestamp, "2006-01-02T15:04:05Z")
-			// jdata, _ := json.Marshal(response)
-			// conn.Write(jdata)
 		}
 	}
 }
@@ -140,7 +176,7 @@ func (t *TCP) handlePayloadResponse(payloadMessage []byte) {
 	} else {
 		payloadName, ok := payloadResponse["filename"]
 		if !ok {
-			output.VerbosePrint(fmt.Sprintf("[-] Payload response did not include filename"))
+			output.VerbosePrint("[-] Payload response did not include filename")
 		}
 		payloadRec, ok := t.payloadBucket[payloadName.(string)]
 		if !ok {
@@ -151,8 +187,13 @@ func (t *TCP) handlePayloadResponse(payloadMessage []byte) {
 			output.VerbosePrint(fmt.Sprintf("[-] Payload response did not include file bytes for: %s", payloadName))
 		}
 
+		decodedBytes, err := base64.StdEncoding.DecodeString(payloadBytes.(string))
+		if err != nil {
+			output.VerbosePrint(fmt.Sprintf("[-] Decoding payload bytes returned an error: %s", err.Error()))
+		}
+
 		payloadRec.Lock()
-		payloadRec.bytes = []byte(payloadBytes.(string))
+		payloadRec.bytes = []byte(decodedBytes)
 		payloadRec.cond.Broadcast()
 		payloadRec.Unlock()
 	}
@@ -162,11 +203,15 @@ func (t *TCP) handleOutgoing() {
 	/*
 		This function keeps going through payloadBucket and outgoingBucket, and sends the entries in each to the server.
 	*/
-	for true {
+	for {
 		for len(t.outgoingBucket) > 0 {
 			response := t.outgoingBucket[0]
 			t.conn.Write(response)
-			t.outgoingBucket = t.outgoingBucket[1:]
+			if len(t.outgoingBucket) > 1 {
+				t.outgoingBucket = t.outgoingBucket[1:]
+			} else {
+				t.outgoingBucket = t.outgoingBucket[:0]
+			}
 		}
 	}
 }
@@ -205,6 +250,7 @@ func (t *TCP) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 		//payload request does not exist yet, we need to make a new one, and populate request fields
 		payloadRec = newPayloadRecord()
 		payloadRec.waitCount = 1
+		t.payloadBucket = make(map[string]*payloadRecord)
 		t.payloadBucket[payload] = payloadRec
 
 		requestFields := make(map[string]interface{})
@@ -221,6 +267,8 @@ func (t *TCP) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 		}
 	}
 
+	// We need to wait until the payload is retrieved before continuing
+	payloadRec = t.payloadBucket[payload]
 	payloadRec.Lock()
 	payloadRec.cond.Wait()
 	payloadRec.Unlock()
@@ -245,16 +293,26 @@ func (t *TCP) SendExecutionResults(profile map[string]interface{}, result map[st
 		This function adds execution output to the outgoingBucket for handleOutgoing() to process
 	*/
 
-	profileCopy := make(map[string]interface{})
+	resultsMessage := make(map[string]interface{})
 	for k, v := range profile {
-		profileCopy[k] = v
+		resultsMessage[k] = v
 	}
-	profileCopy["messageType"] = "executionResults"
+
 	results := make([]map[string]interface{}, 1)
 	results[0] = result
-	profileCopy["results"] = results
+	resultsMessage["results"] = results
 
-	data, err := json.Marshal(profileCopy)
+	resultsMessageJdata, err := json.Marshal(resultsMessage)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[-] Error marshalling results: %s", err.Error()))
+	}
+	encodedResultsMessage := base64.StdEncoding.EncodeToString(resultsMessageJdata)
+
+	request := make(map[string]interface{})
+	request["messageType"] = "executionResults"
+	request["results"] = encodedResultsMessage
+
+	data, err := json.Marshal(request)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot send results. Error with profile marshal: %s", err.Error()))
 	} else {
@@ -277,11 +335,20 @@ func (t *TCP) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	*/
 
 	upload := make(map[string]interface{})
-	upload["messageType"] = "fileUpload"
 	upload["filename"] = uploadName
 	upload["data"] = data
+	uploadJdata, err := json.Marshal(upload)
+	if err != nil {
+		output.VerbosePrint(fmt.Sprintf("[-] Error while marshalling upload data: %s", err.Error()))
+	}
 
-	request, err := json.Marshal(upload)
+	encodedUploadData := base64.StdEncoding.EncodeToString(uploadJdata)
+
+	uploadRequest := make(map[string]interface{})
+	uploadRequest["messageType"] = "fileUpload"
+	uploadRequest["upload"] = encodedUploadData
+
+	request, err := json.Marshal(uploadRequest)
 	if err != nil {
 		return err
 	} else {
@@ -294,7 +361,7 @@ func (t *TCP) SupportsContinuous() bool {
 	return true
 }
 
-func getRandomId() string {
-	rand.Seed(time.Now().UnixNano())
-	return strconv.Itoa(rand.Int())
-}
+// func getRandomId() string {
+// 	rand.Seed(time.Now().UnixNano())
+// 	return strconv.Itoa(rand.Int())
+// }
