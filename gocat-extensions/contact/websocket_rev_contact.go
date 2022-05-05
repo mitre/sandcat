@@ -30,6 +30,10 @@ func init() {
 	CommunicationChannels["Websocket"] = &Websocket{name: "Websocket"}
 }
 
+func (f *Websocket) SupportsContinuous() bool {
+	return false
+}
+
 //GetInstructions sends a beacon and returns response.
 func (a *Websocket) GetBeaconBytes(profile map[string]interface{}) []byte {
 	output.VerbosePrint("[*] Getting commands")
