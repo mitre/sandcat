@@ -1,15 +1,11 @@
 package contact
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
-	"path/filepath"
 
 	"github.com/gorilla/websocket"
 
@@ -49,40 +45,8 @@ func (a *Websocket) GetBeaconBytes(profile map[string]interface{}) []byte {
 
 // Return the file bytes for the requested payload.
 func (a *Websocket) GetPayloadBytes(profile map[string]interface{}, payload string) ([]byte, string) {
-	var payloadBytes []byte
-	var filename string
-	platform := profile["platform"]
-	if platform != nil {
-		address := fmt.Sprintf("%s/file/download", a.upstreamDestAddr)
-		req, err := http.NewRequest("POST", address, nil)
-		if err != nil {
-			output.VerbosePrint(fmt.Sprintf("[-] Failed to create HTTP request: %s", err.Error()))
-			return nil, ""
-		}
-		req.Header.Set("file", payload)
-		req.Header.Set("platform", platform.(string))
-		req.Header.Set("paw", profile["paw"].(string))
-		resp, err := a.client.Do(req)
-		if err != nil {
-			output.VerbosePrint(fmt.Sprintf("[-] Error sending payload request: %s", err.Error()))
-			return nil, ""
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == ok {
-			buf, err := io.ReadAll(resp.Body)
-			if err != nil {
-				output.VerbosePrint(fmt.Sprintf("[-] Error reading HTTP response: %s", err.Error()))
-				return nil, ""
-			}
-			payloadBytes = buf
-			if name_header, ok := resp.Header["Filename"]; ok {
-				filename = filepath.Join(name_header[0])
-			} else {
-				output.VerbosePrint("[-] HTTP response missing Filename header.")
-			}
-		}
-	}
-	return payloadBytes, filename
+	// Not implemented due to interactive nature.
+	return nil, ""
 }
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
@@ -109,7 +73,7 @@ func (a *Websocket) C2RequirementsMet(profile map[string]interface{}, c2Config m
 }
 
 func (a *Websocket) SetUpstreamDestAddr(upstreamDestAddr string) {
-	upstreamDestAddr = "ws://localhost:7012/ws_interactive"
+	upstreamDestAddr = "ws://localhost:7013/ws_interactive"
 	a.upstreamDestAddr = upstreamDestAddr
 }
 
@@ -137,39 +101,7 @@ func (a *Websocket) GetName() string {
 }
 
 func (a *Websocket) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
-	uploadUrl := a.upstreamDestAddr + "/file/upload"
-
-	// Set up the form
-	requestBody := bytes.Buffer{}
-	contentType, err := createUploadForm(&requestBody, data, uploadName)
-	if err != nil {
-		return nil
-	}
-
-	// Set up the request
-	headers := map[string]string{
-		"Content-Type": contentType,
-		"X-Request-Id": fmt.Sprintf("%s-%s", profile["host"].(string), profile["paw"].(string)),
-		"User-Agent":   userAgent,
-		"X-Paw":        profile["paw"].(string),
-		"X-Host":       profile["host"].(string),
-	}
-	req, err := createUploadRequest(uploadUrl, &requestBody, headers)
-	if err != nil {
-		return err
-	}
-
-	// Perform request and process response
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
-		return nil
-	} else {
-		return errors.New(fmt.Sprintf("Non-successful HTTP response status code: %d", resp.StatusCode))
-	}
+	// Not implemented due to interactive nature.
 	return nil
 }
 
