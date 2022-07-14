@@ -5,7 +5,6 @@ package shells
 import (
 	"github.com/mitre/gocat/execute"
 	"os/exec"
-	"time"
 )
 
 type Powershell struct {

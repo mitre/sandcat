@@ -30,7 +30,7 @@ func runShellExecutor(cmd exec.Cmd, timeout int) (execute.CommandResults) {
 	err := cmd.Start()
 	if err != nil {
 	    errorBytes := []byte(fmt.Sprintf("Encountered an error starting the process: %q", err.Error()))
-		return execute.CommandResults(errorBytes, execute.ERROR_STATUS, execute.ERROR_PID, executionTimestamp)
+		return execute.CommandResults{errorBytes, execute.ERROR_STATUS, execute.ERROR_PID, executionTimestamp}
 	}
 	pid := strconv.Itoa(cmd.Process.Pid)
 	go func() {
@@ -53,10 +53,10 @@ func runShellExecutor(cmd exec.Cmd, timeout int) (execute.CommandResults) {
 		}
 		if err != nil {
 			output = append([]byte("Timeout reached, but couldn't kill the process\n"), output...)
-			return execute.CommandResults(output, execute.ERROR_STATUS, pid, executionTimestamp)
+			return execute.CommandResults{output, execute.ERROR_STATUS, pid, executionTimestamp}
 		}
 		output = append([]byte("Timeout reached, process killed\n"), output...)
-		return execute.CommandResults(output, execute.TIMEOUT_STATUS, pid, executionTimestamp)
+		return execute.CommandResults{output, execute.TIMEOUT_STATUS, pid, executionTimestamp}
 	case err := <-done:
 		stdoutBytes := stdoutBuf.Bytes()
 		stderrBytes := stderrBuf.Bytes()
@@ -64,8 +64,8 @@ func runShellExecutor(cmd exec.Cmd, timeout int) (execute.CommandResults) {
 			status = execute.ERROR_STATUS
 		}
 		if len(stderrBytes) > 0 {
-			return execute.CommandResults(stderrBytes, status, pid, executionTimestamp)
+			return execute.CommandResults{stderrBytes, status, pid, executionTimestamp}
 		}
-		return execute.CommandResults(stdoutBytes, status, pid, executionTimestamp)
+		return execute.CommandResults{stdoutBytes, status, pid, executionTimestamp}
 	}
 }
