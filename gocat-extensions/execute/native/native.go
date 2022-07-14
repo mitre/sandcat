@@ -34,7 +34,7 @@ func init() {
 	execute.Executors[executor.shortName] = executor
 }
 
-func (n *NativeExecutor) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
+func (n *NativeExecutor) Run(command string, timeout int, info execute.InstructionInfo) (execute.CommandResults) {
 	return n.runNativeExecutor(command, timeout)
 }
 
@@ -54,20 +54,22 @@ func (n *NativeExecutor) UpdateBinary(newBinary string) {
 	// pass
 }
 
-func (n *NativeExecutor) runNativeExecutor(command string, timeout int) ([]byte, string, string, time.Time) {
+func (n *NativeExecutor) runNativeExecutor(command string, timeout int) (execute.CommandResults) {
 	done := make(chan util.NativeCmdResult, 1)
 	status := execute.SUCCESS_STATUS
 	executionTimestamp := time.Now().UTC()
 	methodName, methodArgs, err := getMethodAndArgs(command)
 	if err != nil {
-		return []byte(fmt.Sprintf("Unable to parse command line: %s", err.Error())), execute.ERROR_STATUS, n.pidStr, executionTimestamp
+	    errorBytes := []byte(fmt.Sprintf("Unable to parse command line: %s", err.Error()))
+		return execute.CommandResults{errorBytes, execute.ERROR_STATUS, n.pidStr, executionTimestamp}
 	}
 	go func() {
 		done <- runCommand(methodName, methodArgs)
 	}()
 	select {
 	case <-time.After(time.Duration(timeout) * time.Second):
-		return []byte("Timeout reached, unable to end go routine"), execute.ERROR_STATUS, n.pidStr, executionTimestamp
+	    errorBytes := []byte("Timeout reached, unable to end go routine")
+		return execute.CommandResults{errorBytes, execute.ERROR_STATUS, n.pidStr, executionTimestamp}
 	case cmdResult := <-done:
 		stdoutBytes := cmdResult.Stdout
 		stderrBytes := cmdResult.Stderr
@@ -75,9 +77,9 @@ func (n *NativeExecutor) runNativeExecutor(command string, timeout int) ([]byte,
 			status = execute.ERROR_STATUS
 		}
 		if len(stderrBytes) > 0 {
-			return stderrBytes, status, n.pidStr, executionTimestamp
+			return execute.CommandResults{stderrBytes, status, n.pidStr, executionTimestamp}
 		}
-		return stdoutBytes, status, n.pidStr, executionTimestamp
+		return execute.CommandResults{stdoutBytes, status, n.pidStr, executionTimestamp}
 	}
 }
 

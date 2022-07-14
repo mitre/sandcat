@@ -24,7 +24,7 @@ type OsGetter func() string
 type PidGetter func() int
 type FileDeleter func(string) error
 type TimeGenerator func() time.Time
-type StandardCmdRunner func(string, []string, int) ([]byte, string, string, time.Time)
+type StandardCmdRunner func(string, []string, int) (execute.CommandResults)
 type CmdHandleRunner func (*exec.Cmd) error // wrapper for exec.Cmd.Run()
 type CmdHandlePidGetter func(*exec.Cmd) int // wrapper for handle.Process.Pid
 
@@ -100,12 +100,12 @@ func init() {
 	execute.Executors[executor.name] = executor
 }
 
-func (p *Proc) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
+func (p *Proc) Run(command string, timeout int, info execute.InstructionInfo) (execute.CommandResults) {
 	exePath, exeArgs, err := p.getExeAndArgs(command)
 	if err != nil {
 		errMsg := fmt.Sprintf("[!] Error parsing command line: %s", err.Error())
 		output.VerbosePrint(errMsg)
-		return []byte(errMsg), execute.ERROR_STATUS, execute.ERROR_PID, p.timeStampGenerator()
+		return execute.CommandResults([]byte(errMsg), execute.ERROR_STATUS, execute.ERROR_PID, p.timeStampGenerator())
 	}
 	output.VerbosePrint(fmt.Sprintf("[*] Starting process %s with args %v", exePath, exeArgs))
 	if exePath == "del" || exePath == "rm" {
@@ -143,7 +143,7 @@ func (p *Proc) UpdateBinary(newBinary string) {
 	return
 }
 
-func (p *Proc) deleteFiles(files []string) ([]byte, string, string, time.Time) {
+func (p *Proc) deleteFiles(files []string) (execute.CommandResults) {
 	var outputMessages []string
 	var msg string
 	var err error
@@ -159,21 +159,21 @@ func (p *Proc) deleteFiles(files []string) ([]byte, string, string, time.Time) {
 		}
 		outputMessages = append(outputMessages, msg)
 	}
-	return []byte(strings.Join(outputMessages, "\n")), status, p.pidStr, executionTimestamp
+	return execute.CommandResults([]byte(strings.Join(outputMessages, "\n")), status, p.pidStr, executionTimestamp)
 }
 
-func runStandardCmd(exePath string, exeArgs []string, timeout int) ([]byte, string, string, time.Time) {
+func runStandardCmd(exePath string, exeArgs []string, timeout int) (execute.CommandResults) {
 	return runShellExecutor(*exec.Command(exePath, append(exeArgs)...), timeout)
 }
 
-func (p *Proc) runBackgroundCmd(exePath string, exeArgs []string) ([]byte, string, string, time.Time) {
+func (p *Proc) runBackgroundCmd(exePath string, exeArgs []string) (execute.CommandResults) {
 	handle := exec.Command(exePath, append(exeArgs)...)
 	err := p.cmdHandleRunner(handle)
 	if err != nil {
-		return []byte(err.Error()), execute.ERROR_STATUS, execute.ERROR_PID, p.timeStampGenerator()
+		return execute.CommandResults([]byte(err.Error()), execute.ERROR_STATUS, execute.ERROR_PID, p.timeStampGenerator())
 	}
 	pid := p.cmdHandlePidGetter(handle)
 	pidStr := strconv.Itoa(pid)
 	retMsg := fmt.Sprintf("Executed background process %s with PID %d and args: %s", exePath, pid, strings.Join(exeArgs, ", "))
-	return []byte(retMsg), execute.SUCCESS_STATUS, pidStr, p.timeStampGenerator()
+	return execute.CommandResults([]byte(retMsg), execute.SUCCESS_STATUS, pidStr, p.timeStampGenerator())
 }

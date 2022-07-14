@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
-	"time"
 )
 
 type Cmd struct {
@@ -27,7 +26,7 @@ func init() {
 	}
 }
 
-func (c *Cmd) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
+func (c *Cmd) Run(command string, timeout int, info execute.InstructionInfo) (execute.CommandResults) {
 	cmd := *exec.Command(c.path)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	commandLineComponents := append(append([]string{c.path}, c.execArgs...), command)

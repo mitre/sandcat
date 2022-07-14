@@ -55,8 +55,8 @@ func MockTimeGenerator() time.Time {
 	return TEST_TIME
 }
 
-func MockStandardCmdRunner(name string, args []string, timeout int) ([]byte, string, string, time.Time) {
-	return []byte(fmt.Sprintf("%s; %s; %d", name, strings.Join(args, ","), timeout)), execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME
+func MockStandardCmdRunner(name string, args []string, timeout int) (execute.CommandResults) {
+	return CommandResults{[]byte(fmt.Sprintf("%s; %s; %d", name, strings.Join(args, ","), timeout)), execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME}
 }
 
 func MockCmdHandleRunner(handle *exec.Cmd) error {
