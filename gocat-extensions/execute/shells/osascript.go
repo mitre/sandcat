@@ -4,7 +4,6 @@ package shells
 
 import (
 	"os/exec"
-	"time"
 
 	"github.com/mitre/gocat/execute"
 )
@@ -26,7 +25,7 @@ func init() {
 	}
 }
 
-func (o *Osascript) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
+func (o *Osascript) Run(command string, timeout int, info execute.InstructionInfo) (execute.CommandResults) {
 	return runShellExecutor(*exec.Command(o.path, append(o.execArgs, command)...), timeout)
 }
 
