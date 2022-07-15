@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/mitre/gocat/execute"
 )

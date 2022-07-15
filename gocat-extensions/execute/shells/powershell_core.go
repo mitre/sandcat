@@ -33,7 +33,7 @@ func init() {
 	}
 }
 
-func (p *PowershellCore) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
+func (p *PowershellCore) Run(command string, timeout int, info execute.InstructionInfo) (execute.CommandResults) {
 	return runShellExecutor(*exec.Command(p.path, append(p.execArgs, command)...), timeout)
 }
 
