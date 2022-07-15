@@ -5,7 +5,6 @@ package shells
 import (
 	"os/exec"
 	"runtime"
-	"time"
 
 	"github.com/mitre/gocat/execute"
 )
