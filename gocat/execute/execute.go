@@ -54,7 +54,7 @@ var Executors = map[string]Executor{}
 
 //RunCommand runs the actual command
 func RunCommand(info InstructionInfo) (CommandResults) {
-	encodedCommand := info.Instruction["command"].(string)
+    encodedCommand := info.Instruction["command"].(string)
     executor := info.Instruction["executor"].(string)
     timeout := int(info.Instruction["timeout"].(float64))
     onDiskPayloads := info.OnDiskPayloads
@@ -69,7 +69,6 @@ func RunCommand(info InstructionInfo) (CommandResults) {
                 commandResults = Executors[executor].Run(command, timeout, info)
         } else {
                 commandResults = CommandResults{[]byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", "))), ERROR_STATUS, ERROR_STATUS, time.Now().UTC()}
-
         }
     }
 	return commandResults

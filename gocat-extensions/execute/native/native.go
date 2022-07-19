@@ -61,7 +61,7 @@ func (n *NativeExecutor) runNativeExecutor(command string, timeout int) (execute
 	methodName, methodArgs, err := getMethodAndArgs(command)
 	if err != nil {
 	    errorBytes := []byte(fmt.Sprintf("Unable to parse command line: %s", err.Error()))
-		return execute.CommandResults{errorBytes, execute.ERROR_STATUS, n.pidStr, executionTimestamp}
+	    return execute.CommandResults{errorBytes, execute.ERROR_STATUS, n.pidStr, executionTimestamp}
 	}
 	go func() {
 		done <- runCommand(methodName, methodArgs)
