@@ -29,8 +29,8 @@ func runShellExecutor(cmd exec.Cmd, timeout int) (execute.CommandResults) {
 	executionTimestamp := time.Now().UTC()
 	err := cmd.Start()
 	if err != nil {
-	    errorBytes := []byte(fmt.Sprintf("Encountered an error starting the process: %q", err.Error()))
-	    return execute.CommandResults{errorBytes, execute.ERROR_STATUS, execute.ERROR_PID, executionTimestamp}
+		errorBytes := []byte(fmt.Sprintf("Encountered an error starting the process: %q", err.Error()))
+		return execute.CommandResults{errorBytes, execute.ERROR_STATUS, execute.ERROR_PID, executionTimestamp}
 	}
 	pid := strconv.Itoa(cmd.Process.Pid)
 	go func() {

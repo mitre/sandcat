@@ -60,15 +60,15 @@ func (n *NativeExecutor) runNativeExecutor(command string, timeout int) (execute
 	executionTimestamp := time.Now().UTC()
 	methodName, methodArgs, err := getMethodAndArgs(command)
 	if err != nil {
-	    errorBytes := []byte(fmt.Sprintf("Unable to parse command line: %s", err.Error()))
-	    return execute.CommandResults{errorBytes, execute.ERROR_STATUS, n.pidStr, executionTimestamp}
+		errorBytes := []byte(fmt.Sprintf("Unable to parse command line: %s", err.Error()))
+		return execute.CommandResults{errorBytes, execute.ERROR_STATUS, n.pidStr, executionTimestamp}
 	}
 	go func() {
 		done <- runCommand(methodName, methodArgs)
 	}()
 	select {
 	case <-time.After(time.Duration(timeout) * time.Second):
-	    errorBytes := []byte("Timeout reached, unable to end go routine")
+		errorBytes := []byte("Timeout reached, unable to end go routine")
 		return execute.CommandResults{errorBytes, execute.ERROR_STATUS, n.pidStr, executionTimestamp}
 	case cmdResult := <-done:
 		stdoutBytes := cmdResult.Stdout

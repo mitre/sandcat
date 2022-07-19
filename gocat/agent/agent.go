@@ -283,7 +283,7 @@ func (a *Agent) runInstructionCommand(instruction map[string]interface{}) map[st
 
 	// Clean up payloads
 	if del, ok := instruction["delete_payload"].(bool); ok && del {
-	    a.removePayloadsOnDisk(onDiskPayloads)
+		a.removePayloadsOnDisk(onDiskPayloads)
 	}
 
 	// Handle results
