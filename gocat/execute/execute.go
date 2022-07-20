@@ -20,7 +20,7 @@ const (
 type Executor interface {
 	// Run takes a command string, timeout int, and instruction info.
 	// Returns Raw Output, A String status code, and a String PID
-	Run(command string, timeout int, info InstructionInfo) ([]byte, string, string, time.Time)
+	Run(command string, timeout int, info InstructionInfo) (CommandResults)
 	String() string
 	CheckIfAvailable() bool
 	UpdateBinary(newBinary string)
@@ -36,6 +36,13 @@ type InstructionInfo struct {
 	InMemoryPayloads map[string][]byte
 }
 
+type CommandResults struct {
+	Result []byte
+	StatusCode string
+	Pid string
+	ExecutionTimestamp time.Time
+}
+
 func AvailableExecutors() (values []string) {
 	for _, e := range Executors {
 		values = append(values, e.String())
@@ -46,34 +53,25 @@ func AvailableExecutors() (values []string) {
 var Executors = map[string]Executor{}
 
 //RunCommand runs the actual command
-func RunCommand(info InstructionInfo) ([]byte, string, string, time.Time) {
+func RunCommand(info InstructionInfo) (CommandResults) {
 	encodedCommand := info.Instruction["command"].(string)
 	executor := info.Instruction["executor"].(string)
 	timeout := int(info.Instruction["timeout"].(float64))
 	onDiskPayloads := info.OnDiskPayloads
-	var status string
-	var result []byte
-	var pid string
-	var executionTimestamp time.Time
+	var commandResults CommandResults
 	decoded, err := base64.StdEncoding.DecodeString(encodedCommand)
 	if err != nil {
-		result = []byte(fmt.Sprintf("Error when decoding command: %s", err.Error()))
-		status = ERROR_STATUS
-		pid = ERROR_STATUS
-		executionTimestamp = time.Now().UTC()
+		commandResults = CommandResults{[]byte(fmt.Sprintf("Error when decoding command: %s", err.Error())), ERROR_STATUS, ERROR_STATUS, time.Now().UTC()}
 	} else {
 		command := string(decoded)
 		missingPaths := checkPayloadsAvailable(onDiskPayloads)
 		if len(missingPaths) == 0 {
-			result, status, pid, executionTimestamp = Executors[executor].Run(command, timeout, info)
+			commandResults = Executors[executor].Run(command, timeout, info)
 		} else {
-			result = []byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", ")))
-			status = ERROR_STATUS
-			pid = ERROR_STATUS
-			executionTimestamp = time.Now().UTC()
+			commandResults = CommandResults{[]byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", "))), ERROR_STATUS, ERROR_STATUS, time.Now().UTC()}
 		}
 	}
-	return result, status, pid, executionTimestamp
+	return commandResults
 }
 
 func RemoveExecutor(name string) {

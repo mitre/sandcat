@@ -278,20 +278,21 @@ func (a *Agent) runInstructionCommand(instruction map[string]interface{}) map[st
 	}
 
 	// Execute command
-	commandOutput, status, pid, commandTimestamp := execute.RunCommand(info)
+	var commandResults execute.CommandResults
+	commandResults = execute.RunCommand(info)
 
 	// Clean up payloads
 	if del, ok := instruction["delete_payload"].(bool); ok && del {
-	    a.removePayloadsOnDisk(onDiskPayloads)
+		a.removePayloadsOnDisk(onDiskPayloads)
 	}
 
 	// Handle results
 	result := make(map[string]interface{})
 	result["id"] = instruction["id"]
-	result["output"] = commandOutput
-	result["status"] = status
-	result["pid"] = pid
-	result["agent_reported_time"] = getFormattedTimestamp(commandTimestamp, "2006-01-02T15:04:05Z")
+	result["output"] = commandResults.Result
+	result["status"] = commandResults.StatusCode
+	result["pid"] = commandResults.Pid
+	result["agent_reported_time"] = getFormattedTimestamp(commandResults.ExecutionTimestamp, "2006-01-02T15:04:05Z")
 	return result
 }
 

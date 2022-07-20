@@ -3,7 +3,6 @@ package shells
 import (
 	"github.com/mitre/gocat/execute"
 	"os/exec"
-	"time"
 )
 
 type Sh struct {
@@ -21,7 +20,7 @@ func init() {
 	}
 }
 
-func (s *Sh) Run(command string, timeout int, info execute.InstructionInfo) ([]byte, string, string, time.Time) {
+func (s *Sh) Run(command string, timeout int, info execute.InstructionInfo) (execute.CommandResults) {
 	return runShellExecutor(*exec.Command(s.path, append(s.execArgs, command)...), timeout)
 }
 

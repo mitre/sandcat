@@ -55,8 +55,8 @@ func MockTimeGenerator() time.Time {
 	return TEST_TIME
 }
 
-func MockStandardCmdRunner(name string, args []string, timeout int) ([]byte, string, string, time.Time) {
-	return []byte(fmt.Sprintf("%s; %s; %d", name, strings.Join(args, ","), timeout)), execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME
+func MockStandardCmdRunner(name string, args []string, timeout int) (execute.CommandResults) {
+	return execute.CommandResults{[]byte(fmt.Sprintf("%s; %s; %d", name, strings.Join(args, ","), timeout)), execute.SUCCESS_STATUS, DUMMY_PID_STR, TEST_TIME}
 }
 
 func MockCmdHandleRunner(handle *exec.Cmd) error {
@@ -228,7 +228,13 @@ func TestGetExeAndArgsLinuxNoPath(t *testing.T) {
 }
 
 func testAndValidateCmd(t *testing.T, p *Proc, cmd, wantMsg, wantStatus, wantPid string, wantTimestamp time.Time) {
-	outputMsgBytes, outputStatus, outputPid, outputTimestamp := p.Run(cmd, TEST_TIMEOUT, DummyInstructionInfo())
+	var commandResults execute.CommandResults
+	commandResults = p.Run(cmd, TEST_TIMEOUT, DummyInstructionInfo())
+	outputMsgBytes := commandResults.Result
+	outputStatus := commandResults.StatusCode
+	outputPid := commandResults.Pid
+	outputTimestamp := commandResults.ExecutionTimestamp
+
 	outputMsg := string(outputMsgBytes)
 	if outputMsg != wantMsg {
 		t.Errorf("got '%s'; expected '%s'", outputMsg, wantMsg)
