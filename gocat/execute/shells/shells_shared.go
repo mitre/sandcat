@@ -64,7 +64,13 @@ func runShellExecutor(cmd exec.Cmd, timeout int) (execute.CommandResults) {
 			status = execute.ERROR_STATUS
 		}
 		if len(stderrBytes) > 0 {
-			return execute.CommandResults{stderrBytes, status, pid, executionTimestamp}
+			total := "STDOUT:\n"
+			total += string(stdoutBytes)
+			total += "\n\n"
+
+			total += "STDERR:\n"
+			total += string(stderrBytes)
+			return execute.CommandResults{byte[](total), status, pid, executionTimestamp}
 		}
 		return execute.CommandResults{stdoutBytes, status, pid, executionTimestamp}
 	}
