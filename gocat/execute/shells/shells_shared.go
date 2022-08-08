@@ -70,7 +70,7 @@ func runShellExecutor(cmd exec.Cmd, timeout int) (execute.CommandResults) {
 
 			total += "STDERR:\n"
 			total += string(stderrBytes)
-			return execute.CommandResults{byte[](total), status, pid, executionTimestamp}
+			return execute.CommandResults{[]byte(total), status, pid, executionTimestamp}
 		}
 		return execute.CommandResults{stdoutBytes, status, pid, executionTimestamp}
 	}
