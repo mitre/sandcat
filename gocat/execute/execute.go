@@ -37,7 +37,8 @@ type InstructionInfo struct {
 }
 
 type CommandResults struct {
-	Result []byte
+	StandardOutput []byte
+	StandardError []byte
 	StatusCode string
 	Pid string
 	ExecutionTimestamp time.Time
@@ -61,14 +62,14 @@ func RunCommand(info InstructionInfo) (CommandResults) {
 	var commandResults CommandResults
 	decoded, err := base64.StdEncoding.DecodeString(encodedCommand)
 	if err != nil {
-		commandResults = CommandResults{[]byte(fmt.Sprintf("Error when decoding command: %s", err.Error())), ERROR_STATUS, ERROR_STATUS, time.Now().UTC()}
+		commandResults = CommandResults{[]byte{}, []byte(fmt.Sprintf("Error when decoding command: %s", err.Error())), ERROR_STATUS, ERROR_STATUS, time.Now().UTC()}
 	} else {
 		command := string(decoded)
 		missingPaths := checkPayloadsAvailable(onDiskPayloads)
 		if len(missingPaths) == 0 {
 			commandResults = Executors[executor].Run(command, timeout, info)
 		} else {
-			commandResults = CommandResults{[]byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", "))), ERROR_STATUS, ERROR_STATUS, time.Now().UTC()}
+			commandResults = CommandResults{[]byte{}, []byte(fmt.Sprintf("Payload(s) not available: %s", strings.Join(missingPaths, ", "))), ERROR_STATUS, ERROR_STATUS, time.Now().UTC()}
 		}
 	}
 	return commandResults
