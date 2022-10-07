@@ -33,9 +33,9 @@ func (s *Shellcode) Run(command string, timeout int, info execute.InstructionInf
 	executionTimestamp := time.Now().UTC()
 	task, pid := Runner(bytes)
 	if task {
-		return execute.CommandResults{[]byte("Shellcode executed successfully."), execute.SUCCESS_STATUS, pid, executionTimestamp}
+		return execute.CommandResults{[]byte("Shellcode executed successfully."), []byte{}, execute.SUCCESS_STATUS, pid, executionTimestamp}
 	}
-	return execute.CommandResults{[]byte("Shellcode execution failed."), execute.ERROR_STATUS, pid, executionTimestamp}
+	return execute.CommandResults{[]byte{}, []byte("Shellcode execution failed."), execute.ERROR_STATUS, pid, executionTimestamp}
 }
 
 func (s *Shellcode) String() string {

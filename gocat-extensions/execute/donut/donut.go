@@ -54,21 +54,17 @@ func (d *Donut) Run(command string, timeout int, info execute.InstructionInfo) (
 
 			total += "STDOUT:\n"
 			total += string(stdoutBytes)
-			total += "\n\n"
 
-			total += "STDERR:\n"
-			total += string(stderrBytes)
-
-			return execute.CommandResults{[]byte(total), execute.SUCCESS_STATUS, fmt.Sprint(pid), executionTimestamp}
+			return execute.CommandResults{[]byte(total), []byte(string(stderrBytes)), execute.SUCCESS_STATUS, fmt.Sprint(pid), executionTimestamp}
 		}
 
 		// Covers the cases where an error was received before the remote thread was created
 		errorBytes := []byte(fmt.Sprintf("Shellcode execution failed. Error message: %s", fmt.Sprint(err)))
-		return execute.CommandResults{errorBytes, execute.ERROR_STATUS, fmt.Sprint(pid), executionTimestamp}
+		return execute.CommandResults{[]byte{}, errorBytes, execute.ERROR_STATUS, fmt.Sprint(pid), executionTimestamp}
 	} else {
 		// Empty payload
 		errorBytes := []byte(fmt.Sprintf("Empty payload: %s", payload))
-		return execute.CommandResults{errorBytes, execute.ERROR_STATUS, "-1", time.Now().UTC()}
+		return execute.CommandResults{[]byte{}, errorBytes, execute.ERROR_STATUS, "-1", time.Now().UTC()}
 	}
 }
 
