@@ -38,14 +38,17 @@ func ListDirectories(dirList []string) util.NativeCmdResult {
 			stdoutLines = append(stdoutLines, output, "")
 		}
 	}
+	exitCode := SUCCESS_EXIT_CODE
 	if len(stderrLines) > 0 {
 		stderr = strings.Join(stderrLines[:], "\n")
 		resultErr = errors.New(stderr)
+		exitCode = PROCESS_ERROR_EXIT_CODE
 	}
 	return util.NativeCmdResult{
 		Stdout: []byte(strings.Join(stdoutLines[:], "\n")),
 		Stderr: []byte(stderr),
 		Err: resultErr,
+		ExitCode: exitCode,
 	}
 }
 
@@ -77,12 +80,14 @@ func handleSingleDir(dirName string) util.NativeCmdResult {
 			Stdout: nil,
 			Stderr: []byte(err.Error()),
 			Err: err,
+			ExitCode: PROCESS_ERROR_EXIT_CODE
 		}
 	}
 	return util.NativeCmdResult{
 		Stdout: []byte(output),
 		Stderr: nil,
 		Err: nil,
+		ExitCode: SUCCESS_EXIT_CODE
 	}
 }
 
