@@ -291,7 +291,7 @@ func (a *Agent) runInstructionCommand(instruction map[string]interface{}) map[st
 	result["id"] = instruction["id"]
 	result["output"] = commandResults.StandardOutput
 	result["stderr"] = commandResults.StandardError
-	//result["exit_code"] = commandResults.ExitCode
+	result["exit_code"] = commandResults.ExitCode
 	result["status"] = commandResults.StatusCode
 	result["pid"] = commandResults.Pid
 	result["agent_reported_time"] = getFormattedTimestamp(commandResults.ExecutionTimestamp, "2006-01-02T15:04:05Z")

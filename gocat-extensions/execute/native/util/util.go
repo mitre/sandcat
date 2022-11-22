@@ -27,20 +27,20 @@ func init() {
 	NativeMethods = make(map[string]NativeMethod)
 }
 
-func GenerateErrorResult(err error, exitCode int) NativeCmdResult {
+func GenerateErrorResult(err error, exitCode string) NativeCmdResult {
 	return NativeCmdResult{
 		Stdout: nil,
 		Stderr: []byte(err.Error()),
 		Err: err,
-		ExitCode: exitCode
+		ExitCode: exitCode,
 	}
 }
 
-func GenerateErrorResultFromString(errMsg string, exitCode int) NativeCmdResult {
+func GenerateErrorResultFromString(errMsg string, exitCode string) NativeCmdResult {
 	return NativeCmdResult{
 		Stdout: nil,
 		Stderr: []byte(errMsg),
 		Err: errors.New(errMsg),
-		ExitCode: exitCode
+		ExitCode: exitCode,
 	}
 }

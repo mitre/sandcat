@@ -67,7 +67,7 @@ func (n *NativeExecutor) runNativeExecutor(command string, timeout int) (execute
 			ExitCode: execute.ERROR_EXIT_CODE,
 			StatusCode: execute.ERROR_STATUS,
 			Pid: n.pidStr,
-			ExecutionTimestamp: executionTimestamp
+			ExecutionTimestamp: executionTimestamp,
 		}
 	}
 	go func() {

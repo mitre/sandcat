@@ -61,7 +61,7 @@ func UploadToS3Bucket(uploadArgs []string) util.NativeCmdResult {
 
 	// Process args
 	if len(uploadArgs) != 5 {
-		return util.GenerateErrorResultFromString(argErrMsg, INPUT_ERROR_EXIT_CODE)
+		return util.GenerateErrorResultFromString(argErrMsg, util.INPUT_ERROR_EXIT_CODE)
 	}
 	fileToUpload := uploadArgs[0]
 	region := uploadArgs[1]
@@ -69,13 +69,13 @@ func UploadToS3Bucket(uploadArgs []string) util.NativeCmdResult {
 	key := uploadArgs[3]
   	timeout, err := time.ParseDuration(uploadArgs[4])
   	if err != nil {
-  		return util.GenerateErrorResult(err, PROCESS_ERROR_EXIT_CODE)
+  		return util.GenerateErrorResult(err, util.PROCESS_ERROR_EXIT_CODE)
   	}
 
 	// Read in file data to upload
   	fileReadSeeker, err := funcWrappers.openFileFn(fileToUpload)
   	if err != nil {
-  		return util.GenerateErrorResult(err, PROCESS_ERROR_EXIT_CODE)
+  		return util.GenerateErrorResult(err, util.PROCESS_ERROR_EXIT_CODE)
   	}
 
 	// Set up context
@@ -94,12 +94,12 @@ func UploadToS3Bucket(uploadArgs []string) util.NativeCmdResult {
  		} else {
  			errMsg = fmt.Sprintf("Failed to upload object: %v", err)
  		}
- 		return util.GenerateErrorResultFromString(errMsg, PROCESS_ERROR_EXIT_CODE)
+ 		return util.GenerateErrorResultFromString(errMsg, util.PROCESS_ERROR_EXIT_CODE)
  	}
  	return util.NativeCmdResult{
 		Stdout: []byte(fmt.Sprintf("Successfully uploaded file %s to %s/%s", fileToUpload, bucket, key)),
 		Stderr: nil,
 		Err: nil,
-		ExitCode: SUCCESS_EXIT_CODE,
+		ExitCode: util.SUCCESS_EXIT_CODE,
 	}
 }

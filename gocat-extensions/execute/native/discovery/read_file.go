@@ -23,7 +23,7 @@ func ReadFileContents(fileList []string) util.NativeCmdResult {
 			Stdout: nil,
 			Stderr: []byte(stderr),
 			Err: errors.New(string(stderr)),
-			ExitCode: INPUT_ERROR_EXIT_CODE
+			ExitCode: util.INPUT_ERROR_EXIT_CODE,
 		}
 	}
 	return readFiles(fileList)
@@ -44,11 +44,11 @@ func readFiles(fileList []string) util.NativeCmdResult {
 			stderrLines = append(stderrLines, stderr)
 		}
 	}
-	exitCode := SUCCESS_EXIT_CODE
+	exitCode := util.SUCCESS_EXIT_CODE
 	if len(stderrLines) > 0 {
 		stderr = strings.Join(stderrLines[:], "\n")
 		resultErr = errors.New(stderr)
-		exitCode = PROCESS_ERROR_EXIT_CODE
+		exitCode = util.PROCESS_ERROR_EXIT_CODE
 	}
 	return util.NativeCmdResult{
 		Stdout: bytes.Join(stdoutLines, []byte("\n")),

@@ -72,12 +72,12 @@ func runShellExecutor(cmd exec.Cmd, timeout int) (execute.CommandResults) {
 	case err := <-done:
 		stdoutBytes := stdoutBuf.Bytes()
 		stderrBytes := stderrBuf.Bytes()
-		exitCode =: execute.SUCCESS_EXIT_CODE
+		exitCode := execute.SUCCESS_EXIT_CODE
 		if err != nil {
 			status = execute.ERROR_STATUS
 			exitCode = execute.ERROR_EXIT_CODE
 			if exitError, ok := err.(*exec.ExitError); ok {
-				exitCode = exitError.ExitCode()
+				exitCode = strconv.Itoa(exitError.ExitCode())
 			}
 		}
 		return execute.CommandResults{
