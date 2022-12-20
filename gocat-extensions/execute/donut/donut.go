@@ -52,10 +52,10 @@ func (d *Donut) Run(command string, timeout int, info execute.InstructionInfo) (
 			return execute.CommandResults{
 				StandardOutput: []byte(string(stdoutBytes)),
 				StandardError: []byte(string(stderrBytes)),
-				ExitCode: fmt.Sprint(eventCode)
+				ExitCode: fmt.Sprint(eventCode),
 				StatusCode: execute.SUCCESS_STATUS,
 				Pid: fmt.Sprint(pid),
-				ExecutionTimestamp: executionTimestamp
+				ExecutionTimestamp: executionTimestamp,
 			}
 		}
 
@@ -67,7 +67,7 @@ func (d *Donut) Run(command string, timeout int, info execute.InstructionInfo) (
 			ExitCode: fmt.Sprint(eventCode),
 			StatusCode: execute.ERROR_STATUS,
 			Pid: fmt.Sprint(pid),
-			ExecutionTimestamp: executionTimestamp
+			ExecutionTimestamp: executionTimestamp,
 		}
 	} else {
 		// Empty payload
