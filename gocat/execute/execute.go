@@ -16,7 +16,7 @@ const (
 	SUCCESS_PID 	= "0"
 	ERROR_PID       = "1"
 	SUCCESS_EXIT_CODE = "0"
-	ERROR_EXIT_CODE	=	"-1"
+	ERROR_EXIT_CODE	= "-1"
 )
 
 type Executor interface {
