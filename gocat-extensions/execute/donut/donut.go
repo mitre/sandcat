@@ -49,22 +49,37 @@ func (d *Donut) Run(command string, timeout int, info execute.InstructionInfo) (
 
 		// Assemble the final output
 		if task {
-
-			total := "Shellcode thread Exit Code: " + fmt.Sprint(eventCode) + "\n\n"
-
-			total += "STDOUT:\n"
-			total += string(stdoutBytes)
-
-			return execute.CommandResults{[]byte(total), []byte(string(stderrBytes)), execute.SUCCESS_STATUS, fmt.Sprint(pid), executionTimestamp}
+			return execute.CommandResults{
+				StandardOutput: []byte(string(stdoutBytes)),
+				StandardError: []byte(string(stderrBytes)),
+				ExitCode: fmt.Sprint(eventCode),
+				StatusCode: execute.SUCCESS_STATUS,
+				Pid: fmt.Sprint(pid),
+				ExecutionTimestamp: executionTimestamp,
+			}
 		}
 
 		// Covers the cases where an error was received before the remote thread was created
 		errorBytes := []byte(fmt.Sprintf("Shellcode execution failed. Error message: %s", fmt.Sprint(err)))
-		return execute.CommandResults{[]byte{}, errorBytes, execute.ERROR_STATUS, fmt.Sprint(pid), executionTimestamp}
+		return execute.CommandResults{
+			StandardOutput: []byte{},
+			StandardError: errorBytes,
+			ExitCode: fmt.Sprint(eventCode),
+			StatusCode: execute.ERROR_STATUS,
+			Pid: fmt.Sprint(pid),
+			ExecutionTimestamp: executionTimestamp,
+		}
 	} else {
 		// Empty payload
 		errorBytes := []byte(fmt.Sprintf("Empty payload: %s", payload))
-		return execute.CommandResults{[]byte{}, errorBytes, execute.ERROR_STATUS, "-1", time.Now().UTC()}
+		return execute.CommandResults{
+			StandardOutput: []byte{},
+			StandardError: errorBytes,
+			ExitCode: execute.ERROR_EXIT_CODE,
+			StatusCode: execute.ERROR_STATUS,
+			Pid: "-1",
+			ExecutionTimestamp: time.Now().UTC(),
+		}
 	}
 }
 

@@ -10,12 +10,12 @@ import (
 
 func TestGenerateErrorResult(t *testing.T) {
 	want := "test error msg"
-	result := util.GenerateErrorResult(errors.New(want))
+	result := util.GenerateErrorResult(errors.New(want), util.PROCESS_ERROR_EXIT_CODE)
 	testutil.VerifyResult(t, result, "", want, want)
 }
 
 func TestGenerateErrorResultFromString(t *testing.T) {
 	want := "test error msg"
-	result := util.GenerateErrorResultFromString(want)
+	result := util.GenerateErrorResultFromString(want, util.PROCESS_ERROR_EXIT_CODE)
 	testutil.VerifyResult(t, result, "", want, want)
 }

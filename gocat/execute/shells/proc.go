@@ -105,7 +105,14 @@ func (p *Proc) Run(command string, timeout int, info execute.InstructionInfo) (e
 	if err != nil {
 		errMsg := fmt.Sprintf("[!] Error parsing command line: %s", err.Error())
 		output.VerbosePrint(errMsg)
-		return execute.CommandResults{[]byte{}, []byte(errMsg), execute.ERROR_STATUS, execute.ERROR_PID, p.timeStampGenerator()}
+		return execute.CommandResults{
+			StandardOutput: []byte{},
+			StandardError: []byte(errMsg),
+			ExitCode: execute.ERROR_EXIT_CODE,
+			StatusCode: execute.ERROR_STATUS,
+			Pid: execute.ERROR_PID,
+			ExecutionTimestamp: p.timeStampGenerator(),
+		}
 	}
 	output.VerbosePrint(fmt.Sprintf("[*] Starting process %s with args %v", exePath, exeArgs))
 	if exePath == "del" || exePath == "rm" {
@@ -148,6 +155,7 @@ func (p *Proc) deleteFiles(files []string) (execute.CommandResults) {
 	var errorMessages []string
 	var msg string
 	var err error
+	exitCode := execute.SUCCESS_EXIT_CODE
 	status := execute.SUCCESS_STATUS
 	executionTimestamp := p.timeStampGenerator()
 	for _, toDelete := range files {
@@ -155,13 +163,21 @@ func (p *Proc) deleteFiles(files []string) (execute.CommandResults) {
 		if err != nil {
 			msg = fmt.Sprintf("Failed to remove %s: %s", toDelete, err.Error())
 			status = execute.ERROR_STATUS
+			exitCode = execute.ERROR_EXIT_CODE
 			errorMessages = append(errorMessages, msg)
 		} else {
 			msg = fmt.Sprintf("Removed file %s.", toDelete)
 			outputMessages = append(outputMessages, msg)
 		}
 	}
-	return execute.CommandResults{[]byte(strings.Join(outputMessages, "\n")), []byte(strings.Join(errorMessages, "\n")), status, p.pidStr, executionTimestamp}
+	return execute.CommandResults{
+		StandardOutput: []byte(strings.Join(outputMessages, "\n")),
+		StandardError: []byte(strings.Join(errorMessages, "\n")),
+		ExitCode: exitCode,
+		StatusCode: status,
+		Pid: p.pidStr,
+		ExecutionTimestamp: executionTimestamp,
+	}
 }
 
 func runStandardCmd(exePath string, exeArgs []string, timeout int) (execute.CommandResults) {
@@ -172,10 +188,24 @@ func (p *Proc) runBackgroundCmd(exePath string, exeArgs []string) (execute.Comma
 	handle := exec.Command(exePath, append(exeArgs)...)
 	err := p.cmdHandleRunner(handle)
 	if err != nil {
-		return execute.CommandResults{[]byte{}, []byte(err.Error()), execute.ERROR_STATUS, execute.ERROR_PID, p.timeStampGenerator()}
+		return execute.CommandResults{
+			StandardOutput: []byte{},
+			StandardError: []byte(err.Error()),
+			ExitCode: execute.ERROR_EXIT_CODE,
+			StatusCode: execute.ERROR_STATUS,
+			Pid: execute.ERROR_PID,
+			ExecutionTimestamp: p.timeStampGenerator(),
+		}
 	}
 	pid := p.cmdHandlePidGetter(handle)
 	pidStr := strconv.Itoa(pid)
 	retMsg := fmt.Sprintf("Executed background process %s with PID %d and args: %s", exePath, pid, strings.Join(exeArgs, ", "))
-	return execute.CommandResults{[]byte(retMsg), []byte{}, execute.SUCCESS_STATUS, pidStr, p.timeStampGenerator()}
+	return execute.CommandResults{
+		StandardOutput: []byte(retMsg),
+		StandardError: []byte{},
+		ExitCode: execute.SUCCESS_EXIT_CODE,
+		StatusCode: execute.SUCCESS_STATUS,
+		Pid: pidStr,
+		ExecutionTimestamp: p.timeStampGenerator(),
+	}
 }

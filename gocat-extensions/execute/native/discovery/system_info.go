@@ -21,6 +21,7 @@ func GetSystemInfo(args []string) util.NativeCmdResult {
 		Stdout: []byte(getSystemInfo()),
 		Stderr: nil,
 		Err: nil,
+		ExitCode: util.SUCCESS_EXIT_CODE,
 	}
 }
 

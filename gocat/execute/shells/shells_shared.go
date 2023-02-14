@@ -30,7 +30,14 @@ func runShellExecutor(cmd exec.Cmd, timeout int) (execute.CommandResults) {
 	err := cmd.Start()
 	if err != nil {
 		errorBytes := []byte(fmt.Sprintf("Encountered an error starting the process: %q", err.Error()))
-		return execute.CommandResults{[]byte{}, errorBytes, execute.ERROR_STATUS, execute.ERROR_PID, executionTimestamp}
+		return execute.CommandResults{
+			StandardOutput: []byte{},
+			StandardError: errorBytes,
+			ExitCode: execute.ERROR_EXIT_CODE,
+			StatusCode: execute.ERROR_STATUS,
+			Pid: execute.ERROR_PID,
+			ExecutionTimestamp: executionTimestamp,
+		}
 	}
 	pid := strconv.Itoa(cmd.Process.Pid)
 	go func() {
@@ -44,16 +51,42 @@ func runShellExecutor(cmd exec.Cmd, timeout int) (execute.CommandResults) {
 
 		if err != nil {
 			stderrBytes = append([]byte("Timeout reached, but couldn't kill the process\n"), stderrBytes...)
-			return execute.CommandResults{stdoutBytes, stderrBytes, execute.ERROR_STATUS, pid, executionTimestamp}
+			return execute.CommandResults{
+				StandardOutput: stdoutBytes,
+				StandardError: stderrBytes,
+				ExitCode: execute.ERROR_EXIT_CODE,
+				StatusCode: execute.ERROR_STATUS,
+				Pid: pid,
+				ExecutionTimestamp: executionTimestamp,
+			}
 		}
 		stdoutBytes = append([]byte("Timeout reached, process killed\n"), stdoutBytes...)
-		return execute.CommandResults{stdoutBytes, stderrBytes, execute.TIMEOUT_STATUS, pid, executionTimestamp}
+		return execute.CommandResults{
+			StandardOutput: stdoutBytes,
+			StandardError: stderrBytes,
+			ExitCode: execute.ERROR_EXIT_CODE,
+			StatusCode: execute.TIMEOUT_STATUS,
+			Pid: pid,
+			ExecutionTimestamp: executionTimestamp,
+		}
 	case err := <-done:
 		stdoutBytes := stdoutBuf.Bytes()
 		stderrBytes := stderrBuf.Bytes()
+		exitCode := execute.SUCCESS_EXIT_CODE
 		if err != nil {
 			status = execute.ERROR_STATUS
+			exitCode = execute.ERROR_EXIT_CODE
+			if exitError, ok := err.(*exec.ExitError); ok {
+				exitCode = strconv.Itoa(exitError.ExitCode())
+			}
 		}
-		return execute.CommandResults{stdoutBytes, stderrBytes, status, pid, executionTimestamp}
+		return execute.CommandResults{
+			StandardOutput: stdoutBytes,
+			StandardError: stderrBytes,
+			ExitCode: exitCode,
+			StatusCode: status,
+			Pid: pid,
+			ExecutionTimestamp: executionTimestamp,
+		}
 	}
 }
