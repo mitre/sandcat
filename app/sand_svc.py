@@ -54,6 +54,9 @@ class SandService(BaseService):
                 cflags='CGO_ENABLED=1',
                 extldflags='-extldflags "-Wl,--nxcompat -Wl,--dynamicbase -Wl,--high-entropy-va"',
             ),
+            freebsd=dict(
+                cflags='CGO_ENABLED=1'
+            ),
             linux=dict(
                 cflags='CGO_ENABLED=1'
             )
