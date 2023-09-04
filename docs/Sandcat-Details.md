@@ -23,6 +23,7 @@ various use cases.
 ## Precompiled Binaries
 Precompiled agent binaries are located in the `payloads` directory and are referenced with the following filename:
 - `sandcat.go-darwin` compiled binary for Mac targets
+- `sandcat.go-darwin-arm64` compiled binary for Mac with ARM processor targets
 - `sandcat.go-linux` compiled binary for Linux targets
 - `sandcat.go-windows` compiled binary for Windows targets.
 
