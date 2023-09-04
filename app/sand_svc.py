@@ -113,6 +113,7 @@ class SandService(BaseService):
         If a gocat variant is specified along with additional extensions, the extensions will be added to the
         base extensions for the variant.
         """
+        architecture = headers.get('architecture', 'amd64')
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
         for param in flag_params:
             if param in headers:
@@ -135,8 +136,8 @@ class SandService(BaseService):
         plugin, file_path = await self.file_svc.find_file_path(compile_target_name, location=compile_target_dir)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
         build_path, build_file = os.path.split(file_path)
-        await self.file_svc.compile_go(platform, output, build_file, buildmode=buildmode, ldflags=' '.join(ldflags),
-                                       cflags=cflags, build_dir=build_path)
+        await self.file_svc.compile_go(platform, output, build_file, arch=architecture, buildmode=buildmode,
+                                       ldflags=' '.join(ldflags), cflags=cflags, build_dir=build_path)
 
         # Remove extension files.
         await self._uninstall_gocat_extensions(installed_extensions)
