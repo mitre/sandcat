@@ -29,13 +29,14 @@ jobs:
       env:
         GOOS: windows
 
-    - name: Build Darwin
+    - name: Build Darwin amd64
       run: |
         cd gocat
-        go build -o sandcat.go-darwin -ldflags="-s -w" sandcat.go
-        file sandcat.go-darwin && ls -al sandcat.go-darwin
+        go build -o sandcat.go-darwin-amd64 -ldflags="-s -w" sandcat.go
+        file sandcat.go-darwin-amd64 && ls -al sandcat.go-darwin-amd64
       env:
         GOOS: darwin
+        GOARCH: amd64
 
     - name: Build Darwin arm64
       run: |
