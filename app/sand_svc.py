@@ -133,7 +133,7 @@ class SandService(BaseService):
 
         # Load extensions and compile. Extensions need to be loaded before searching for target file.
         installed_extensions = await self._install_gocat_extensions(extension_names)
-        plugin, file_path = await self.file_svc.find_file_path(compile_target_name, location=compile_target_dir)
+        _, file_path = await self.file_svc.find_file_path(compile_target_name, location=compile_target_dir)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
         build_path, build_file = os.path.split(file_path)
         await self.file_svc.compile_go(platform, output, build_file, arch=architecture, buildmode=buildmode,
