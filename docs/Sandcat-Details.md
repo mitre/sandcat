@@ -1,10 +1,10 @@
 # Sandcat Plugin Details
 
-The Sandcat plugin provides CALDERA with its default agent implant, Sandcat.
+The Sandcat plugin provides Caldera with its default agent implant, Sandcat.
 The agent is written in GoLang for cross-platform compatibility and can currently be compiled to run on
 Windows, Linux, and MacOS targets.
 
-While the CALDERA C2 server requires GoLang to be installed in order to compile agent binaries, 
+While the Caldera C2 server requires GoLang to be installed in order to compile agent binaries, 
 no installation is required on target machines - the agent program will simply run as an executable.
 
 The `sandcat` plugin does come with precompiled binaries, but these only contain the basic
@@ -35,11 +35,11 @@ latest compiled version on your system.
 To deploy Sandcat, use one of the built-in delivery commands from the main server GUI which allows you to run the agent 
 on Windows, Mac, or Linux.
 
-Each of these commands downloads a compiled Sandcat executable from CALDERA and runs it immediately.
+Each of these commands downloads a compiled Sandcat executable from Caldera and runs it immediately.
 
-Once the agent is running, it should show log messages when it beacons into CALDERA.
+Once the agent is running, it should show log messages when it beacons into Caldera.
 
-> If you have GoLang installed on the CALDERA server, each time you run one of the delivery commands above, 
+> If you have GoLang installed on the Caldera server, each time you run one of the delivery commands above, 
 the agent will re-compile itself dynamically to obtain a new file hash. This will help bypass file-based signature detections.
 
 ### Options
@@ -142,7 +142,7 @@ The following values describe exit codes utilized by specific executors:
 
 ## Customizing Default Options & Execution Without CLI Options
 
-It is possible to customize the default values of these options when pulling Sandcat from the CALDERA server.  
+It is possible to customize the default values of these options when pulling Sandcat from the Caldera server.  
 This is useful if you want to hide the parameters from the process tree or if you cannot specify arguments when executing the agent binary. 
 
 You can do this by passing the values in as headers when requesting the agent binary from the C2 server instead of as parameters when executing the binary.
