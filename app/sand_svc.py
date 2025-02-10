@@ -17,8 +17,7 @@ gocat_variants = dict(
     red=set(['gist', 'shared', 'shells', 'shellcode'])
 )
 default_gocat_variant = 'basic'
-allowed_server_regex = re.compile(r'^[A-Za-z0-9_\-\.:%+]+$')
-allowed_generic_param_regex = re.compile(r'^[A-Za-z0-9_\-\.]+$')
+
 
 class SandService(BaseService):
 
@@ -130,10 +129,9 @@ class SandService(BaseService):
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('receiverKey', xor_key))
                 else:
                     if param == 'server':
-                        if not allowed_server_regex.fullmatch(value):
-                            raise ValueError('Invalid characters in server value: %s' % value)
-                    else if not allowed_generic_param_regex.fullmatch(value):
-                        raise ValueError('Invalid characters in %s value: %s' % (param, value))
+                        value = self.file_svc.sanitize_server_ldflag_value(value)
+                    else:
+                        value = self.file_svc.sanitize_ldflag_value(value)
                     ldflags.append('-X main.%s=%s' % (param, value))
         ldflags.append(extldflags)
 
