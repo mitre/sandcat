@@ -128,11 +128,8 @@ class SandService(BaseService):
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('encodedReceivers', encoded_info))
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('receiverKey', xor_key))
                 else:
-                    if param == 'server':
-                        value = self.file_svc.sanitize_server_ldflag_value(value)
-                    else:
-                        value = self.file_svc.sanitize_ldflag_value(value)
-                    ldflags.append('-X main.%s=%s' % (param, value))
+                    sanitized = self.file_svc.sanitize_ldflag_value(param, value)
+                    ldflags.append('-X main.%s=%s' % (param, sanitized))
         ldflags.append(extldflags)
 
         output = str(pathlib.Path('plugins/sandcat/payloads').resolve() / ('%s-%s' % (output_name, platform)))
