@@ -117,16 +117,18 @@ class SandService(BaseService):
         ldflags = ['-s', '-w', '-X main.key=%s' % (self._generate_key(),)]
         for param in flag_params:
             if param in headers:
+                value = headers[param]
                 if param == 'c2':
-                    ldflags.append('-X main.%s=%s' % (await self._get_c2_config(headers[param])))
+                    ldflags.append('-X main.%s=%s' % (await self._get_c2_config(value)))
                 elif param == 'includeProxyPeers':
                     self.log.debug('Available peer-to-peer proxy receivers requested.')
-                    encoded_info, xor_key = await self._get_encoded_proxy_peer_info(headers[param])
+                    encoded_info, xor_key = await self._get_encoded_proxy_peer_info(value)
                     if encoded_info and xor_key:
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('encodedReceivers', encoded_info))
                         ldflags.append('-X github.com/mitre/gocat/proxy.%s=%s' % ('receiverKey', xor_key))
                 else:
-                    ldflags.append('-X main.%s=%s' % (param, headers[param]))
+                    sanitized = self.file_svc.sanitize_ldflag_value(param, value)
+                    ldflags.append('-X main.%s=%s' % (param, sanitized))
         ldflags.append(extldflags)
 
         output = str(pathlib.Path('plugins/sandcat/payloads').resolve() / ('%s-%s' % (output_name, platform)))
