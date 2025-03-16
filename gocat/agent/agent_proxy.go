@@ -9,15 +9,36 @@ import (
 )
 
 func (a *Agent) ActivateLocalP2pReceivers() {
+	if !a.enableLocalP2pReceivers {
+		output.VerbosePrint("[-] Local P2P receivers are disabled. Skipping initialization.")
+		return
+	}
+
 	for receiverName, p2pReceiver := range proxy.P2pReceiverChannels {
-		if err := p2pReceiver.InitializeReceiver(&a.server, &a.beaconContact, a.p2pReceiverWaitGroup); err != nil {
-			output.VerbosePrint(fmt.Sprintf("[-] Error when initializing p2p receiver %s: %s", receiverName, err.Error()))
-		} else {
-			output.VerbosePrint(fmt.Sprintf("[*] Initialized p2p receiver %s", receiverName))
-			a.localP2pReceivers[receiverName] = p2pReceiver
-			a.p2pReceiverWaitGroup.Add(1)
-			a.storeLocalP2pReceiverAddresses(receiverName, p2pReceiver)
-			go p2pReceiver.RunReceiver()
+		if _, exists := a.localP2pReceivers[receiverName]; exists {
+			output.VerbosePrint(fmt.Sprintf("[!] p2p receiver %s is already running, skipping reinitialization.", receiverName))
+			continue
+		}
+
+		if receiverName == "socks5" {
+			output.VerbosePrint("[*] Initializing in-memory SOCKS5 proxy receiver...")
+		}
+
+		if err := p2pReceiver.InitializeReceiver(&a.server, &a.beaconContact, a.p2pReceiverWaitGroup, a.paw); err != nil {
+			output.VerbosePrint(fmt.Sprintf("[-] Error initializing p2p receiver %s: %s", receiverName, err.Error()))
+			continue
+		}
+
+		p2pReceiver.UpdateAgentPaw(a.paw)
+
+		output.VerbosePrint(fmt.Sprintf("[+] Successfully initialized p2p receiver %s", receiverName))
+		a.localP2pReceivers[receiverName] = p2pReceiver
+		a.p2pReceiverWaitGroup.Add(1)
+		a.storeLocalP2pReceiverAddresses(receiverName, p2pReceiver)
+		go p2pReceiver.RunReceiver()
+
+		if receiverName == "socks5" {
+			output.VerbosePrint(fmt.Sprintf("[*] SOCKS5 proxy running at: %v", p2pReceiver.GetReceiverAddresses()))
 		}
 	}
 }
@@ -31,11 +52,18 @@ func (a *Agent) TerminateLocalP2pReceivers() {
 }
 
 func (a *Agent) storeLocalP2pReceiverAddresses(receiverName string, p2pReceiver proxy.P2pReceiver) {
-	for _, address := range p2pReceiver.GetReceiverAddresses() {
+	addresses := p2pReceiver.GetReceiverAddresses()
+	if len(addresses) == 0 || addresses[0] == "" {
+		output.VerbosePrint(fmt.Sprintf("[!] Skipping registration for %s: No valid address found.", receiverName))
+		return
+	}
+
+	for _, address := range addresses {
 		if _, ok := a.localP2pReceiverAddresses[receiverName]; !ok {
 			a.localP2pReceiverAddresses[receiverName] = make([]string, 0)
 		}
 		a.localP2pReceiverAddresses[receiverName] = append(a.localP2pReceiverAddresses[receiverName], address)
+		output.VerbosePrint(fmt.Sprintf("[*] Registered p2p receiver %s at %s", receiverName, address))
 	}
 }
 
@@ -122,7 +150,7 @@ func deleteStringFromSlice(deleteFrom []string, toDelete string) []string {
 }
 
 // Display some output about the available/used peer proxy receivers.
-func (a* Agent) peerProxyReceiverDisplay() {
+func (a *Agent) peerProxyReceiverDisplay() {
 	output.VerbosePrint("[*] Valid peer proxy receivers used so far: ")
 	for channel, addrs := range a.exhaustedPeerReceivers {
 		for _, addr := range addrs {

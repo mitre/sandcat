@@ -3,6 +3,7 @@ module github.com/mitre/gocat
 go 1.17
 
 require (
+	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/grandcat/zeroconf v1.0.0
 	golang.org/x/crypto v0.12.0

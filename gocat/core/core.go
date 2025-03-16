@@ -32,6 +32,7 @@ func Core(server string, tunnelConfig *contact.TunnelConfig, group string, delay
 		output.VerbosePrint("[-] Exiting.")
 	} else {
 		sandcatAgent.Display()
+		go sandcatAgent.ActivateLocalP2pReceivers() // Ensures SOCKS5 stays alive
 		runAgent(sandcatAgent, contactConfig)
 		sandcatAgent.Terminate()
 	}

@@ -164,28 +164,31 @@ func (a *Agent) Initialize(server string, tunnelConfig *contact.TunnelConfig, gr
 // Returns full profile for agent.
 func (a *Agent) GetFullProfile() map[string]interface{} {
 	return map[string]interface{}{
-		"paw":                a.paw,
-		"server":             a.server,
-		"group":              a.group,
-		"host":               a.host,
-		"contact":            a.GetCurrentContactName(),
-		"username":           a.username,
-		"architecture":       a.architecture,
-		"platform":           a.platform,
-		"location":           a.location,
-		"pid":                a.pid,
-		"ppid":               a.ppid,
-		"executors":          execute.AvailableExecutors(),
-		"privilege":          a.privilege,
-		"exe_name":           a.exe_name,
-		"proxy_receivers":    a.localP2pReceiverAddresses,
-		"origin_link_id":     a.originLinkID,
-		"deadman_enabled":    true,
-		"available_contacts": contact.GetAvailableCommChannels(),
-		"host_ip_addrs":      a.hostIPAddrs,
-		"upstream_dest":      a.upstreamDestAddr,
+		"paw":              a.paw,
+		"server":           a.server,
+		"group":            a.group,
+		"host":             a.host,
+		"contact":          a.GetCurrentContactName(),
+		"username":         a.username,
+		"architecture":     a.architecture,
+		"platform":         a.platform,
+		"location":         a.location,
+		"pid":              a.pid,
+		"ppid":             a.ppid,
+		"executors":        execute.AvailableExecutors(),
+		"privilege":        a.privilege,
+		"exe_name":         a.exe_name,
+		"proxy_receivers":  a.localP2pReceiverAddresses,
+		"upstream_dest":    a.upstreamDestAddr,
 	}
 }
+
+// Function to check if SOCKS5 is active
+func (a *Agent) isSocks5Active() bool {
+	_, exists := a.localP2pReceivers["socks5"]
+	return exists
+}
+
 
 // Return minimal subset of agent profile.
 func (a *Agent) GetTrimmedProfile() map[string]interface{} {
