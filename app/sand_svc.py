@@ -29,6 +29,15 @@ class SandService(BaseService):
         self.sandcat_dir = os.path.relpath(os.path.join('plugins', 'sandcat'))
         self.sandcat_extensions = dict()
 
+    # New SOCKS5 Dynamic Start/Stop functionality
+    async def handle_agent_message(self, message, agent):
+        if "activate_proxy" in message:
+            self.log.debug("[*] Activating SOCKS5 proxy for agent %s", agent.paw)
+            agent.activate_socks5_proxy()
+        elif "deactivate_proxy" in message:
+            self.log.debug("[*] Deactivating SOCKS5 proxy for agent %s", agent.paw)
+            agent.deactivate_socks5_proxy()
+
     async def dynamically_compile_executable(self, headers):
         # HTTP headers will specify the file name, platform, and comma-separated list of extension modules to include.
         name, platform = headers.get('file'), headers.get('platform')

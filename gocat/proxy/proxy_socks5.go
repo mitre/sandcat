@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/armon/go-socks5"
 	"github.com/mitre/gocat/contact"
@@ -13,70 +14,109 @@ import (
 // SOCKS5Receiver implements the P2pReceiver interface.
 type SOCKS5Receiver struct {
 	listenAddr   string
-	listener     net.Listener
 	server       *socks5.Server
 	upstreamComs *contact.Contact
 	waitgroup    *sync.WaitGroup
-	agentPaw     string // Store only the agent's PAW instead of a reference to Agent
+	agentPaw     string
+	active       bool // ✅ Tracks if the proxy is currently active
 }
 
-// InitializeReceiver sets up the SOCKS5 server in memory and finds an open port.
+// InitializeReceiver sets up the SOCKS5 receiver but does NOT start it.
 func (s *SOCKS5Receiver) InitializeReceiver(agentServer *string, upstreamComs *contact.Contact, waitgroup *sync.WaitGroup, agentPaw string) error {
-    s.upstreamComs = upstreamComs
-    s.waitgroup = waitgroup
-    s.agentPaw = agentPaw // Store PAW immediately
+	s.upstreamComs = upstreamComs
+	s.waitgroup = waitgroup
+	s.agentPaw = agentPaw
+	s.active = false // Proxy is inactive at initialization
 
-    // Find an available port before running the receiver
-    listener, err := net.Listen("tcp", "127.0.0.1:0") // OS assigns an available port
-    if err != nil {
-        return fmt.Errorf("[-] SOCKS5 proxy failed to find an available port: %v", err)
-    }
-    s.listener = listener
-    s.listenAddr = listener.Addr().String()
+	// Create SOCKS5 server
+	conf := &socks5.Config{}
+	server, err := socks5.New(conf)
+	if err != nil {
+		return fmt.Errorf("[-] Failed to create in-memory SOCKS5 server: %v", err)
+	}
+	s.server = server
 
-    // Create SOCKS5 server
-    conf := &socks5.Config{}
-    server, err := socks5.New(conf)
-    if err != nil {
-        listener.Close() // Ensure cleanup if the server fails to create
-        return fmt.Errorf("[-] Failed to create in-memory SOCKS5 server: %v", err)
-    }
-    s.server = server
+	// ✅ Start listening for proxy activation requests
+	go s.listenForProxyMessage()
 
-    log.Printf("[+] SOCKS5 proxy initialized at %s", s.listenAddr)
-    return nil
+	return nil
 }
 
-// RunReceiver starts the SOCKS5 proxy listener.
-func (s *SOCKS5Receiver) RunReceiver() {
-	log.Println("[DEBUG] SOCKS5 Proxy Receiver is attempting to start.")
+// listenForProxyMessage waits for an activation request before starting the proxy.
+func (s *SOCKS5Receiver) listenForProxyMessage() {
+	for {
+		time.Sleep(2 * time.Second) // Poll every 2 seconds
 
-	if s.listener == nil {
-		log.Println("[-] SOCKS5 proxy has no valid listener. Cannot start.")
+		if contact.ShouldActivateProxy() { // ✅ External function to check activation
+			s.RunReceiver()
+		} else if s.active && contact.ShouldDeactivateProxy() {
+			s.Terminate()
+		}
+	}
+}
+
+// RunReceiver starts the SOCKS5 proxy dynamically.
+func (s *SOCKS5Receiver) RunReceiver() {
+	if s.active {
+		log.Println("[!] SOCKS5 proxy is already running at", s.listenAddr)
 		return
 	}
 
-	// Start the SOCKS5 server in-memory
-	s.waitgroup.Add(1) // Track in waitgroup
+	log.Println("[DEBUG] SOCKS5 Proxy Receiver is attempting to start.")
+
+	// Find an open port dynamically
+	listener, err := net.Listen("tcp", "127.0.0.1:0") // OS assigns an available port
+	if err != nil {
+		log.Printf("[-] SOCKS5 proxy failed to find an available port: %v", err)
+		return
+	}
+
+	// ✅ Set listen address before starting
+	s.listenAddr = listener.Addr().String()
+	s.active = true
+
+	log.Printf("[+] SOCKS5 proxy dynamically assigned to %s", s.listenAddr)
+
+	// ✅ Notify Sandcat that the proxy is running
+	s.sendMessageToSandcat("proxy_active", s.listenAddr)
+
+	// Start the SOCKS5 server
+	s.waitgroup.Add(1)
 	go func() {
 		defer s.waitgroup.Done()
-		if err := s.server.Serve(s.listener); err != nil {
+		if err = s.server.Serve(listener); err != nil {
 			log.Printf("[-] SOCKS5 proxy encountered an error: %v", err)
-			s.Terminate() // Cleanup if failure occurs
+			s.active = false
+			s.listenAddr = ""
 		}
 	}()
 }
 
-// Terminate stops the SOCKS5 server.
+// Terminate stops the SOCKS5 proxy.
 func (s *SOCKS5Receiver) Terminate() {
+	if !s.active {
+		log.Println("[!] SOCKS5 proxy is not running.")
+		return
+	}
+
 	log.Println("[*] Shutting down in-memory SOCKS5 proxy...")
 	if s.server != nil {
-		s.server = nil
+		fmt.Println("[*] SOCKS5 proxy stopped.")
 	}
-	if s.listener != nil {
-		s.listener.Close()
-		s.listenAddr = "" // Reset address
+	s.active = false
+	s.listenAddr = ""
+
+	// ✅ Notify Sandcat that the proxy is inactive
+	s.sendMessageToSandcat("proxy_inactive", "")
+}
+
+// sendMessageToSandcat notifies Sandcat of the proxy status.
+func (s *SOCKS5Receiver) sendMessageToSandcat(status string, address string) {
+	proxyStatus := map[string]string{
+		"status":  status,
+		"address": address,
 	}
+	contact.SendProxyStatus(proxyStatus) // ✅ Function to send data to Sandcat
 }
 
 // UpdateAgentPaw updates the PAW for the SOCKS5Receiver
@@ -86,12 +126,18 @@ func (s *SOCKS5Receiver) UpdateAgentPaw(newPaw string) {
 
 // GetReceiverAddresses returns the listen address.
 func (s *SOCKS5Receiver) GetReceiverAddresses() []string {
-	if s.listenAddr == "" {
-		return []string{} // Return an empty slice if no address assigned
-	}
-	return []string{s.listenAddr} // Returns the dynamically assigned port
+    if s.listenAddr == "" {
+        return []string{"Inactive - Waiting for activation"} // ✅ Avoids empty output
+    }
+    return []string{s.listenAddr}
 }
 
+// ✅ Add IsRunning() method to check if the proxy is active
+func (s *SOCKS5Receiver) IsRunning() bool {
+	return s.active
+}
+
+// Initialize SOCKS5 proxy in the proxy channel list.
 func init() {
 	P2pReceiverChannels["socks5"] = &SOCKS5Receiver{}
 }

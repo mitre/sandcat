@@ -21,11 +21,13 @@ const (
 // P2pReceiver defines required functions for relaying messages between peers and an upstream peer/c2.
 type P2pReceiver interface {
 	InitializeReceiver(agentServer *string, upstreamComs *contact.Contact, waitgroup *sync.WaitGroup, agentPaw string) error
-	RunReceiver() // must be run as a go routine
+	RunReceiver() // Start on demand
 	UpdateAgentPaw(newPaw string)
 	Terminate()
 	GetReceiverAddresses() []string
+	IsRunning() bool // ✅ Add this method
 }
+
 
 // P2pClient will implement the contact.Contact interface.
 
@@ -52,3 +54,6 @@ var (
 	// XOR key for the encoded proxy receiver info.
 	receiverKey = ""
 )
+
+var activateProxyFunc func()
+var deactivateProxyFunc func()

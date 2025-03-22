@@ -83,6 +83,7 @@ type Agent struct {
 	availablePeerReceivers    map[string][]string          // maps P2P protocol to receiver addresses running on peer machines
 	exhaustedPeerReceivers    map[string][]string          // maps P2P protocol to receiver addresses that the agent has tried using.
 	usingPeerReceivers        bool                         // True if connecting to C2 via proxy peer
+	beaconInterval 			  time.Duration  // Add this field
 
 	// Deadman instructions to run before termination. Will be list of instruction mappings.
 	deadmanInstructions []map[string]interface{}
@@ -402,18 +403,20 @@ func (a *Agent) Display() {
 }
 
 func (a *Agent) displayLocalReceiverInformation() {
-	for receiverName, _ := range proxy.P2pReceiverChannels {
-		if _, ok := a.localP2pReceivers[receiverName]; ok {
-			output.VerbosePrint(fmt.Sprintf("P2p receiver %s=activated", receiverName))
-		} else {
-			output.VerbosePrint(fmt.Sprintf("P2p receiver %s=NOT activated", receiverName))
-		}
-	}
-	for protocol, addressList := range a.localP2pReceiverAddresses {
-		for _, address := range addressList {
-			output.VerbosePrint(fmt.Sprintf("%s local proxy receiver available at %s", protocol, address))
-		}
-	}
+    for receiverName, receiver := range a.localP2pReceivers {
+        if receiverName == "socks5" && !receiver.IsRunning() {
+            output.VerbosePrint(fmt.Sprintf("P2P receiver %s=Inactive - Waiting for activation", receiverName))
+        } else if receiver.IsRunning() {
+            output.VerbosePrint(fmt.Sprintf("P2P receiver %s=activated", receiverName))
+        } else {
+            output.VerbosePrint(fmt.Sprintf("P2P receiver %s=NOT activated", receiverName))
+        }
+    }
+    for protocol, addressList := range a.localP2pReceiverAddresses {
+        for _, address := range addressList {
+            output.VerbosePrint(fmt.Sprintf("%s local proxy receiver available at %s", protocol, address))
+        }
+    }
 }
 
 // Will download each individual payload listed for the given executor. The executor will determine
@@ -613,4 +616,106 @@ func (a *Agent) ProcessExecutorChange(executorUpdateMap interface{}) error {
 	} else {
 		return errors.New("Missing executor name or action for executor update.")
 	}
+}
+
+// contains checks if a slice contains a specific string.
+func contains(slice []string, item string) bool {
+    for _, s := range slice {
+        if s == item {
+            return true
+        }
+    }
+    return false
+}
+
+// ✅ Store SOCKS5 Proxy Address for Later Use
+func (a *Agent) storeLocalP2pReceiverAddresses(receiverName string, p2pReceiver proxy.P2pReceiver) {
+    addresses := p2pReceiver.GetReceiverAddresses()
+
+    // ✅ Avoid redundant "Inactive" prints
+    if len(addresses) == 0 || (len(addresses) == 1 && addresses[0] == "Inactive - Waiting for activation") {
+        if _, exists := a.localP2pReceiverAddresses[receiverName]; !exists {
+            output.VerbosePrint(fmt.Sprintf("[*] Registered P2P receiver %s, but no active address yet.", receiverName))
+        }
+        return // ✅ Do not store redundant "Inactive" state multiple times
+    }
+
+    // ✅ Prevent duplicate storage of addresses
+    if _, exists := a.localP2pReceiverAddresses[receiverName]; !exists {
+        a.localP2pReceiverAddresses[receiverName] = make([]string, 0)
+    }
+
+    for _, address := range addresses {
+        if address == "" || contains(a.localP2pReceiverAddresses[receiverName], address) {
+            continue
+        }
+        a.localP2pReceiverAddresses[receiverName] = append(a.localP2pReceiverAddresses[receiverName], address)
+        output.VerbosePrint(fmt.Sprintf("[*] Registered P2P receiver %s at %s", receiverName, address))
+    }
+}
+
+// ✅ Terminate all P2P Receivers
+func (a *Agent) TerminateLocalP2pReceivers() {
+	for receiverName, p2pReceiver := range a.localP2pReceivers {
+		output.VerbosePrint(fmt.Sprintf("[*] Terminating P2P receiver %s", receiverName))
+		p2pReceiver.Terminate()
+	}
+	a.p2pReceiverWaitGroup.Wait()
+}
+
+// ✅ Find Available Proxy Peers for Communication
+func (a *Agent) findAvailablePeerProxyClient() error {
+	if len(a.availablePeerReceivers) == 0 {
+		if len(a.exhaustedPeerReceivers) == 0 {
+			return errors.New("No peer proxy receivers available to connect to.")
+		}
+		output.VerbosePrint("[*] All available peer proxy receivers have been tried. Retrying them.")
+		a.refreshAvailablePeerReceivers()
+	}
+	for proxyChannel, receiverAddresses := range a.availablePeerReceivers {
+		if len(receiverAddresses) > 0 {
+			output.VerbosePrint(fmt.Sprintf("[-] Verifying proxy channel %s", proxyChannel))
+			if err := a.AttemptSelectComChannel(nil, proxyChannel); err != nil {
+				output.VerbosePrint(fmt.Sprintf("[!] Error attempting to use proxy channel %s: %s", proxyChannel, err.Error()))
+				delete(a.availablePeerReceivers, proxyChannel)
+				continue
+			}
+			a.usingPeerReceivers = true
+			addressToUse := receiverAddresses[0]
+			a.updateUpstreamDestAddr(addressToUse)
+			output.VerbosePrint(fmt.Sprintf("[*] Updated agent's destination address to proxy peer address: %s", addressToUse))
+			a.markPeerReceiverAsUsed(proxyChannel, addressToUse)
+			return nil
+		}
+	}
+	return errors.New("No available compatible peer-to-peer proxy clients found.")
+}
+
+func (a *Agent) refreshAvailablePeerReceivers() {
+	a.availablePeerReceivers = a.exhaustedPeerReceivers
+	a.exhaustedPeerReceivers = make(map[string][]string)
+}
+
+func (a *Agent) markPeerReceiverAsUsed(proxyChannel string, usedAddress string) {
+	if _, ok := a.exhaustedPeerReceivers[proxyChannel]; !ok {
+		a.exhaustedPeerReceivers[proxyChannel] = make([]string, 0)
+	}
+	a.exhaustedPeerReceivers[proxyChannel] = append(a.exhaustedPeerReceivers[proxyChannel], usedAddress)
+
+	if receiverAddresses, ok := a.availablePeerReceivers[proxyChannel]; ok {
+		a.availablePeerReceivers[proxyChannel] = deleteStringFromSlice(receiverAddresses, usedAddress)
+		if len(a.availablePeerReceivers[proxyChannel]) == 0 {
+			delete(a.availablePeerReceivers, proxyChannel)
+		}
+	}
+}
+
+func deleteStringFromSlice(slice []string, str string) []string {
+	newSlice := []string{}
+	for _, s := range slice {
+		if s != str {
+			newSlice = append(newSlice, s)
+		}
+	}
+	return newSlice
 }
