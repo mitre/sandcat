@@ -21,7 +21,7 @@ type SOCKS5Receiver struct {
 }
 
 // InitializeReceiver sets up the SOCKS5 server in memory and finds an open port.
-func (s *SOCKS5Receiver) InitializeReceiver(agentServer *string, upstreamComs *contact.Contact, waitgroup *sync.WaitGroup, agentPaw string) error {
+func (s *SOCKS5Receiver) Initialize(ctx ReceiverInitContext) error {
     s.upstreamComs = upstreamComs
     s.waitgroup = waitgroup
     s.agentPaw = agentPaw // Store PAW immediately
@@ -43,7 +43,8 @@ func (s *SOCKS5Receiver) InitializeReceiver(agentServer *string, upstreamComs *c
     }
     s.server = server
 
-    log.Printf("[+] SOCKS5 proxy initialized at %s", s.listenAddr)
+	output.VerbosePrint(fmt.Sprintf("[+] %s proxy initialized at %s",receiverName, s.listenAddr))
+
     return nil
 }
 

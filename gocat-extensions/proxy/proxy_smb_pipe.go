@@ -98,7 +98,7 @@ func init() {
  * SmbPipeReceiver Implementation (implements P2pReceiver interface).
  */
 
-func (s *SmbPipeReceiver) InitializeReceiver(agentServer *string, upstreamComs *contact.Contact, waitgroup *sync.WaitGroup) error {
+ func (s *SmbPipeReceiver) Initialize(ctx ReceiverInitContext) error {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return err

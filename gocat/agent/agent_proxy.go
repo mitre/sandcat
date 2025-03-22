@@ -24,10 +24,17 @@ func (a *Agent) ActivateLocalP2pReceivers() {
 			output.VerbosePrint("[*] Initializing in-memory SOCKS5 proxy receiver...")
 		}
 
-		if err := p2pReceiver.InitializeReceiver(&a.server, &a.beaconContact, a.p2pReceiverWaitGroup, a.paw); err != nil {
+		ctx := proxy.ReceiverInitContext{
+			AgentServer:  &a.server,
+			UpstreamComs: &a.beaconContact,
+			WaitGroup:    a.p2pReceiverWaitGroup,
+			AgentPaw:     a.paw,
+		}
+		if err := p2pReceiver.Initialize(ctx); err != nil {
 			output.VerbosePrint(fmt.Sprintf("[-] Error initializing p2p receiver %s: %s", receiverName, err.Error()))
 			continue
 		}
+		
 
 		p2pReceiver.UpdateAgentPaw(a.paw)
 

@@ -51,7 +51,7 @@ func init() {
 	P2pReceiverChannels[httpProxyName] = &HttpReceiver{}
 }
 
-func (h *HttpReceiver) InitializeReceiver(agentServer *string, upstreamComs *contact.Contact, waitgroup *sync.WaitGroup) error {
+func (h *HttpReceiver) Initialize(ctx ReceiverInitContext) error {
 	err := h.initializeReceiverPort()
 	if err != nil {
 		return err
