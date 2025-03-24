@@ -1,9 +1,6 @@
 package proxy
 
 import (
-	_ "github.com/mitre/gocat-extensions/proxy/proxy_receiver_http"
-	_ "github.com/mitre/gocat-extensions/proxy/proxy_smb_pipe"
-	_ "github.com/mitre/gocat-extensions/proxy/proxy_socks5"
 	"github.com/mitre/gocat/contact"
 )
 

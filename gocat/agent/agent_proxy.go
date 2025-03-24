@@ -9,9 +9,6 @@ import (
 )
 
 func (a *Agent) ActivateLocalP2pReceivers() {
-	output.VerbosePrint("NEW [TRACE] Entered ActivateLocalP2pReceivers()")
-	output.VerbosePrint(fmt.Sprintf("[TRACE] Current P2pReceiverChannels: %v", proxy.P2pReceiverChannels))
-
 	if !a.enableLocalP2pReceivers {
 		output.VerbosePrint("[-] Local P2P receivers are disabled. Skipping initialization.")
 		return
@@ -22,11 +19,6 @@ func (a *Agent) ActivateLocalP2pReceivers() {
 			output.VerbosePrint(fmt.Sprintf("[!] p2p receiver %s is already running, skipping reinitialization.", receiverName))
 			continue
 		}
-
-		if receiverName == "socks5" {
-			output.VerbosePrint("[*] Initializing in-memory SOCKS5 proxy receiver...")
-		}
-
 		ctx := proxy.ReceiverInitContext{
 			AgentServer:  &a.server,
 			UpstreamComs: &a.beaconContact,
