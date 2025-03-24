@@ -36,7 +36,8 @@ function build() {
 
 
     echo "[*] Cleaning up temporary build directory..."
-    rm -rf "${BUILD_DIR}"
+    
+    cd ../ && rm -rf "${BUILD_DIR}"
 }
 cd gocat
 build
