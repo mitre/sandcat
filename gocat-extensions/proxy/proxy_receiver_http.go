@@ -48,8 +48,9 @@ type HttpReceiver struct {
 }
 
 func init() {
-	P2pReceiverChannels[httpProxyName] = &HttpReceiver{}
+	P2pReceiverChannels["http"] = &HttpReceiver{}
 }
+
 
 func (h *HttpReceiver) Initialize(ctx ReceiverInitContext) error {
 	err := h.initializeReceiverPort()
@@ -57,8 +58,10 @@ func (h *HttpReceiver) Initialize(ctx ReceiverInitContext) error {
 		return err
 	}
 	h.receiverName = httpProxyName
-	h.agentServer = agentServer
-	h.upstreamComs = upstreamComs // contact will keep track of upstream dest addr.
+	h.agentServer = ctx.AgentServer
+	h.upstreamComs = ctx.UpstreamComs
+
+// contact will keep track of upstream dest addr.
 	h.httpServer = &http.Server{
 		Addr: h.bindPortStr,
 		Handler: nil,
@@ -67,7 +70,7 @@ func (h *HttpReceiver) Initialize(ctx ReceiverInitContext) error {
 	if err != nil {
 		return err
 	}
-	h.waitgroup = waitgroup
+	h.waitgroup = ctx.WaitGroup
 	h.receiverContext, h.receiverCancelFunc = context.WithTimeout(context.Background(), 5*time.Second)
 	return nil
 }

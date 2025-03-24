@@ -8,6 +8,8 @@ import (
 
 	"github.com/armon/go-socks5"
 	"github.com/mitre/gocat/contact"
+	"github.com/mitre/gocat/output"
+
 )
 
 // SOCKS5Receiver implements the P2pReceiver interface.
@@ -18,13 +20,20 @@ type SOCKS5Receiver struct {
 	upstreamComs *contact.Contact
 	waitgroup    *sync.WaitGroup
 	agentPaw     string // Store only the agent's PAW instead of a reference to Agent
+	receiverName string
 }
+
+func init() {
+    P2pReceiverChannels["socks5"] = &SOCKS5Receiver{}
+}
+
 
 // InitializeReceiver sets up the SOCKS5 server in memory and finds an open port.
 func (s *SOCKS5Receiver) Initialize(ctx ReceiverInitContext) error {
-    s.upstreamComs = upstreamComs
-    s.waitgroup = waitgroup
-    s.agentPaw = agentPaw // Store PAW immediately
+    s.upstreamComs = ctx.UpstreamComs
+	s.waitgroup = ctx.WaitGroup
+	s.agentPaw = ctx.AgentPaw// Store PAW immediately
+	s.receiverName = ctx.ReceiverName
 
     // Find an available port before running the receiver
     listener, err := net.Listen("tcp", "127.0.0.1:0") // OS assigns an available port
@@ -43,7 +52,7 @@ func (s *SOCKS5Receiver) Initialize(ctx ReceiverInitContext) error {
     }
     s.server = server
 
-	output.VerbosePrint(fmt.Sprintf("[+] %s proxy initialized at %s",receiverName, s.listenAddr))
+	output.VerbosePrint(fmt.Sprintf("[+] %s proxy initialized at %s",s.receiverName, s.listenAddr))
 
     return nil
 }
@@ -58,7 +67,6 @@ func (s *SOCKS5Receiver) RunReceiver() {
 	}
 
 	// Start the SOCKS5 server in-memory
-	s.waitgroup.Add(1) // Track in waitgroup
 	go func() {
 		defer s.waitgroup.Done()
 		if err := s.server.Serve(s.listener); err != nil {

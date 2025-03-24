@@ -4,17 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net"
-	"sync"
-	"github.com/mitre/gocat/contact"
 )
-
-// Context object to hold initialization arguments for P2P Receivers
-type ReceiverInitContext struct {
-	AgentServer  *string
-	UpstreamComs *contact.Contact
-	WaitGroup    *sync.WaitGroup
-	AgentPaw     string
-}
 
 // Build p2p message and return the bytes of its JSON marshal.
 func buildP2pMsgBytes(sourcePaw string, messageType int, payload []byte, srcAddr string) ([]byte, error) {

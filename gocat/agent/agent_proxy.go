@@ -9,6 +9,9 @@ import (
 )
 
 func (a *Agent) ActivateLocalP2pReceivers() {
+	output.VerbosePrint("NEW [TRACE] Entered ActivateLocalP2pReceivers()")
+	output.VerbosePrint(fmt.Sprintf("[TRACE] Current P2pReceiverChannels: %v", proxy.P2pReceiverChannels))
+
 	if !a.enableLocalP2pReceivers {
 		output.VerbosePrint("[-] Local P2P receivers are disabled. Skipping initialization.")
 		return
@@ -29,12 +32,12 @@ func (a *Agent) ActivateLocalP2pReceivers() {
 			UpstreamComs: &a.beaconContact,
 			WaitGroup:    a.p2pReceiverWaitGroup,
 			AgentPaw:     a.paw,
+			ReceiverName: receiverName,
 		}
 		if err := p2pReceiver.Initialize(ctx); err != nil {
 			output.VerbosePrint(fmt.Sprintf("[-] Error initializing p2p receiver %s: %s", receiverName, err.Error()))
 			continue
 		}
-		
 
 		p2pReceiver.UpdateAgentPaw(a.paw)
 

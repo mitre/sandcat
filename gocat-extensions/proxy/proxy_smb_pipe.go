@@ -43,6 +43,7 @@ import (
 
 	"github.com/mitre/gocat/contact"
 	"github.com/mitre/gocat/output"
+
 )
 
 var (
@@ -97,8 +98,7 @@ func init() {
 /*
  * SmbPipeReceiver Implementation (implements P2pReceiver interface).
  */
-
- func (s *SmbPipeReceiver) Initialize(ctx ReceiverInitContext) error {
+func (s *SmbPipeReceiver) Initialize(ctx ReceiverInitContext) error {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return err
@@ -110,10 +110,10 @@ func init() {
 	if err != nil {
 		return err
 	}
-	s.agentServer = agentServer
-	s.upstreamComs = upstreamComs
+	s.agentServer = ctx.AgentServer
+	s.upstreamComs = ctx.UpstreamComs
+	s.waitgroup = ctx.WaitGroup
 	s.receiverName = protocolName
-	s.waitgroup = waitgroup
 	s.receiverContext, s.receiverCancelFunc = context.WithTimeout(context.Background(), 5*time.Second)
 	return nil
 }
