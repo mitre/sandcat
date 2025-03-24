@@ -241,11 +241,6 @@ class SandService(BaseService):
         """
         requested_extensions = [ext_name for ext_name in headers.get('gocat-extensions', '').split(',') if ext_name]
         agent_variant = headers.get('gocat-variant', default_gocat_variant)
-
-        # 🛠 Ensure "socks5" is properly mapped
-        if "socks5" in requested_extensions:
-            self.log.debug("[+] SOCKS5 proxy detected in headers")
-
         variant_extensions = gocat_variants.get(agent_variant, set())
         self.log.debug('Using gocat variant: %s' % agent_variant)
         return variant_extensions.union(set(requested_extensions))

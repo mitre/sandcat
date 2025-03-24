@@ -2,12 +2,12 @@ package proxy
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"sync"
 
 	"github.com/armon/go-socks5"
 	"github.com/mitre/gocat/contact"
+	"github.com/mitre/gocat/output"
 )
 
 // SOCKS5Receiver implements the P2pReceiver interface.
@@ -35,7 +35,7 @@ func (s *SOCKS5Receiver) Initialize(ctx ReceiverInitContext) error {
 	// Find an available port before running the receiver
 	listener, err := net.Listen("tcp", "127.0.0.1:0") // OS assigns an available port
 	if err != nil {
-		return fmt.Errorf("[-] SOCKS5 proxy failed to find an available port: %v", err)
+		return output.VerbosePrint(fmt.Sprintf("[-] SOCKS5 proxy failed to find an available port: %v", err))
 	}
 	s.listener = listener
 	s.listenAddr = listener.Addr().String()
@@ -53,10 +53,10 @@ func (s *SOCKS5Receiver) Initialize(ctx ReceiverInitContext) error {
 
 // RunReceiver starts the SOCKS5 proxy listener.
 func (s *SOCKS5Receiver) RunReceiver() {
-	log.Println("[DEBUG] SOCKS5 Proxy Receiver is attempting to start.")
+	output.VerbosePrint(fmt.Sprintf("[DEBUG] SOCKS5 Proxy Receiver is attempting to start."))
 
 	if s.listener == nil {
-		log.Println("[-] SOCKS5 proxy has no valid listener. Cannot start.")
+		output.VerbosePrint(fmt.Sprintf("[-] SOCKS5 proxy has no valid listener. Cannot start."))
 		return
 	}
 
@@ -64,7 +64,7 @@ func (s *SOCKS5Receiver) RunReceiver() {
 	go func() {
 		defer s.waitgroup.Done()
 		if err := s.server.Serve(s.listener); err != nil {
-			log.Printf("[-] SOCKS5 proxy encountered an error: %v", err)
+			output.VerbosePrint(fmt.Sprintf("[-] SOCKS5 proxy encountered an error: %v", err))
 			s.Terminate() // Cleanup if failure occurs
 		}
 	}()
@@ -72,7 +72,7 @@ func (s *SOCKS5Receiver) RunReceiver() {
 
 // Terminate stops the SOCKS5 server.
 func (s *SOCKS5Receiver) Terminate() {
-	log.Println("[*] Shutting down in-memory SOCKS5 proxy...")
+	output.VerbosePrint(fmt.Sprintf("[*] Shutting down in-memory SOCKS5 proxy..."))
 	if s.server != nil {
 		s.server = nil
 	}
