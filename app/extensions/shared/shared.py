@@ -10,6 +10,5 @@ class Shared(Extension):
     def __init__(self):
         super().__init__([
             ('shared.go', 'shared'),
-            ('dllmain.h', 'shared'),
         ])
         self.dependencies = []
