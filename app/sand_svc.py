@@ -11,6 +11,7 @@ from shutil import which
 from app.utility.base_service import BaseService
 
 default_flag_params = ('server', 'group', 'listenP2P', 'c2', 'includeProxyPeers')
+library_flag_params = ('runOnInit',)
 gocat_variants = dict(
     basic=set(),
     red=set(['gist', 'shared', 'shells', 'shellcode'])
@@ -73,7 +74,7 @@ class SandService(BaseService):
                                               output_name=name,
                                               buildmode='--buildmode=c-shared',
                                               **compile_options[platform],
-                                              flag_params=default_flag_params,
+                                              flag_params=default_flag_params + library_flag_params,
                                               extension_names=extension_names,
                                               compile_target_dir='gocat/shared')
         return await self.app_svc.retrieve_compiled_file(name, platform, location='payloads')
