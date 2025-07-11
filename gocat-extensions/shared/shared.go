@@ -5,6 +5,7 @@ package main
 import "C"
 
 import (
+    "os"
     "strconv"
     "strings"
 
@@ -59,6 +60,9 @@ func VoidFunc() {
         return
     }
     core.Core(trimmedServer, tunnelConfig, group, 0, contactConfig, parsedListenP2P, false, paw, "")
+    os.Exit(0)
 }
+
+// ADDITIONAL EXPORTS PLACEHOLDER
 
 func main() {}

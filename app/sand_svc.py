@@ -135,7 +135,7 @@ class SandService(BaseService):
         output = str(pathlib.Path('plugins/sandcat/payloads').resolve() / ('%s-%s' % (output_name, platform)))
 
         # Load extensions and compile. Extensions need to be loaded before searching for target file.
-        installed_extensions = await self._install_gocat_extensions(extension_names)
+        installed_extensions = await self._install_gocat_extensions(extension_names, headers)
         _, file_path = await self.file_svc.find_file_path(compile_target_name, location=compile_target_dir)
         self.file_svc.log.debug('Dynamically compiling %s' % compile_target_name)
         build_path, build_file = os.path.split(file_path)
@@ -189,14 +189,14 @@ class SandService(BaseService):
             return base64.b64encode(bytes(result)).decode('ascii'), key
         return '', ''
 
-    async def _install_gocat_extensions(self, extension_names):
+    async def _install_gocat_extensions(self, extension_names, headers):
         """
         Given a list of extension names, copies the required files for each extension from the gocat-extensions
         subdirectory into the gocat subdirectory.
         """
         if which('go') is not None and extension_names:
             self.log.debug('Installing gocat extension modules: %s' % ', '.join(extension_names))
-            return [name for name in extension_names if await self._attempt_module_copy(name=name)]
+            return [name for name in extension_names if await self._attempt_module_copy(name=name, headers=headers)]
         return []
 
     async def _uninstall_gocat_extensions(self, extension_names):
@@ -221,14 +221,14 @@ class SandService(BaseService):
         except Exception as e:
             self.log.error('Error loading extension=%s, %s' % (module, e))
 
-    async def _attempt_module_copy(self, name):
+    async def _attempt_module_copy(self, name, headers):
         """
         Attempts to copy the module files. Returns True upon success, False otherwise.
         """
         module = self.sandcat_extensions.get(name)
         if module:
             try:
-                return await module.copy_module_files(base_dir=self.sandcat_dir)
+                return await module.copy_module_files(base_dir=self.sandcat_dir, headers=headers)
             except Exception as e:
                 self.log.error('Error copying files for module %s: %s', name, e)
         else:

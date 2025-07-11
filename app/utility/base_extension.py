@@ -23,7 +23,7 @@ class Extension(ABC):
                 return False
         return True
 
-    async def copy_module_files(self, base_dir):
+    async def copy_module_files(self, base_dir, headers=None):
         """Copies module files into their corresponding location within the gocat directory.
         If a hook function is assigned to the file, run the hook function on the file data before
         copying it to the gocat directory.
