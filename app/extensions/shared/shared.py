@@ -1,5 +1,3 @@
-import re
-
 from plugins.sandcat.app.utility.base_extension import Extension
 
 
@@ -39,5 +37,6 @@ class Shared(Extension):
                 export_text += f'//export {export_func}\nfunc {export_func}() {{\n    VoidFunc()\n}}\n\n'
 
             if export_text:
-                return re.sub(EXPORT_PLACEHOLDER, export_text, original_data, count=1)
+                return original_data.replace(EXPORT_PLACEHOLDER, export_text)
         return original_data
+
