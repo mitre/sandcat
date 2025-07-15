@@ -1,17 +1,17 @@
 # Sandcat Plugin Details
 
 The Sandcat plugin provides Caldera with its default agent implant, Sandcat.
-The agent is written in GoLang for cross-platform compatibility and can currently be compiled to run on
+The agent is written in Golang for cross-platform compatibility and can currently be compiled to run on
 Windows, Linux, and MacOS targets.
 
-While the Caldera C2 server requires GoLang to be installed in order to compile agent binaries, 
+While the Caldera C2 server requires Golang to be installed in order to compile agent binaries, 
 no installation is required on target machines - the agent program will simply run as an executable.
 
 The `sandcat` plugin does come with precompiled binaries, but these only contain the basic
 agent features and are more likely to be flagged by AV as they are publicly available on GitHub.
 
 If you wish to dynamically compile agents to produce new hashes or include additional agent features,
-the C2 server must have GoLang installed.
+the C2 server must have Golang installed (at least v1.23, though v.1.24.4+ is recommended).
 
 ## Source Code
 The source code for the sandcat agent is located in the `gocat` and `gocat-extensions` directories.
@@ -35,18 +35,16 @@ latest compiled version on your system.
 To deploy Sandcat, use one of the built-in delivery commands from the main server GUI which allows you to run the agent 
 on Windows, Mac, or Linux.
 
-Each of these commands downloads a compiled Sandcat executable from Caldera and runs it immediately.
+Each of these commands downloads a compiled Sandcat executable from Caldera and runs it immediately. If you have a compatible version of Golang installed on the server, a fresh binary will be dynamically re-compiled prior to download. The recompilation produces a new file hash, which helps bypass hash-based signature detections, and it also gives operators the opportunity to include agent extensions or set certain C2-related values at compile-time.
 
-Once the agent is running, it should show log messages when it beacons into Caldera.
+Once the agent is running, it will start beaconing to the control server. If run in verbose mode, the agent will output messages to the console.
 
-> If you have GoLang installed on the Caldera server, each time you run one of the delivery commands above, 
-the agent will re-compile itself dynamically to obtain a new file hash. This will help bypass file-based signature detections.
+Note: for MacOS, both amd64 and arm64 architectures are supported. When retrieving the executable from the server, the architecture header can be used to select the correct executable: `-H "architecture:amd64"` or `-H "architecture:arm64"`.
 
 ### Options
 
 When running the Sandcat agent binary, there are optional parameters you can use when you start the executable:
 
-* `-H "architecture: [architecture]"`: For MacOS, both amd64 and arm64 are supported. When retrieving the executable from the server, the architecture header can be used to select the correct executable: `-H "architecture:amd64"` or `-H "architecture:arm64"`.
 * `-server [C2 endpoint]`: This is the location (e.g. HTTP URL, IPv4:port string) that the agent will use to reach the C2 server. (e.g. `-server http://10.0.0.1:8888`, `-server 10.0.0.1:53`, `-server https://example.com`). The agent must have connectivity to this endpoint. 
 * `-group [group name]`: This is the group name that you would like the agent to join when it starts. The group does not have to exist beforehand. A default group of `red` will be used if this option is not provided (e.g. `-group red`, `-group mygroup`)
 * `-v`: Toggle verbose output from sandcat. If this flag is not set, sandcat will run silently. This only applies to output that would be displayed on the target machine, for instance if running sandcat from a terminal window. This option does not affect the information that gets sent to the C2 server.
@@ -74,7 +72,7 @@ executors, and additional C2 communication protocols.
 To request particular extensions, users must include the `gocat-extensions` HTTP header when asking the C2 to compile an agent. 
 The header value must be a comma-separated list of requested extensions.
 The server will include the extensions in the binary if they exist and if their dependencies are met (i.e. if the extension requires a particular
-GoLang module that is not installed on the server, then the extension will not be included).
+Golang module that is not installed on the server, then the extension will not be included).
 
 Below is an example PowerShell snippet to request the C2 server to include the `proxy_http` and `shells` 
 extensions:
@@ -99,23 +97,23 @@ The following features are included in the stock default agent:
 Additional functionality can be found in the following agent extensions:
 
 **C2 Communication Extensions**
-- `gist`: provides the Github Gist C2 contact protocol. Requires the following GoLang modules:
+- `gist`: provides the Github Gist C2 contact protocol. Requires the following Golang modules:
     - `github.com/google/go-github/github`
     - `golang.org/x/oauth2`
-- `dns_tunneling`: provides the DNS tunneling C2 communication protocol. Requires the following GoLang modules:
+- `dns_tunneling`: provides the DNS tunneling C2 communication protocol. Requires the following Golang modules:
     - `github.com/miekg/dns`
-- `ftp`: provides the FTP C2 communication protocol. Requires the following GoLang modules:
+- `ftp`: provides the FTP C2 communication protocol. Requires the following Golang modules:
     - `github.com/jlaffaye/ftp`
 - `slack`: provides the Slack C2 communication protocol.
 - `proxy_http`: allows the agent to accept peer-to-peer messages via HTTP. Not required if the agent is simply using HTTP to connect to a peer (acts the same as connecting direclty to the C2 server over HTTP).
 - `proxy_smb_pipe`: provides the `SmbPipe` peer-to-peer proxy client and receiver for Windows (peer-to-peer communication via SMB named pipes).
-    - Requires the `gopkg.in/natefinch/npipe.v2` GoLang module
+    - Requires the `gopkg.in/natefinch/npipe.v2` Golang module
 
 **Executor Extensions**
 - `shells`: provides the `osascript` (Mac Osascript), `pwsh` (Windows powershell core), and Python (`python2` and `python3`) executors.
 - `shellcode`: provides the shellcode executors.
-- `native`: provides basic native execution functionality, which leverages GoLang code to perform tasks rather than calling external binaries or commands.
-- `native_aws`: provides native execution functionality specific to AWS. Does not require the `native` extension, but does require the following GoLang modules:
+- `native`: provides basic native execution functionality, which leverages Golang code to perform tasks rather than calling external binaries or commands.
+- `native_aws`: provides native execution functionality specific to AWS. Does not require the `native` extension, but does require the following Golang modules:
     - `github.com/aws/aws-sdk-go`
     - `github.com/aws/aws-sdk-go/aws`
 - `donut`: provides the Donut functionality to execute certain .NET executables in memory. See https://github.com/TheWover/donut for additional information.
