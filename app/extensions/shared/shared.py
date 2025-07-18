@@ -19,9 +19,10 @@ class Shared(Extension):
 
     async def copy_module_files(self, base_dir, headers=None):
         # Check if additional export functions are requested
-        if headers:
+        if headers and 'additional_exports' in headers:
             for export in headers.get('additional_exports', '').split(','):
-                self.additional_exports.append(export.strip())
+                if export:
+                    self.additional_exports.append(export.strip())
 
         return await super().copy_module_files(base_dir, headers=headers)
 
