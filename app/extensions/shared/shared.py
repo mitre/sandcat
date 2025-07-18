@@ -25,17 +25,14 @@ class Shared(Extension):
 
         return await super().copy_module_files(base_dir, headers=headers)
 
-    def remove_module_files(self, base_dir):
-        self.additional_exports.clear()
-        super().remove_module_files(base_dir)
-
     async def hook_set_additional_exports(self, original_data):
         """Will add additional export functions in shared.go to run agent."""
         if self.additional_exports:
             export_text = ''
             for export_func in self.additional_exports:
                 export_text += f'//export {export_func}\nfunc {export_func}() {{\n    VoidFunc()\n}}\n\n'
-
+            
+            self.additional_exports.clear()
             if export_text:
                 return original_data.replace(EXPORT_PLACEHOLDER, export_text)
         return original_data
