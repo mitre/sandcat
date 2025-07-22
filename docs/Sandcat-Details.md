@@ -119,7 +119,7 @@ Additional functionality can be found in the following agent extensions:
 - `donut`: provides the Donut functionality to execute certain .NET executables in memory. See https://github.com/TheWover/donut for additional information.
 
 **Other Extensions**
-- `shared` extension provides the C sharing functionality for Sandcat. This can be used to compile Sandcat as a DLL rather than a `.exe` for Windows targets.
+- `shared` extension provides the C sharing functionality for Sandcat. This can be used to compile Sandcat as a DLL rather than a `.exe` for Windows targets. For more information on using Sandcat as a DLL, see the [corresponding section](#sandcat-dll).
 
 ## Exit Codes
 
@@ -163,3 +163,20 @@ Example usage:
 - `includeProxyPeers:all` - include all peers, regardless of what proxy methods they are listening on
 - `includeProxypeers:SmbPipe` - only include peers listening for SMB pipe proxy traffic
 - `includeProxypeers:HTTP` - only include peers listening for HTTP proxy traffic.
+
+## Sandcat DLL
+While Sandcat is typically built for Windows as a PE executable (`.exe`) file, the Sandcat agent can also be built as a Windows DLL using the `shared` extension. 
+
+If running Caldera on a Linux system, cross-compiling Sandcat as a Windows DLL requires the following dependencies in addition to Golang:
+- `x86_64-w64-mingw32-gcc` - can typically be installed as part of the `gcc-mingw-w64-x86-64` apt package (e.g. `sudo apt install gcc-mingw-w64-x86-64`)
+
+The Sandcat DLL has the option to run the agent on DLL load (by default, it will not), and it will always export the `VoidFunc` function, which also runs the agent when called.
+
+To build Sandcat as a Windows DLL instead of as an executable file, the following HTTP headers need to be sent to the C2 server when requesting the build:
+- `platform` - must be set to `windows` to request a build for a Windows target
+- `file` - must be set to `shared.go`. Note that we use this filename instead of `sandcat.go` since `shared.go` implements the necessary DLL routines to compile Sandcat as a DLL
+- `server` - must be set to the address of the C2 server or P2P listener that your agent must use to connect to the C2 server. This value must be included because we will not be able to provide command-line parameters to the Sandcat DLL.
+
+You can also set certain optional header values to customize your Sandcat DLL's behavior:
+- `runOnInit` - set to `true` or `false` depending on whether or not you want Sandcat agent to start on DLL load rather than when the exported function is called. Default is `false`
+- `additional_exports` - provide a comma-separated list of function names for your DLL to export in addition to the default `VoidFunc` exported function. All exported functions will trigger the same behavior - running the agent and connecting to the C2 server. This header allows users to have their Sandcat DLLs export specific functions of their choice to perform DLL hijacking attacks and other related behavior.
