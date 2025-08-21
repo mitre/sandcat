@@ -40,7 +40,8 @@ func Runner(shellcode []byte) (bool, string) {
 	if checkErrorMessage(err) {
 		return false, execute.ERROR_PID
 	}
-	if (hThread == nil) {
+	if (hThread == 0) {
+		println("[!] CreateThread returned a null handle.")
 		return false, execute.ERROR_PID
 	}
 	return true, execute.SUCCESS_PID
