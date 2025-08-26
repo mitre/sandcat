@@ -37,13 +37,17 @@ func Runner(shellcode []byte) (bool, string) {
 
     // Run shellcode in new thread
     output.VerbosePrint("[*] Running shellcode in new thread")
-    hThread, _, err := fpCreateThread.Call(0, 0, address, 0, 0, 0)
+    var threadId uint32
+    pThreadId := unsafe.Pointer(&threadId)
+    hThread, _, err := fpCreateThread.Call(0, 0, address, 0, 0, uintptr(pThreadId))
     if checkErrorMessage(err) {
         return false, execute.ERROR_PID
     }
     if (hThread == 0) {
         output.VerbosePrint("[!] CreateThread returned a null handle.")
         return false, execute.ERROR_PID
+    } else {
+        output.VerbosePrint(fmt.Sprintf("[*] Created thread with ID %d", threadId))
     }
 
     // Run auxiliary go routine to wait for shellcode completion and perform cleanup
