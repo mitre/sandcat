@@ -97,7 +97,8 @@ func (a *Agent) Initialize(server string, tunnelConfig *contact.TunnelConfig, gr
 	if userName, err := getUsername(); err == nil {
 		a.username = userName
 	} else {
-		return err
+		output.VerbosePrint(fmt.Sprintf("[-] Failed to find username: %s. Setting to unknown.", err.Error()))
+		a.username = "UNKNOWN"
 	}
 	a.server = server
 	a.upstreamDestAddr = server
@@ -382,6 +383,7 @@ func (a *Agent) AttemptSelectComChannel(requestedChannelConfig map[string]string
 
 // Outputs information about the agent.
 func (a *Agent) Display() {
+	output.VerbosePrint(fmt.Sprintf("username=%s", a.username))
 	output.VerbosePrint(fmt.Sprintf("initial delay=%d", int(a.initialDelay)))
 	output.VerbosePrint(fmt.Sprintf("server=%s", a.server))
 	output.VerbosePrint(fmt.Sprintf("upstream dest addr=%s", a.upstreamDestAddr))
