@@ -16,3 +16,5 @@
 shared.h
 sandcat.h
 payloads/sandcat.go-*
+gocat/sandcat-test
+sandcat-test
