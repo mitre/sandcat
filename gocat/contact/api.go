@@ -261,6 +261,12 @@ func createUploadRequest(uploadUrl string, requestBody *bytes.Buffer, headers ma
 	return req, nil
 }
 
+// isRetryableStatusCode determines if an HTTP status code should trigger a retry
+func isRetryableStatusCode(statusCode int) bool {
+	// Server errors (5xx) and some client errors that might be temporary
+	return statusCode >= 500 || statusCode == 408 || statusCode == 429
+}
+
 // isRetryableError determines if an error should trigger a retry
 func isRetryableError(err error) bool {
 	if err == nil {
@@ -334,6 +340,19 @@ func (a *API) request(address string, data []byte) []byte {
 				continue
 			}
 			output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response after %d attempts: %s", attempt+1, err.Error()))
+			return nil
+		}
+		
+		// Check for retryable HTTP status codes
+		if isRetryableStatusCode(resp.StatusCode) {
+			if attempt < maxRetries {
+				delay := calculateRetryDelay(attempt)
+				output.VerbosePrint(fmt.Sprintf("[!] HTTP request returned status %d (attempt %d/%d). Retrying in %v", 
+					resp.StatusCode, attempt+1, maxRetries+1, delay))
+				time.Sleep(delay)
+				continue
+			}
+			output.VerbosePrint(fmt.Sprintf("[-] HTTP request returned status %d after %d attempts", resp.StatusCode, attempt+1))
 			return nil
 		}
 		
