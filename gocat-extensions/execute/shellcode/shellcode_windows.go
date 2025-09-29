@@ -88,15 +88,16 @@ func IsAvailable() bool {
 		return false
 	}
 	if hNtdll, err = syscall.LoadDLL("ntdll.dll"); err != nil {
-		fmt.Println("[!] Failed to load NTDLL: %s", err.Error())
+		fmt.Printf("[!] Failed to load NTDLL: %s\n", err.Error())
 		return false
 	}
     if fpCreateThread, err = hKernel32.FindProc("CreateThread"); err != nil {
-		fmt.Println("[-] Failed to load CreateThread API: %s", err.Error())
+		fmt.Printf("[-] Failed to load CreateThread API: %s\n", err.Error())
 		return false
 	}
 	if fpRtlCopyMemory, err = hNtdll.FindProc("RtlCopyMemory"); err != nil {
 		fmt.Println("[-] Failed to load RtlCopyMemory API: %s", err.Error())
+		return false
 	}
 
 	fmt.Println("[+] Fetched required APIs for shellcode runner.")
