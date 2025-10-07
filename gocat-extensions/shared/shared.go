@@ -7,6 +7,7 @@ import "C"
 import (
     "strconv"
     "strings"
+    "sync/atomic"
 
     "github.com/mitre/gocat/contact"
     "github.com/mitre/gocat/core"
@@ -22,7 +23,7 @@ var (
     listenP2P  = "false" // need to set as string to allow ldflags -X build-time variable change on server-side.
     runOnInit  = "false" // need to set as string to allow ldflags -X build-time variable change on server-side.
     httpProxyGateway = ""
-    running    = false
+    running    = atomic.Bool // false
 )
 
 func init() {
@@ -38,11 +39,12 @@ func init() {
 
 //export VoidFunc
 func VoidFunc() {
-    if running {
+    // Condition sets running to true and returns previous running value
+    if running.Swap(true) {
+        // Already an instance running in this process
         return
     }
 
-    running = true
     parsedListenP2P, err := strconv.ParseBool(listenP2P)
     if err != nil {
         parsedListenP2P = false
