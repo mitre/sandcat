@@ -33,7 +33,7 @@ class Shared(Extension):
         if self.additional_exports:
             export_text = ''
             for export_func in self.additional_exports:
-                sanitized = sanitize_export_func(export_func)
+                sanitized = Shared.sanitize_export_func(export_func)
                 export_text += f'//export {sanitized}\nfunc {sanitized}() {{\n    VoidFunc()\n}}\n\n'
             
             self.additional_exports.clear()
