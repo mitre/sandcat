@@ -5,7 +5,6 @@ package main
 import "C"
 
 import (
-    "os"
     "strconv"
     "strings"
 
