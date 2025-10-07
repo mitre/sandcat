@@ -23,8 +23,9 @@ var (
     listenP2P  = "false" // need to set as string to allow ldflags -X build-time variable change on server-side.
     runOnInit  = "false" // need to set as string to allow ldflags -X build-time variable change on server-side.
     httpProxyGateway = ""
-    running    = atomic.Bool // false
 )
+
+var running atomic.Bool // false
 
 func init() {
     parsedRunOnInit, err := strconv.ParseBool(runOnInit)
