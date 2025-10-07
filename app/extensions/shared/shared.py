@@ -1,3 +1,5 @@
+import re
+
 from plugins.sandcat.app.utility.base_extension import Extension
 
 
@@ -31,10 +33,14 @@ class Shared(Extension):
         if self.additional_exports:
             export_text = ''
             for export_func in self.additional_exports:
-                export_text += f'//export {export_func}\nfunc {export_func}() {{\n    VoidFunc()\n}}\n\n'
+                sanitized = sanitize_export_func(export_func)
+                export_text += f'//export {sanitized}\nfunc {sanitized}() {{\n    VoidFunc()\n}}\n\n'
             
             self.additional_exports.clear()
             if export_text:
                 return original_data.replace(EXPORT_PLACEHOLDER, export_text)
         return original_data
 
+    @staticmethod
+    def sanitize_export_func(export_func):
+        return re.sub('[^0-9a-zA-Z_]+', '_', export_func)
