@@ -226,10 +226,14 @@ Add-Type -TypeDefinition @"
     public static class Kernel32 {
         [DllImport("Kernel32", SetLastError=true, CharSet = CharSet.Ansi)]
         public static extern IntPtr LoadLibrary([MarshalAs(UnmanagedType.LPStr)]string lpFileName);
+
+        [DllImport("Kernel32", SetLastError=true)]
+        public static extern bool FreeLibrary(IntPtr hModule);
     }
 "@;
 $handle = [Kernel32]::LoadLibrary("C:\Users\Public\sandcat.dll");
 ```
+  - Once finished, you can free the library using `[Kernel32]::FreeLibrary($handle)`
 
 ### Build Dependencies
 If running Caldera on a Linux system, cross-compiling Sandcat as a Windows DLL requires the following dependencies in addition to Golang:
