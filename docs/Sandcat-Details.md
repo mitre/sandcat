@@ -233,7 +233,7 @@ Add-Type -TypeDefinition @"
 "@;
 $handle = [Kernel32]::LoadLibrary("C:\Users\Public\sandcat.dll");
 ```
-  - Once finished, you can free the library using `[Kernel32]::FreeLibrary($handle)`
+  - Once finished, you can free the library handle using `[Kernel32]::FreeLibrary($handle)`
 
 ### Build Dependencies
 If running Caldera on a Linux system, cross-compiling Sandcat as a Windows DLL requires the following dependencies in addition to Golang:
