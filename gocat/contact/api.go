@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	apiBeacon = "/beacon"
-	userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"
+	API_BEACON = "/beacon"
+	USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"
 )
 
 //API communicates through HTTP
@@ -39,7 +39,7 @@ func (a *API) GetBeaconBytes(profile map[string]interface{}) []byte {
 		output.VerbosePrint(fmt.Sprintf("[-] Cannot request beacon. Error with profile marshal: %s", err.Error()))
 		return nil
 	} else {
-		address := fmt.Sprintf("%s%s", a.upstreamDestAddr, apiBeacon)
+		address := fmt.Sprintf("%s%s", a.upstreamDestAddr, API_BEACON)
 		return a.request(address, data)
 	}
 }
@@ -59,6 +59,7 @@ func (a *API) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 		req.Header.Set("file", payload)
 		req.Header.Set("platform", platform.(string))
 		req.Header.Set("paw", profile["paw"].(string))
+		req.Header.Set("User-Agent", USER_AGENT)
 		resp, err := a.client.Do(req)
 		if err != nil {
 			output.VerbosePrint(fmt.Sprintf("[-] Error sending payload request: %s", err.Error()))
@@ -84,8 +85,13 @@ func (a *API) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 
 //C2RequirementsMet determines if sandcat can use the selected comm channel
 func (a *API) C2RequirementsMet(profile map[string]interface{}, c2Config map[string]string) (bool, map[string]string) {
-	output.VerbosePrint(fmt.Sprintf("Beacon API=%s", apiBeacon))
+	output.VerbosePrint(fmt.Sprintf("Beacon API=%s", API_BEACON))
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	// Set user agent string if provided
+	if providedUserAgent, ok := c2Config["httpUserAgent"]; ok && len(providedUserAgent) > 0 {
+		USER_AGENT = providedUserAgent
+	}
 
 	// Handle proxy gateway configuration.
 	if proxyUrlStr, ok := c2Config["httpProxyGateway"]; ok && len(proxyUrlStr) > 0 {
@@ -107,7 +113,7 @@ func (a *API) SetUpstreamDestAddr(upstreamDestAddr string) {
 
 // SendExecutionResults will send the execution results to the upstream destination.
 func (a *API) SendExecutionResults(profile map[string]interface{}, result map[string]interface{}) {
-	address := fmt.Sprintf("%s%s", a.upstreamDestAddr, apiBeacon)
+	address := fmt.Sprintf("%s%s", a.upstreamDestAddr, API_BEACON)
 	profileCopy := make(map[string]interface{})
 	for k,v := range profile {
 		profileCopy[k] = v
@@ -141,7 +147,7 @@ func (a *API) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	headers := map[string]string{
 		"Content-Type": contentType,
 		"X-Request-Id": fmt.Sprintf("%s-%s", profile["host"].(string), profile["paw"].(string)),
-		"User-Agent": userAgent,
+		"User-Agent": USER_AGENT,
 		"X-Paw": profile["paw"].(string),
 		"X-Host": profile["host"].(string),
 	}
@@ -200,6 +206,7 @@ func (a *API) request(address string, data []byte) []byte {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to create HTTP request: %s", err.Error()))
 		return nil
 	}
+	req.Header.Set("User-Agent", USER_AGENT)
 	resp, err := a.client.Do(req)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to perform HTTP request: %s", err.Error()))
