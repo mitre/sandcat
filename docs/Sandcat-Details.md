@@ -60,6 +60,7 @@ When running the Sandcat agent binary, there are optional parameters you can use
 * `-delay [number of seconds]`: pause the agent for the specified number of seconds before running
 * `-listenP2P`: Toggle peer-to-peer listening mode. When enabled, the agent will listen for and accept peer-to-peer connections from other agents. This feature can be leveraged in environments where users want agents within an internal network to proxy through another agent in order to connect to the C2 server.
 * `-originLinkID [link ID]`: associated the agent with the operation instruction with the given link ID. This allows the C2 server to map out lateral movement by determining which operation instructions spawned which agents.
+* `-userAgent [link ID]`: specifies a custom user agent string to use for HTTP-based contact methods. The default user agent string is `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36`
 
 Additionally, the sandcat agent can tunnel its communications to the C2 using the following options (for more details, see the [C2 tunneling documentation](../../C2-Tunneling.md)
 
@@ -149,12 +150,13 @@ The following parameters can be specified this way:
 - `server`
 - `group`
 - `listenP2P`
+- `userAgent`
 
 For example, the following will download a linux executable that will use `http://10.0.0.2:8888` as the server address
-instead of `http://localhost:8888`, will set the group name to `mygroup` instead of the default `red`, and will enable the P2P listener:
+instead of `http://localhost:8888`, will set the group name to `mygroup` instead of the default `red`, will enable the P2P listener, and will use the HTTP user agent string `myuseragent`:
 
 ```
-curl -sk -X POST -H 'file:sandcat.go' -H 'platform:linux' -H 'server:http://10.0.0.2:8888' -H 'group:mygroup' -H 'listenP2P:true' http://localhost:8888/file/download > sandcat
+curl -sk -X POST -H 'file:sandcat.go' -H 'platform:linux' -H 'server:http://10.0.0.2:8888' -H 'group:mygroup' -H 'listenP2P:true' -H 'userAgent:myuseragent' http://localhost:8888/file/download > sandcat
 ```
 
 Additionally, if you want the C2 server to compile the agent with a built-in list of known peers (agents that are actively listening for peer-to-peer requests), you can do so with the following header:
