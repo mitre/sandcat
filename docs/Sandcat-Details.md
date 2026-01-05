@@ -60,7 +60,7 @@ When running the Sandcat agent binary, there are optional parameters you can use
 * `-delay [number of seconds]`: pause the agent for the specified number of seconds before running
 * `-listenP2P`: Toggle peer-to-peer listening mode. When enabled, the agent will listen for and accept peer-to-peer connections from other agents. This feature can be leveraged in environments where users want agents within an internal network to proxy through another agent in order to connect to the C2 server.
 * `-originLinkID [link ID]`: associated the agent with the operation instruction with the given link ID. This allows the C2 server to map out lateral movement by determining which operation instructions spawned which agents.
-* `-userAgent [link ID]`: specifies a custom user agent string to use for HTTP-based contact methods. The default user agent string is `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36`
+* `-userAgent [user agent]`: specifies a custom user agent string to use for HTTP-based contact methods. The default user agent string is `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36`
 
 Additionally, the sandcat agent can tunnel its communications to the C2 using the following options (for more details, see the [C2 tunneling documentation](../../C2-Tunneling.md)
 
