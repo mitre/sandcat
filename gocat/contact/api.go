@@ -8,10 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/mitre/gocat/output"
 )
@@ -19,6 +22,11 @@ import (
 var (
 	apiBeacon = "/beacon"
 	userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"
+	// Retry configuration
+	maxRetries = 3
+	initialRetryDelay = time.Second * 2
+	maxRetryDelay = time.Second * 30
+	httpTimeout = time.Second * 30
 )
 
 //API communicates through HTTP
@@ -51,31 +59,67 @@ func (a *API) GetPayloadBytes(profile map[string]interface{}, payload string) ([
     platform := profile["platform"]
     if platform != nil {
 		address := fmt.Sprintf("%s/file/download", a.upstreamDestAddr)
-		req, err := http.NewRequest("POST", address, nil)
-		if err != nil {
-			output.VerbosePrint(fmt.Sprintf("[-] Failed to create HTTP request: %s", err.Error()))
-			return nil, ""
-		}
-		req.Header.Set("file", payload)
-		req.Header.Set("platform", platform.(string))
-		req.Header.Set("paw", profile["paw"].(string))
-		resp, err := a.client.Do(req)
-		if err != nil {
-			output.VerbosePrint(fmt.Sprintf("[-] Error sending payload request: %s", err.Error()))
-			return nil, ""
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == ok {
-			buf, err := io.ReadAll(resp.Body)
+		
+		for attempt := 0; attempt <= maxRetries; attempt++ {
+			req, err := http.NewRequest("POST", address, nil)
 			if err != nil {
-				output.VerbosePrint(fmt.Sprintf("[-] Error reading HTTP response: %s", err.Error()))
+				output.VerbosePrint(fmt.Sprintf("[-] Failed to create HTTP request: %s", err.Error()))
 				return nil, ""
 			}
-			payloadBytes = buf
-			if name_header, ok := resp.Header["Filename"]; ok {
-				filename = filepath.Join(name_header[0])
+			req.Header.Set("file", payload)
+			req.Header.Set("platform", platform.(string))
+			req.Header.Set("paw", profile["paw"].(string))
+			
+			resp, err := a.client.Do(req)
+			if err != nil {
+				if attempt < maxRetries && isRetryableError(err) {
+					delay := calculateRetryDelay(attempt)
+					output.VerbosePrint(fmt.Sprintf("[!] Payload request failed (attempt %d/%d): %s. Retrying in %v", 
+						attempt+1, maxRetries+1, err.Error(), delay))
+					time.Sleep(delay)
+					continue
+				}
+				output.VerbosePrint(fmt.Sprintf("[-] Error sending payload request after %d attempts: %s", attempt+1, err.Error()))
+				return nil, ""
+			}
+			
+			if resp.StatusCode == ok {
+				buf, err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if err != nil {
+					if attempt < maxRetries {
+						delay := calculateRetryDelay(attempt)
+						output.VerbosePrint(fmt.Sprintf("[!] Error reading payload response (attempt %d/%d): %s. Retrying in %v", 
+							attempt+1, maxRetries+1, err.Error(), delay))
+						time.Sleep(delay)
+						continue
+					}
+					output.VerbosePrint(fmt.Sprintf("[-] Error reading HTTP response after %d attempts: %s", attempt+1, err.Error()))
+					return nil, ""
+				}
+				
+				payloadBytes = buf
+				if name_header, ok := resp.Header["Filename"]; ok {
+					filename = filepath.Join(name_header[0])
+				} else {
+					output.VerbosePrint("[-] HTTP response missing Filename header.")
+				}
+				
+				// Success - log if this was a retry
+				if attempt > 0 {
+					output.VerbosePrint(fmt.Sprintf("[+] Payload request succeeded on attempt %d", attempt+1))
+				}
+				break
 			} else {
-				output.VerbosePrint("[-] HTTP response missing Filename header.")
+				resp.Body.Close()
+				if attempt < maxRetries {
+					delay := calculateRetryDelay(attempt)
+					output.VerbosePrint(fmt.Sprintf("[!] Payload request returned status %d (attempt %d/%d). Retrying in %v", 
+						resp.StatusCode, attempt+1, maxRetries+1, delay))
+					time.Sleep(delay)
+					continue
+				}
+				output.VerbosePrint(fmt.Sprintf("[-] Payload request returned status %d after %d attempts", resp.StatusCode, attempt+1))
 			}
 		}
     }
@@ -96,7 +140,10 @@ func (a *API) C2RequirementsMet(profile map[string]interface{}, c2Config map[str
 		}
 		http.DefaultTransport.(*http.Transport).Proxy = http.ProxyURL(proxyUrl)
 	}
-	a.client = &http.Client{Transport: http.DefaultTransport}
+	a.client = &http.Client{
+		Transport: http.DefaultTransport,
+		Timeout:   httpTimeout,
+	}
 
 	return true, nil
 }
@@ -130,36 +177,57 @@ func (a *API) GetName() string {
 func (a *API) UploadFileBytes(profile map[string]interface{}, uploadName string, data []byte) error {
 	uploadUrl := a.upstreamDestAddr + "/file/upload"
 
-	// Set up the form
-	requestBody := bytes.Buffer{}
-	contentType, err := createUploadForm(&requestBody, data, uploadName)
-	if err != nil {
-		return nil
-	}
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// Set up the form
+		requestBody := bytes.Buffer{}
+		contentType, err := createUploadForm(&requestBody, data, uploadName)
+		if err != nil {
+			return err
+		}
 
-	// Set up the request
-	headers := map[string]string{
-		"Content-Type": contentType,
-		"X-Request-Id": fmt.Sprintf("%s-%s", profile["host"].(string), profile["paw"].(string)),
-		"User-Agent": userAgent,
-		"X-Paw": profile["paw"].(string),
-		"X-Host": profile["host"].(string),
-	}
-	req, err := createUploadRequest(uploadUrl, &requestBody, headers)
-	if err != nil {
-		return err
-	}
+		// Set up the request
+		headers := map[string]string{
+			"Content-Type": contentType,
+			"X-Request-Id": fmt.Sprintf("%s-%s", profile["host"].(string), profile["paw"].(string)),
+			"User-Agent": userAgent,
+			"X-Paw": profile["paw"].(string),
+			"X-Host": profile["host"].(string),
+		}
+		req, err := createUploadRequest(uploadUrl, &requestBody, headers)
+		if err != nil {
+			return err
+		}
 
-	// Perform request and process response
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
-		return nil
-	} else {
-		return errors.New(fmt.Sprintf("Non-successful HTTP response status code: %d", resp.StatusCode))
+		// Perform request and process response
+		resp, err := a.client.Do(req)
+		if err != nil {
+			if attempt < maxRetries && isRetryableError(err) {
+				delay := calculateRetryDelay(attempt)
+				output.VerbosePrint(fmt.Sprintf("[!] File upload failed (attempt %d/%d): %s. Retrying in %v", 
+					attempt+1, maxRetries+1, err.Error(), delay))
+				time.Sleep(delay)
+				continue
+			}
+			return err
+		}
+		
+		resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			// Success - log if this was a retry
+			if attempt > 0 {
+				output.VerbosePrint(fmt.Sprintf("[+] File upload succeeded on attempt %d", attempt+1))
+			}
+			return nil
+		} else {
+			if attempt < maxRetries {
+				delay := calculateRetryDelay(attempt)
+				output.VerbosePrint(fmt.Sprintf("[!] File upload returned status %d (attempt %d/%d). Retrying in %v", 
+					resp.StatusCode, attempt+1, maxRetries+1, delay))
+				time.Sleep(delay)
+				continue
+			}
+			return errors.New(fmt.Sprintf("Non-successful HTTP response status code: %d after %d attempts", resp.StatusCode, attempt+1))
+		}
 	}
 	return nil
 }
@@ -193,28 +261,121 @@ func createUploadRequest(uploadUrl string, requestBody *bytes.Buffer, headers ma
 	return req, nil
 }
 
+// isRetryableStatusCode determines if an HTTP status code should trigger a retry
+func isRetryableStatusCode(statusCode int) bool {
+	// Server errors (5xx) and some client errors that might be temporary
+	return statusCode >= 500 || statusCode == 408 || statusCode == 429
+}
+
+// isRetryableError determines if an error should trigger a retry
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	// Network connectivity issues that are often temporary
+	retryableErrors := []string{
+		"connection refused",
+		"connection reset",
+		"connection timeout",
+		"timeout",
+		"temporary failure",
+		"wsarecv",
+		"wsasend",
+		"no such host", // DNS issues
+		"network is unreachable",
+		"broken pipe",
+	}
+	
+	for _, retryable := range retryableErrors {
+		if strings.Contains(strings.ToLower(errStr), retryable) {
+			return true
+		}
+	}
+	return false
+}
+
+// calculateRetryDelay calculates exponential backoff delay with jitter
+func calculateRetryDelay(attempt int) time.Duration {
+	delay := time.Duration(1<<uint(attempt)) * initialRetryDelay
+	if delay > maxRetryDelay {
+		delay = maxRetryDelay
+	}
+	// Add jitter to prevent thundering herd
+	jitter := time.Duration(rand.Intn(1000)) * time.Millisecond
+	return delay + jitter
+}
+
 func (a *API) request(address string, data []byte) []byte {
 	encodedData := []byte(base64.StdEncoding.EncodeToString(data))
-	req, err := http.NewRequest("POST", address, bytes.NewBuffer(encodedData))
-	if err != nil {
-		output.VerbosePrint(fmt.Sprintf("[-] Failed to create HTTP request: %s", err.Error()))
-		return nil
+	
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		req, err := http.NewRequest("POST", address, bytes.NewBuffer(encodedData))
+		if err != nil {
+			output.VerbosePrint(fmt.Sprintf("[-] Failed to create HTTP request: %s", err.Error()))
+			return nil
+		}
+		
+		resp, err := a.client.Do(req)
+		if err != nil {
+			if attempt < maxRetries && isRetryableError(err) {
+				delay := calculateRetryDelay(attempt)
+				output.VerbosePrint(fmt.Sprintf("[!] HTTP request failed (attempt %d/%d): %s. Retrying in %v", 
+					attempt+1, maxRetries+1, err.Error(), delay))
+				time.Sleep(delay)
+				continue
+			}
+			output.VerbosePrint(fmt.Sprintf("[-] Failed to perform HTTP request after %d attempts: %s", attempt+1, err.Error()))
+			return nil
+		}
+		
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			if attempt < maxRetries {
+				delay := calculateRetryDelay(attempt)
+				output.VerbosePrint(fmt.Sprintf("[!] Failed to read HTTP response (attempt %d/%d): %s. Retrying in %v", 
+					attempt+1, maxRetries+1, err.Error(), delay))
+				time.Sleep(delay)
+				continue
+			}
+			output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response after %d attempts: %s", attempt+1, err.Error()))
+			return nil
+		}
+		
+		// Check for retryable HTTP status codes
+		if isRetryableStatusCode(resp.StatusCode) {
+			if attempt < maxRetries {
+				delay := calculateRetryDelay(attempt)
+				output.VerbosePrint(fmt.Sprintf("[!] HTTP request returned status %d (attempt %d/%d). Retrying in %v", 
+					resp.StatusCode, attempt+1, maxRetries+1, delay))
+				time.Sleep(delay)
+				continue
+			}
+			output.VerbosePrint(fmt.Sprintf("[-] HTTP request returned status %d after %d attempts", resp.StatusCode, attempt+1))
+			return nil
+		}
+		
+		decodedBody, err := base64.StdEncoding.DecodeString(string(body))
+		if err != nil {
+			if attempt < maxRetries {
+				delay := calculateRetryDelay(attempt)
+				output.VerbosePrint(fmt.Sprintf("[!] Failed to decode HTTP response (attempt %d/%d): %s. Retrying in %v", 
+					attempt+1, maxRetries+1, err.Error(), delay))
+				time.Sleep(delay)
+				continue
+			}
+			output.VerbosePrint(fmt.Sprintf("[-] Failed to decode HTTP response after %d attempts: %s", attempt+1, err.Error()))
+			return nil
+		}
+		
+		// Success - log if this was a retry
+		if attempt > 0 {
+			output.VerbosePrint(fmt.Sprintf("[+] HTTP request succeeded on attempt %d", attempt+1))
+		}
+		return decodedBody
 	}
-	resp, err := a.client.Do(req)
-	if err != nil {
-		output.VerbosePrint(fmt.Sprintf("[-] Failed to perform HTTP request: %s", err.Error()))
-		return nil
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		output.VerbosePrint(fmt.Sprintf("[-] Failed to read HTTP response: %s", err.Error()))
-		return nil
-	}
-	decodedBody, err := base64.StdEncoding.DecodeString(string(body))
-	if err != nil {
-		output.VerbosePrint(fmt.Sprintf("[-] Failed to decode HTTP response: %s", err.Error()))
-		return nil
-	}
-	return decodedBody
+	
+	// This should never be reached, but included for safety
+	return nil
 }
