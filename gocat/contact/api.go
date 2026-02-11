@@ -18,7 +18,6 @@ import (
 
 var (
 	API_BEACON = "/beacon"
-	USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"
 )
 
 //API communicates through HTTP
@@ -26,6 +25,7 @@ type API struct {
 	name string
 	client *http.Client
 	upstreamDestAddr string
+	userAgent string
 }
 
 func init() {
@@ -59,7 +59,7 @@ func (a *API) GetPayloadBytes(profile map[string]interface{}, payload string) ([
 		req.Header.Set("file", payload)
 		req.Header.Set("platform", platform.(string))
 		req.Header.Set("paw", profile["paw"].(string))
-		req.Header.Set("User-Agent", USER_AGENT)
+		req.Header.Set("User-Agent", a.userAgent)
 		resp, err := a.client.Do(req)
 		if err != nil {
 			output.VerbosePrint(fmt.Sprintf("[-] Error sending payload request: %s", err.Error()))
@@ -90,7 +90,7 @@ func (a *API) C2RequirementsMet(profile map[string]interface{}, c2Config map[str
 
 	// Set user agent string if provided
 	if providedUserAgent, ok := c2Config["httpUserAgent"]; ok && len(providedUserAgent) > 0 {
-		USER_AGENT = providedUserAgent
+		a.userAgent = providedUserAgent
 	}
 
 	// Handle proxy gateway configuration.
@@ -147,7 +147,7 @@ func (a *API) UploadFileBytes(profile map[string]interface{}, uploadName string,
 	headers := map[string]string{
 		"Content-Type": contentType,
 		"X-Request-Id": fmt.Sprintf("%s-%s", profile["host"].(string), profile["paw"].(string)),
-		"User-Agent": USER_AGENT,
+		"User-Agent": a.userAgent,
 		"X-Paw": profile["paw"].(string),
 		"X-Host": profile["host"].(string),
 	}
@@ -206,7 +206,7 @@ func (a *API) request(address string, data []byte) []byte {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to create HTTP request: %s", err.Error()))
 		return nil
 	}
-	req.Header.Set("User-Agent", USER_AGENT)
+	req.Header.Set("User-Agent", a.userAgent)
 	resp, err := a.client.Do(req)
 	if err != nil {
 		output.VerbosePrint(fmt.Sprintf("[-] Failed to perform HTTP request: %s", err.Error()))
