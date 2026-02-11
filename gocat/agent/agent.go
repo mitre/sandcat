@@ -127,6 +127,12 @@ func (a *Agent) Initialize(server string, tunnelConfig *contact.TunnelConfig, gr
 	if paw != "" {
 		a.paw = paw
 	}
+	
+	// Set console output to UTF-8 for agent proces
+	err = output.SetConsoleOutputUTF8()
+	if err != nil {
+		return err
+	}
 
 	// Load peer proxy receiver information
 	a.exhaustedPeerReceivers = make(map[string][]string)
