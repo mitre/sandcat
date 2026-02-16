@@ -23,6 +23,7 @@ var (
 	c2Key     = ""
 	listenP2P = "false" // need to set as string to allow ldflags -X build-time variable change on server-side.
 	httpProxyGateway = ""
+	userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36"
 )
 
 func main() {
@@ -43,6 +44,7 @@ func main() {
 	tunnelAddr := flag.String("tunnelAddr", "", "Address used to connect to or start the tunnel.")
 	tunnelUsername := flag.String("tunnelUser", "", "Username used to authenticate to the tunnel.")
 	tunnelPassword := flag.String("tunnelPassword", "", "Password used to authenticate to the tunnel.")
+	userAgentFlag := flag.String("userAgent", userAgent, "User agent string to use for HTTP-based C2 communications")
 
 	flag.Parse()
 
@@ -56,6 +58,7 @@ func main() {
 		"c2Name": *c2Protocol,
 		"c2Key": c2Key,
 		"httpProxyGateway": *httpProxyUrl,
+		"httpUserAgent": *userAgentFlag,
 	}
 	core.Core(trimmedServer, tunnelConfig, *group, *delay, contactConfig, *listenP2P, *verbose, *paw, *originLinkID)
 }

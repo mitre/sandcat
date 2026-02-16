@@ -10,7 +10,7 @@ from shutil import which
 
 from app.utility.base_service import BaseService
 
-default_flag_params = ('server', 'group', 'listenP2P', 'c2', 'includeProxyPeers')
+default_flag_params = ('server', 'group', 'listenP2P', 'c2', 'includeProxyPeers', 'userAgent')
 library_flag_params = ('runOnInit',)
 gocat_variants = dict(
     basic=set(),
