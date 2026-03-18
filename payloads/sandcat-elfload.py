@@ -12,7 +12,7 @@ group = os.getenv('SC_DEFAULTGROUP', 'red')
 print("{} {} {}".format(proc_name, server, group))
 
 headers = dict(file='sandcat.go', platform='linux', server=server, group=group)
-r = requests.get('%s/file/download' % server, headers=headers, stream=True)
+r = requests.get('%s/file/download' % server, headers=headers, stream=True, timeout=60)
 print(r.status_code)
 if r.status_code == 200:
     print("OK")
