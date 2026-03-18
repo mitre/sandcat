@@ -17,7 +17,7 @@ class Extension(ABC):
     def check_go_dependencies(self, gocat_dir):
         """Returns True if the golang dependencies are met for this module, False if not."""
         for d in self.dependencies:
-            dep_result = subprocess.run('go list "{}"'.format(d), shell=True, cwd=gocat_dir,
+            dep_result = subprocess.run(['go', 'list', d], cwd=gocat_dir,
                                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             if (dep_result.stdout.decode()).strip() != d:
                 return False
