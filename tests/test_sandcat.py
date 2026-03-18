@@ -1,15 +1,13 @@
 import ast
 import glob
-import inspect
 import os
-import re
 
 import pytest
-import yaml
-from unittest.mock import MagicMock, AsyncMock, patch
+
+yaml = pytest.importorskip("yaml")
 
 
-PLUGIN_DIR = os.path.join(os.path.dirname(__file__), '..')
+PLUGIN_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 ABILITIES_DIR = os.path.join(PLUGIN_DIR, 'data', 'abilities')
 PAYLOADS_DIR = os.path.join(PLUGIN_DIR, 'payloads')
 APP_DIR = os.path.join(PLUGIN_DIR, 'app')
@@ -23,7 +21,9 @@ class TestHookModule:
     def test_hook_module_loads(self):
         hook_path = os.path.join(PLUGIN_DIR, 'hook.py')
         assert os.path.isfile(hook_path), 'hook.py not found'
-        tree = ast.parse(open(hook_path).read())
+        with open(hook_path, encoding='utf-8') as f:
+            source = f.read()
+        tree = ast.parse(source)
         top_level_names = [
             node.name
             for node in ast.walk(tree)
@@ -33,7 +33,8 @@ class TestHookModule:
 
     def test_hook_has_name_and_description(self):
         hook_path = os.path.join(PLUGIN_DIR, 'hook.py')
-        source = open(hook_path).read()
+        with open(hook_path, encoding='utf-8') as f:
+            source = f.read()
         tree = ast.parse(source)
         assigned_names = [
             node.targets[0].id
@@ -45,26 +46,28 @@ class TestHookModule:
 
     def test_hook_registers_routes(self):
         hook_path = os.path.join(PLUGIN_DIR, 'hook.py')
-        source = open(hook_path).read()
+        with open(hook_path, encoding='utf-8') as f:
+            source = f.read()
         assert 'add_route' in source or 'add_static' in source, (
             'hook.py should register at least one route'
         )
 
     def test_hook_registers_special_payloads(self):
         hook_path = os.path.join(PLUGIN_DIR, 'hook.py')
-        source = open(hook_path).read()
+        with open(hook_path, encoding='utf-8') as f:
+            source = f.read()
         assert 'add_special_payload' in source, (
             'hook.py should register special payloads for dynamic compilation'
         )
 
 
 class TestSandService:
-    """Tests that SandService initializes correctly."""
+    """Tests that SandService defines expected class structure and methods."""
 
     def test_sand_svc_module_is_valid_python(self):
         path = os.path.join(APP_DIR, 'sand_svc.py')
         assert os.path.isfile(path), 'sand_svc.py not found'
-        with open(path) as f:
+        with open(path, encoding='utf-8') as f:
             try:
                 ast.parse(f.read())
             except SyntaxError as e:
@@ -72,14 +75,14 @@ class TestSandService:
 
     def test_sand_svc_defines_service_class(self):
         path = os.path.join(APP_DIR, 'sand_svc.py')
-        with open(path) as f:
+        with open(path, encoding='utf-8') as f:
             tree = ast.parse(f.read())
         class_names = [node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
         assert 'SandService' in class_names, 'sand_svc.py should define SandService class'
 
     def test_sand_svc_has_compile_methods(self):
         path = os.path.join(APP_DIR, 'sand_svc.py')
-        with open(path) as f:
+        with open(path, encoding='utf-8') as f:
             tree = ast.parse(f.read())
         method_names = [
             node.name
@@ -93,10 +96,10 @@ class TestSandService:
             'SandService should have dynamically_compile_library method'
         )
 
-    def test_sand_svc_initializes_with_mock_services(self):
-        """Test that SandService.__init__ stores expected service references."""
+    def test_sand_svc_accepts_services_parameter(self):
+        """Test that SandService.__init__ accepts a services parameter."""
         path = os.path.join(APP_DIR, 'sand_svc.py')
-        with open(path) as f:
+        with open(path, encoding='utf-8') as f:
             source = f.read()
         tree = ast.parse(source)
         # Find __init__ method in SandService
@@ -117,7 +120,7 @@ class TestBaseExtension:
 
     def _get_source(self):
         path = os.path.join(APP_DIR, 'utility', 'base_extension.py')
-        with open(path) as f:
+        with open(path, encoding='utf-8') as f:
             return f.read()
 
     def test_base_extension_exists(self):
@@ -195,7 +198,7 @@ class TestAbilitiesYAML:
 
     def test_all_abilities_are_parseable(self):
         for yml_file in self._collect_yaml_files():
-            with open(yml_file) as f:
+            with open(yml_file, encoding='utf-8') as f:
                 try:
                     data = yaml.safe_load(f)
                 except yaml.YAMLError as e:
@@ -204,7 +207,7 @@ class TestAbilitiesYAML:
 
     def test_all_abilities_have_required_fields(self):
         for yml_file in self._collect_yaml_files():
-            with open(yml_file) as f:
+            with open(yml_file, encoding='utf-8') as f:
                 data = yaml.safe_load(f)
             if not isinstance(data, list):
                 data = [data]
@@ -220,7 +223,7 @@ class TestSandcatElfloadSecurity:
 
     def _get_source(self):
         path = os.path.join(PAYLOADS_DIR, 'sandcat-elfload.py')
-        with open(path) as f:
+        with open(path, encoding='utf-8') as f:
             return f.read()
 
     def test_elfload_is_valid_python(self):
@@ -243,7 +246,7 @@ class TestSandcatElfloadSecurity:
                     if isinstance(func.value, ast.Name) and func.value.id == 'requests':
                         is_requests_call = True
                 if is_requests_call:
-                    keyword_names = [kw.arg for kw in node.keywords]
+                    keyword_names = [kw.arg for kw in node.keywords if kw.arg is not None]
                     if 'timeout' not in keyword_names:
                         line = getattr(node, 'lineno', '?')
                         missing.append(f'line {line}: requests.{func.attr}()')
