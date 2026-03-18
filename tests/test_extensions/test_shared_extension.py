@@ -1,7 +1,7 @@
 """Tests for shared extension."""
 import pytest
 
-from plugins.sandcat.app.utility.base_extension import Extension
+from app.utility.base_extension import Extension
 
 
 class TestShared:

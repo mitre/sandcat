@@ -3,8 +3,7 @@ import os
 import sys
 import shutil
 import tempfile
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -12,7 +11,6 @@ import pytest
 # ---------------------------------------------------------------------------
 # Fake caldera service stubs so that imports from app.utility.base_service,
 # app.utility.base_world, and app.service.auth_svc never touch real code.
-# We inject thin fakes into sys.modules *before* any sandcat code is imported.
 # ---------------------------------------------------------------------------
 
 class _FakeBaseService:
@@ -50,75 +48,83 @@ def _for_all_public_methods(decorator):
     return wrapper
 
 
-# Build fake module trees ------------------------------------------------
-_base_service_mod = type(sys)('app.utility.base_service')
-_base_service_mod.BaseService = _FakeBaseService
+# ---------------------------------------------------------------------------
+# Session-scoped autouse fixture: inject fake modules into sys.modules once
+# per test session so sandcat code can be imported without a real Caldera
+# installation present.
+# ---------------------------------------------------------------------------
 
-_base_world_mod = type(sys)('app.utility.base_world')
-_base_world_mod.BaseWorld = _FakeBaseWorld
+@pytest.fixture(scope='session', autouse=True)
+def _inject_fake_modules():
+    """Populate sys.modules with thin stubs for Caldera framework modules."""
+    repo_root = os.path.dirname(os.path.abspath(__file__))
 
-_auth_svc_mod = type(sys)('app.service.auth_svc')
-_auth_svc_mod.check_authorization = _noop_decorator
-_auth_svc_mod.for_all_public_methods = _for_all_public_methods
+    # Build fake module stubs
+    base_service_mod = type(sys)('app.utility.base_service')
+    base_service_mod.BaseService = _FakeBaseService
 
-# aiohttp_jinja2 stub
-_jinja2_mod = type(sys)('aiohttp_jinja2')
-_jinja2_mod.template = lambda name: (lambda fn: fn)
+    base_world_mod = type(sys)('app.utility.base_world')
+    base_world_mod.BaseWorld = _FakeBaseWorld
 
-# _REPO_ROOT needed early for path setup
-_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+    auth_svc_mod = type(sys)('app.service.auth_svc')
+    auth_svc_mod.check_authorization = _noop_decorator
+    auth_svc_mod.for_all_public_methods = _for_all_public_methods
 
-# Ensure parent packages exist as proper namespace stubs with real paths
-_pkg_paths = {
-    'app': [os.path.join(_REPO_ROOT, 'app')],
-    'app.utility': [os.path.join(_REPO_ROOT, 'app', 'utility')],
-    'app.service': [],
-    'app.extensions': [os.path.join(_REPO_ROOT, 'app', 'extensions')],
-    'app.extensions.contact': [os.path.join(_REPO_ROOT, 'app', 'extensions', 'contact')],
-    'app.extensions.donut': [os.path.join(_REPO_ROOT, 'app', 'extensions', 'donut')],
-    'app.extensions.execute': [os.path.join(_REPO_ROOT, 'app', 'extensions', 'execute')],
-    'app.extensions.execute.native': [os.path.join(_REPO_ROOT, 'app', 'extensions', 'execute', 'native')],
-    'app.extensions.execute.shellcode': [os.path.join(_REPO_ROOT, 'app', 'extensions', 'execute', 'shellcode')],
-    'app.extensions.execute.shells': [os.path.join(_REPO_ROOT, 'app', 'extensions', 'execute', 'shells')],
-    'app.extensions.proxy': [os.path.join(_REPO_ROOT, 'app', 'extensions', 'proxy')],
-    'app.extensions.shared': [os.path.join(_REPO_ROOT, 'app', 'extensions', 'shared')],
-}
-for pkg, paths in _pkg_paths.items():
-    if pkg not in sys.modules:
-        mod = type(sys)(pkg)
-        mod.__path__ = paths
-        sys.modules[pkg] = mod
+    jinja2_mod = type(sys)('aiohttp_jinja2')
+    jinja2_mod.template = lambda name: (lambda fn: fn)
 
-sys.modules['app.utility.base_service'] = _base_service_mod
-sys.modules['app.utility.base_world'] = _base_world_mod
-sys.modules['app.service.auth_svc'] = _auth_svc_mod
-sys.modules['aiohttp_jinja2'] = _jinja2_mod
+    # Ensure parent packages exist as proper namespace stubs with real paths
+    pkg_paths = {
+        'app': [os.path.join(repo_root, 'app')],
+        'app.utility': [os.path.join(repo_root, 'app', 'utility')],
+        'app.service': [],
+        'app.extensions': [os.path.join(repo_root, 'app', 'extensions')],
+        'app.extensions.contact': [os.path.join(repo_root, 'app', 'extensions', 'contact')],
+        'app.extensions.donut': [os.path.join(repo_root, 'app', 'extensions', 'donut')],
+        'app.extensions.execute': [os.path.join(repo_root, 'app', 'extensions', 'execute')],
+        'app.extensions.execute.native': [os.path.join(repo_root, 'app', 'extensions', 'execute', 'native')],
+        'app.extensions.execute.shellcode': [os.path.join(repo_root, 'app', 'extensions', 'execute', 'shellcode')],
+        'app.extensions.execute.shells': [os.path.join(repo_root, 'app', 'extensions', 'execute', 'shells')],
+        'app.extensions.proxy': [os.path.join(repo_root, 'app', 'extensions', 'proxy')],
+        'app.extensions.shared': [os.path.join(repo_root, 'app', 'extensions', 'shared')],
+    }
+    for pkg, paths in pkg_paths.items():
+        if pkg not in sys.modules:
+            mod = type(sys)(pkg)
+            mod.__path__ = paths
+            sys.modules[pkg] = mod
 
-# Now make the *plugin* package importable.
-# Create a `plugins.sandcat` namespace that maps to the repo root.
-if 'plugins' not in sys.modules:
-    _plugins_mod = type(sys)('plugins')
-    _plugins_mod.__path__ = [os.path.dirname(_REPO_ROOT)]  # parent of sandcat-pytest
-    sys.modules['plugins'] = _plugins_mod
+    sys.modules['app.utility.base_service'] = base_service_mod
+    sys.modules['app.utility.base_world'] = base_world_mod
+    sys.modules['app.service.auth_svc'] = auth_svc_mod
+    sys.modules['aiohttp_jinja2'] = jinja2_mod
 
-if 'plugins.sandcat' not in sys.modules:
-    _sandcat_mod = type(sys)('plugins.sandcat')
-    _sandcat_mod.__path__ = [_REPO_ROOT]
-    sys.modules['plugins.sandcat'] = _sandcat_mod
+    # Make the plugin package importable as plugins.sandcat
+    if 'plugins' not in sys.modules:
+        plugins_mod = type(sys)('plugins')
+        plugins_mod.__path__ = [os.path.dirname(repo_root)]
+        sys.modules['plugins'] = plugins_mod
 
-if 'plugins.sandcat.app' not in sys.modules:
-    _ps_app = type(sys)('plugins.sandcat.app')
-    _ps_app.__path__ = [os.path.join(_REPO_ROOT, 'app')]
-    sys.modules['plugins.sandcat.app'] = _ps_app
+    if 'plugins.sandcat' not in sys.modules:
+        sandcat_mod = type(sys)('plugins.sandcat')
+        sandcat_mod.__path__ = [repo_root]
+        sys.modules['plugins.sandcat'] = sandcat_mod
 
-if 'plugins.sandcat.app.utility' not in sys.modules:
-    _ps_util = type(sys)('plugins.sandcat.app.utility')
-    _ps_util.__path__ = [os.path.join(_REPO_ROOT, 'app', 'utility')]
-    sys.modules['plugins.sandcat.app.utility'] = _ps_util
+    if 'plugins.sandcat.app' not in sys.modules:
+        ps_app = type(sys)('plugins.sandcat.app')
+        ps_app.__path__ = [os.path.join(repo_root, 'app')]
+        sys.modules['plugins.sandcat.app'] = ps_app
 
-# Also add repo root to sys.path so plain `from app.…` works for extension files
-if _REPO_ROOT not in sys.path:
-    sys.path.insert(0, _REPO_ROOT)
+    if 'plugins.sandcat.app.utility' not in sys.modules:
+        ps_util = type(sys)('plugins.sandcat.app.utility')
+        ps_util.__path__ = [os.path.join(repo_root, 'app', 'utility')]
+        sys.modules['plugins.sandcat.app.utility'] = ps_util
+
+    # Add repo root to sys.path so plain `from app.…` works for extension files
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+
+    yield
 
 
 # ---------------------------------------------------------------------------

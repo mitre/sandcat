@@ -271,7 +271,7 @@ class TestDynamicallyCompileLibrary:
     async def test_windows_compile_without_mingw_raises(self, mock_which, sand_svc):
         sand_svc._compile_new_agent = AsyncMock()
         headers = {'file': 'shared.go', 'platform': 'windows'}
-        with pytest.raises(Exception, match='Missing dependency for cross compilation'):
+        with pytest.raises(RuntimeError, match='Missing dependency for cross compilation'):
             await sand_svc.dynamically_compile_library(headers)
 
     @pytest.mark.asyncio

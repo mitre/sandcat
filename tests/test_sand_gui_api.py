@@ -1,5 +1,5 @@
 """Tests for app/sand_gui_api.py — SandGuiApi."""
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
 import pytest
 
