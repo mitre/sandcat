@@ -19,6 +19,8 @@ class Extension(ABC):
         for d in self.dependencies:
             dep_result = subprocess.run(['go', 'list', d], cwd=gocat_dir,
                                         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            if dep_result.returncode != 0:
+                return False
             if (dep_result.stdout.decode()).strip() != d:
                 return False
         return True
