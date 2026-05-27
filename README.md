@@ -1,4 +1,4 @@
-# MITRE Caldera Plugin: Sandcat Agent
+# Caldera Plugin: Sandcat Agent
 [![Basic Agent Build](https://github.com/mitre/sandcat/actions/workflows/go.yml/badge.svg)](https://github.com/mitre/sandcat/actions/workflows/go.yml)
 [![Agent Extensions Build](https://github.com/mitre/sandcat/actions/workflows/sandcatextensions.yml/badge.svg)](https://github.com/mitre/sandcat/actions/workflows/sandcatextensions.yml)
 
